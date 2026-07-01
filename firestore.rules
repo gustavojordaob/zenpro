@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /personalizacoes/{personalizacaoId} {
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+
+    match /pedidos/{pedidoId} {
+      allow create: if request.auth != null
+        && request.resource.data.clienteUid == request.auth.uid;
+      allow read: if request.auth != null
+        && resource.data.clienteUid == request.auth.uid;
+    }
+
+    match /usuarios/{userId} {
+      allow read, create, update: if request.auth != null
+        && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /contatos/{contatoId} {
+      allow create: if request.resource.data.keys().hasAll([
+            'nome', 'email', 'telefone', 'comentario', 'emailDestino', 'status', 'criadoEm'
+          ])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() >= 2
+        && request.resource.data.nome.size() <= 120
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 5
+        && request.resource.data.email.size() <= 200
+        && request.resource.data.telefone is string
+        && request.resource.data.telefone.size() >= 8
+        && request.resource.data.telefone.size() <= 20
+        && request.resource.data.comentario is string
+        && request.resource.data.comentario.size() >= 5
+        && request.resource.data.comentario.size() <= 2000
+        && request.resource.data.emailDestino is string
+        && request.resource.data.status == 'novo';
+      allow read, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

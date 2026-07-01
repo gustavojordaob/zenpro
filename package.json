@@ -1,0 +1,35 @@
+{
+  "name": "zenpro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:firebase": "next build",
+    "deploy:firebase": "npm run build:firebase && firebase deploy --only auth,firestore,storage,hosting --project zenpro-capinhas",
+    "start": "next start",
+    "lint": "eslint",
+    "firebase:deploy-rules": "firebase deploy --only storage,firestore --project zenpro-capinhas"
+  },
+  "dependencies": {
+    "browser-image-compression": "^2.0.2",
+    "firebase": "^12.15.0",
+    "konva": "^10.3.0",
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-konva": "^19.2.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/browser-image-compression": "^1.0.13",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "firebase-tools": "^15.22.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

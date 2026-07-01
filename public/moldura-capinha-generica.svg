@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 720" width="340" height="720">
+  <!-- Moldura genérica de capinha de smartphone (sem modelo específico) -->
+  <!-- Silhueta externa: use este path/rect como clip da foto E como overlay -->
+
+  <!-- Contorno da capinha (overlay: desenhe por cima da foto) -->
+  <rect x="10" y="10" width="320" height="700" rx="64" ry="64"
+        fill="none" stroke="#111111" stroke-width="6"/>
+
+  <!-- Módulo de câmera (canto superior esquerdo) -->
+  <rect x="42" y="42" width="132" height="132" rx="36" ry="36"
+        fill="#f2f2f2" stroke="#111111" stroke-width="5"/>
+  <!-- lentes -->
+  <circle cx="80"  cy="80"  r="18" fill="#e6e6e6" stroke="#444" stroke-width="4"/>
+  <circle cx="80"  cy="80"  r="8"  fill="#333"/>
+  <circle cx="136" cy="80"  r="18" fill="#e6e6e6" stroke="#444" stroke-width="4"/>
+  <circle cx="136" cy="80"  r="8"  fill="#333"/>
+  <circle cx="80"  cy="136" r="18" fill="#e6e6e6" stroke="#444" stroke-width="4"/>
+  <circle cx="80"  cy="136" r="8"  fill="#333"/>
+  <!-- flash -->
+  <circle cx="140" cy="132" r="7" fill="#cfcf60"/>
+
+  <!-- Recortes laterais (botões) -->
+  <rect x="4"   y="150" width="8" height="52"  rx="4" fill="#111111"/>
+  <rect x="4"   y="220" width="8" height="80"  rx="4" fill="#111111"/>
+  <rect x="328" y="200" width="8" height="100" rx="4" fill="#111111"/>
+</svg>
