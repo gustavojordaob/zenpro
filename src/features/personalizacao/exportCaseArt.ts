@@ -3,6 +3,7 @@ import { getFonteFamilia } from "./caseTextFonts";
 import { getCaseLayout } from "./caseGeometry";
 import { EXPORT_ART_WIDTH } from "./caseVisualConstants";
 import { extrairCorPredominante } from "./extrairCorPredominante";
+import { loadImageForCanvasExport } from "./loadImageForCanvasExport";
 import { IPHONE_ASSETS } from "./moldura";
 import type { TextoCapinha, Transform } from "./types";
 
@@ -88,13 +89,21 @@ function criarTextoKonva(texto: TextoCapinha): Konva.Text {
   return node;
 }
 
-/** Arte só da área útil (para impressão) — alta resolução */
-export async function exportCaseArtBlob(
+type ExportOpts = {
+  exportWidth?: number;
+  /** "mascara" = forma exata do modelo (produção); "retangulo" = capa cheia (preview) */
+  clip?: "mascara" | "retangulo";
+};
+
+/** Arte só da área útil (para impressão) — alta resolução, como dataURL */
+export async function exportCaseArtDataUrl(
   fotoUrl: string,
   transform: Transform,
   textos: TextoCapinha[] = [],
-  exportWidth = EXPORT_ART_WIDTH,
-): Promise<Blob> {
+  opts: ExportOpts = {},
+): Promise<string> {
+  const exportWidth = opts.exportWidth ?? EXPORT_ART_WIDTH;
+  const clip = opts.clip ?? "mascara";
   await garantirFontesCarregadas();
 
   const fator = exportWidth / EDITOR_WIDTH;
@@ -105,8 +114,10 @@ export async function exportCaseArtBlob(
   const t = escalaTransform(transform, fator);
 
   const [fotoImage, maskImage] = await Promise.all([
-    loadHtmlImage(fotoUrl).catch(() => loadHtmlImage(fotoUrl, false)),
-    loadMaskImage(),
+    loadImageForCanvasExport(fotoUrl),
+    clip === "mascara"
+      ? loadMaskImage()
+      : Promise.resolve<HTMLImageElement | null>(null),
   ]);
 
   const corFundo = extrairCorPredominante(fotoImage, transform, {
@@ -133,6 +144,27 @@ export async function exportCaseArtBlob(
     fill: corFundo,
   });
 
+  // Fundo borrado = a própria foto cobrindo toda a capa (preenche vãos).
+  const bgBoost = 1.18;
+  const bgScale =
+    Math.max(molduraW / fotoImage.width, molduraH / fotoImage.height) * bgBoost;
+  const bgW = fotoImage.width * bgScale;
+  const bgH = fotoImage.height * bgScale;
+  const bgFoto = new Konva.Image({
+    image: fotoImage,
+    x: molduraX + (molduraW - bgW) / 2,
+    y: molduraY + (molduraH - bgH) / 2,
+    scaleX: bgScale,
+    scaleY: bgScale,
+  });
+  try {
+    bgFoto.cache();
+    bgFoto.filters([Konva.Filters.Blur]);
+    bgFoto.blurRadius(Math.round(molduraW * 0.16));
+  } catch {
+    // imagem não permite leitura de pixels — segue sem blur (cor de fundo cobre)
+  }
+
   const foto = new Konva.Image({
     image: fotoImage,
     x: t.x,
@@ -142,23 +174,40 @@ export async function exportCaseArtBlob(
     rotation: t.rotation,
   });
 
-  const mask = new Konva.Image({
-    image: maskImage,
-    x: molduraX,
-    y: molduraY,
-    width: molduraW,
-    height: molduraH,
-    globalCompositeOperation: "destination-in",
-  });
-
   layer.add(fundo);
+  layer.add(bgFoto);
   layer.add(foto);
 
   for (const texto of textos) {
     layer.add(criarTextoKonva(escalaTexto(texto, fator)));
   }
 
-  layer.add(mask);
+  if (clip === "mascara" && maskImage) {
+    layer.add(
+      new Konva.Image({
+        image: maskImage,
+        x: molduraX,
+        y: molduraY,
+        width: molduraW,
+        height: molduraH,
+        globalCompositeOperation: "destination-in",
+      }),
+    );
+  } else {
+    // recorte em retângulo arredondado (capa cheia, sem furo de câmera)
+    layer.add(
+      new Konva.Rect({
+        x: molduraX,
+        y: molduraY,
+        width: molduraW,
+        height: molduraH,
+        cornerRadius: molduraW * 0.12,
+        fill: "#000",
+        globalCompositeOperation: "destination-in",
+      }),
+    );
+  }
+
   layer.draw();
 
   const dataUrl = stage.toDataURL({
@@ -172,6 +221,20 @@ export async function exportCaseArtBlob(
 
   stage.destroy();
 
+  return dataUrl;
+}
+
+/** Arte só da área útil (para impressão) — alta resolução */
+export async function exportCaseArtBlob(
+  fotoUrl: string,
+  transform: Transform,
+  textos: TextoCapinha[] = [],
+  exportWidth = EXPORT_ART_WIDTH,
+): Promise<Blob> {
+  const dataUrl = await exportCaseArtDataUrl(fotoUrl, transform, textos, {
+    exportWidth,
+    clip: "mascara",
+  });
   const res = await fetch(dataUrl);
   return res.blob();
 }

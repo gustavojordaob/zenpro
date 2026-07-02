@@ -79,6 +79,18 @@ export function StoreHeader() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {loja && (
+            <span className="flex items-center gap-1.5 border-r border-zinc-200 pr-2 sm:pr-3">
+              <span className="hidden text-[10px] font-medium uppercase tracking-wide text-zinc-400 sm:inline">
+                por
+              </span>
+              <ZenProLogo
+                variant="dark"
+                href="/"
+                className="h-5 w-auto sm:h-6"
+              />
+            </span>
+          )}
           <AuthLink />
           <CartLink />
         </div>

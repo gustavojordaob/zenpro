@@ -111,6 +111,11 @@ export function getModelosCelularSeed() {
 
 export { COLECOES_CATALOGO, SEED_CATALOGO };
 
+/** Loja oficial do dono (raiz do site "/") — papel `marca`. */
+export const MARCA_LOJA_ID = "zenpro";
+export const MARCA_LOJA_SLUG = "zenpro";
+export const MARCA_LOJA_NOME = "Zen Pro";
+
 /** IDs fixos usados no seed e nos testes de rules */
 export const SEED_IDS = {
   LOJA_A: "loja-a",

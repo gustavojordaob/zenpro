@@ -12,6 +12,8 @@ export type LojaEfetiva = {
   ativo: boolean;
   config: LojaConfig;
   basePath: string;
+  /** true quando é a loja oficial do dono (raiz do site), não um revendedor. */
+  isMarca?: boolean;
 };
 
 /** Loja do contexto /[slug] ou a última loja visitada (sessionStorage). */

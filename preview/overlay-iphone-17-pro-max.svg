@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="820" viewBox="0 0 400 820">
+  <!-- janela da câmera (branca) -->
+  <rect x="16" y="22.96" width="364" height="206.64" rx="24" ry="24" fill="#ffffff"/>
+  <rect x="16" y="22.96" width="364" height="206.64" rx="24" ry="24" fill="none" stroke="#c9def0" stroke-width="2.4"/>
+  <!-- borda da capa -->
+  <rect x="2.4" y="2.4" width="395.2" height="815.2" rx="60" ry="60" fill="none" stroke="#cbe6fb" stroke-width="4.8"/>
+</svg>

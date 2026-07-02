@@ -15,7 +15,7 @@ import { criarPedidoLoja } from "@/features/loja/criarPedidoLoja";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
 import { formatarPreco } from "@/features/loja/produtosMock";
-import { LOJA_SLUGS_STATIC } from "@/features/multitenant/lojaSlugs";
+import { MARCA_LOJA_EFETIVA } from "@/features/multitenant/marcaLoja";
 import {
   formatarCep,
   formatarCpf,
@@ -29,7 +29,8 @@ export function CheckoutPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const paths = useLojaPaths();
-  const loja = useLojaEfetiva();
+  // Revendedor (/[slug]) quando houver; senão a loja oficial do dono (raiz).
+  const loja = useLojaEfetiva() ?? MARCA_LOJA_EFETIVA;
   const { user, carregando: authCarregando } = useAuth();
   const { perfil, carregando: perfilCarregando, completo } = usePerfilUsuario(user);
   const { itens, totalCentavos, limpar } = useCarrinho();
@@ -39,12 +40,13 @@ export function CheckoutPageContent() {
   const [modalConfirmar, setModalConfirmar] = useState(false);
 
   const temPersonalizada = itens.some((i) => i.tipo === "personalizada");
-  const checkoutPath = loja ? `${loja.basePath}/checkout` : "/checkout";
+  const checkoutPath = loja.basePath ? `${loja.basePath}/checkout` : "/checkout";
 
   useEffect(() => {
-    if (pathname !== "/checkout" || !loja) return;
+    // Só redireciona para o subcaminho quando é revendedor (basePath preenchido).
+    if (pathname !== "/checkout" || !loja.basePath) return;
     router.replace(`${loja.basePath}/checkout`);
-  }, [pathname, loja, router]);
+  }, [pathname, loja.basePath, router]);
 
   useEffect(() => {
     if (authCarregando || pedidoId) return;
@@ -92,12 +94,6 @@ export function CheckoutPageContent() {
     setPagando(true);
 
     try {
-      if (!loja) {
-        throw new Error(
-          "Compre pela loja de um revendedor (ex.: /loja-a) para o pedido aparecer no admin.",
-        );
-      }
-
       for (const item of itens) {
         if (item.tipo === "pronta") {
           await validarEstoqueVenda(loja.lojaId, item.produtoId, 1);
@@ -141,17 +137,15 @@ export function CheckoutPageContent() {
         <StoreHeader />
         <main className="mx-auto max-w-lg px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-zinc-900">Pedido registrado</h1>
-          {loja && (
-            <p className="mt-2 text-sm text-zinc-600">
-              Loja: <strong>{loja.nome}</strong> ({loja.lojaId})
-            </p>
-          )}
+          <p className="mt-2 text-sm text-zinc-600">
+            Loja: <strong>{loja.nome}</strong>
+          </p>
           <p className="mt-2 text-zinc-600">
             Nº{" "}
             <code className="rounded bg-zinc-100 px-2 py-0.5 text-sm">{pedidoId}</code>
           </p>
           <p className="mt-1 text-sm text-zinc-500">
-            Pagamento mock aprovado — pedido visível no admin do revendedor.
+            Pagamento mock aprovado — pedido visível no admin.
           </p>
           <Link
             href={paths.home}
@@ -172,26 +166,9 @@ export function CheckoutPageContent() {
         <h1 className="mt-4 text-2xl font-bold text-zinc-900 sm:text-3xl">
           Checkout
         </h1>
-        {loja && (
-          <p className="mt-1 text-sm text-zinc-600">
-            Comprando em <strong>{loja.nome}</strong>
-          </p>
-        )}
-
-        {!loja && (
-          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            Os pedidos precisam ser feitos pela loja de um revendedor. Escolha uma
-            loja:{" "}
-            {LOJA_SLUGS_STATIC.map((slug, index) => (
-              <span key={slug}>
-                {index > 0 ? " · " : ""}
-                <Link href={`/${slug}`} className="font-semibold underline">
-                  /{slug}
-                </Link>
-              </span>
-            ))}
-          </div>
-        )}
+        <p className="mt-1 text-sm text-zinc-600">
+          Comprando em <strong>{loja.nome}</strong>
+        </p>
 
         {!completo && (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -293,16 +270,14 @@ export function CheckoutPageContent() {
 
         <button
           type="button"
-          disabled={pagando || !completo || !loja}
+          disabled={pagando || !completo}
           onClick={handlePagar}
           className="mt-8 w-full rounded-xl bg-emerald-600 py-3.5 text-base font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
         >
           {pagando ? "Registrando pedido..." : "Pagar (mock)"}
         </button>
         <p className="mt-2 text-center text-xs text-zinc-500">
-          {loja
-            ? "Simula pagamento aprovado e grava em lojas/{lojaId}/pedidos."
-            : "Selecione uma loja revendedora antes de pagar."}
+          Simula pagamento aprovado e registra o pedido no admin.
         </p>
 
         <button

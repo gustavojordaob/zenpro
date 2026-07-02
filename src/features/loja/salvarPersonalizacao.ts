@@ -17,12 +17,15 @@ type SalvarPersonalizacaoInput = {
   dados: Personalizacao;
   userId: string;
   tipoPersonalizacao?: TipoPersonalizacao;
+  /** Fonte local (blob:) da foto para gerar a arte sem depender de CORS. */
+  fotoExportUrl?: string;
 };
 
 export async function salvarPersonalizacao({
   dados,
   userId,
   tipoPersonalizacao = "mascara_modelo",
+  fotoExportUrl,
 }: SalvarPersonalizacaoInput): Promise<{ id: string; arteProducaoUrl: string | null }> {
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase não configurado.");
@@ -55,7 +58,7 @@ export async function salvarPersonalizacao({
 
   try {
     const blob = await exportCaseArtBlob(
-      dados.fotoUrl,
+      fotoExportUrl ?? dados.fotoUrl,
       dados.transform,
       dados.textos ?? [],
     );

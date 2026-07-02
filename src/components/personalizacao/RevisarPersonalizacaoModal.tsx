@@ -10,6 +10,7 @@ type Props = {
     "fotoUrl" | "transform" | "textos" | "titulo" | "descricao"
   >;
   modeloRotulo: string;
+  modeloId?: string;
   confirmando?: boolean;
   tituloBotao?: string;
   somenteLeitura?: boolean;
@@ -21,6 +22,7 @@ export function RevisarPersonalizacaoModal({
   aberto,
   personalizacao,
   modeloRotulo,
+  modeloId,
   confirmando = false,
   tituloBotao = "Confirmar e continuar",
   somenteLeitura = false,
@@ -51,6 +53,7 @@ export function RevisarPersonalizacaoModal({
             fotoUrl={personalizacao.fotoUrl}
             transform={personalizacao.transform}
             textos={personalizacao.textos}
+            modeloId={modeloId}
             previewWidth={260}
           />
         </div>

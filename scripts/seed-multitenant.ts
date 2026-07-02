@@ -17,6 +17,9 @@ import {
   getModelosCelularSeed,
   getModelosSeed,
   getTiposSeed,
+  MARCA_LOJA_ID,
+  MARCA_LOJA_NOME,
+  MARCA_LOJA_SLUG,
   SEED_AUTH,
   SEED_IDS,
 } from "../src/features/multitenant/catalogoSeedData";
@@ -196,6 +199,22 @@ async function main() {
       nomeCompleto: "Revendedor Loja B",
       papel: "revendedor",
       lojaId: SEED_IDS.LOJA_B,
+      atualizadoEm: now,
+    },
+    { merge: true },
+  );
+
+  // Loja oficial do dono (raiz do site "/")
+  batch.set(
+    db.doc(`lojas/${MARCA_LOJA_ID}`),
+    {
+      nome: MARCA_LOJA_NOME,
+      slug: MARCA_LOJA_SLUG,
+      donoUid: marcaUser.uid,
+      donoEmail: SEED_AUTH.MARCA_EMAIL,
+      ativo: true,
+      config: { logo: null, cor: "#18181b", whatsapp: null },
+      criadoEm: now,
       atualizadoEm: now,
     },
     { merge: true },

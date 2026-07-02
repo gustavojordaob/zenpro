@@ -3,10 +3,11 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PersonalizacaoFields } from "@/components/personalizacao/PersonalizacaoFields";
 import { TextoCapinhaPanel } from "@/components/personalizacao/TextoCapinhaPanel";
 import { RevisarPersonalizacaoModal } from "@/components/personalizacao/RevisarPersonalizacaoModal";
+import { PreviewCapaModal } from "@/features/personalizacao/PreviewCapaModal";
 import { PageBackLink } from "@/components/loja/PageBackLink";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { StoreHeader } from "@/components/loja/StoreHeader";
@@ -62,6 +63,8 @@ export function PersonalizarEditor({
   const { adicionarPersonalizada } = useCarrinho();
   const { user } = useAuth();
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  // URL local (blob:) da foto original — usada para gerar arte/3D sem CORS
+  const [fotoLocalUrl, setFotoLocalUrl] = useState<string | null>(null);
   const [transform, setTransform] = useState<Transform>(DEFAULT_TRANSFORM);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -72,6 +75,7 @@ export function PersonalizarEditor({
   const [uploading, setUploading] = useState(false);
   const [comprando, setComprando] = useState(false);
   const [modalRevisao, setModalRevisao] = useState(false);
+  const [modalPreview, setModalPreview] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [comprarError, setComprarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +83,12 @@ export function PersonalizarEditor({
   const handleTransformChange = useCallback((next: Transform) => {
     setTransform(next);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (fotoLocalUrl) URL.revokeObjectURL(fotoLocalUrl);
+    };
+  }, [fotoLocalUrl]);
 
   async function handleEscolherFoto(file: File) {
     if (!isFirebaseConfigured()) {
@@ -96,12 +106,19 @@ export function PersonalizarEditor({
     setUploadError(null);
     setUploading(true);
 
+    const localUrl = URL.createObjectURL(file);
+
     try {
       const url = await subirFoto(file);
       setTransform(DEFAULT_TRANSFORM);
       setFotoUrl(url);
+      setFotoLocalUrl((anterior) => {
+        if (anterior) URL.revokeObjectURL(anterior);
+        return localUrl;
+      });
     } catch (error) {
       console.error(error);
+      URL.revokeObjectURL(localUrl);
       setUploadError("Não foi possível enviar a foto. Tente novamente.");
     } finally {
       setUploading(false);
@@ -137,6 +154,7 @@ export function PersonalizarEditor({
         dados: estado,
         userId: user.uid,
         tipoPersonalizacao,
+        fotoExportUrl: fotoLocalUrl ?? undefined,
       });
       adicionarPersonalizada(
         { ...estado, arteProducaoUrl: arteProducaoUrl ?? undefined },
@@ -208,7 +226,7 @@ export function PersonalizarEditor({
         <CaseEditor
           modelo={modelo}
           visualAssets={visualAssets}
-          fotoUrl={fotoUrl}
+          fotoUrl={fotoLocalUrl ?? fotoUrl}
           transform={transform}
           textos={textos}
           textoSelecionadoId={textoSelecionadoId}
@@ -267,6 +285,14 @@ export function PersonalizarEditor({
           >
             Girar 90°
           </button>
+          <button
+            type="button"
+            disabled={!fotoUrl}
+            onClick={() => setModalPreview(true)}
+            className="rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+          >
+            Ver na capa
+          </button>
         </div>
 
         {fotoUrl && (
@@ -306,10 +332,29 @@ export function PersonalizarEditor({
       </main>
 
       {fotoUrl && (
+        <PreviewCapaModal
+          aberto={modalPreview}
+          fotoUrl={fotoLocalUrl ?? fotoUrl}
+          transform={transform}
+          textos={textos}
+          modeloId={modelo.id}
+          modeloRotulo={`${modelo.marca} ${modelo.modelo}`}
+          onFechar={() => setModalPreview(false)}
+        />
+      )}
+
+      {fotoUrl && (
         <RevisarPersonalizacaoModal
           aberto={modalRevisao}
-          personalizacao={{ fotoUrl, transform, textos, titulo, descricao }}
+          personalizacao={{
+            fotoUrl: fotoLocalUrl ?? fotoUrl,
+            transform,
+            textos,
+            titulo,
+            descricao,
+          }}
           modeloRotulo={`${modelo.marca} ${modelo.modelo}`}
+          modeloId={modelo.id}
           confirmando={comprando}
           tituloBotao="Confirmar e ir ao carrinho"
           onFechar={() => setModalRevisao(false)}

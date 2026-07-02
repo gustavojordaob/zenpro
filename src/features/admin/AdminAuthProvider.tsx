@@ -14,6 +14,7 @@ import {
   carregarSessaoAdmin,
   type SessaoAdmin,
 } from "@/features/admin/adminAuthService";
+import { ensureMarcaLoja } from "@/features/multitenant/marcaLoja";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 
 type AdminAuthContextValue = {
@@ -43,6 +44,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
     const next = await carregarSessaoAdmin(authUser.uid, authUser.email);
     setSessao(next);
+
+    // Dono (marca): garante que a loja oficial exista para receber pedidos da raiz.
+    if (next?.papel === "marca") {
+      void ensureMarcaLoja(authUser.uid, authUser.email).catch((error) => {
+        console.error("Falha ao garantir loja da marca", error);
+      });
+    }
   }, []);
 
   const recarregarSessao = useCallback(async () => {
