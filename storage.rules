@@ -17,6 +17,38 @@ service firebase.storage {
                    && request.resource.contentType == 'image/png';
     }
 
+    function isMarca() {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.papel == 'marca';
+    }
+
+    function revendedorDaLoja(lojaId) {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.papel == 'revendedor'
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.lojaId == lojaId;
+    }
+
+    match /lojas/{lojaId}/{fileName} {
+      allow read: if true;
+      allow write: if (isMarca() || revendedorDaLoja(lojaId))
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    match /produtos/{produtoId}/{fileName} {
+      allow read: if true;
+      allow write: if isMarca()
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    match /modelos/{modeloId}/{fileName} {
+      allow read: if true;
+      allow write: if isMarca()
+                   && request.resource.size < 8 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

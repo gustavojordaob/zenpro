@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
+import { useLojaPaths } from "@/features/loja/useLojaPaths";
 
 export function CartLink() {
   const { quantidade } = useCarrinho();
+  const paths = useLojaPaths();
 
   return (
     <Link
-      href="/carrinho"
+      href={paths.carrinho}
       className="relative flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900"
       aria-label={`Carrinho, ${quantidade} itens`}
     >

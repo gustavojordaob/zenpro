@@ -25,7 +25,7 @@ export function criarItemPronto(produto: ProdutoDestaque) {
   return {
     id: crypto.randomUUID(),
     tipo: "pronta" as const,
-    produtoId: produto.id,
+    produtoId: produto.produtoBaseId ?? produto.id,
     nomeProduto: produto.nome,
     modeloId: produto.modeloId,
     personalizacaoId: null,

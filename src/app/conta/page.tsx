@@ -16,6 +16,7 @@ import {
   perfilCompleto,
 } from "@/features/usuario/perfilUtils";
 import { usePerfilUsuario } from "@/features/usuario/usePerfilUsuario";
+import { PerfilIndiceOcupadoError } from "@/features/usuario/perfilIndices";
 
 function ContaForm() {
   const router = useRouter();
@@ -95,7 +96,19 @@ function ContaForm() {
       }
     } catch (error) {
       console.error(error);
-      setErro("Não foi possível salvar seus dados. Tente novamente.");
+      if (error instanceof PerfilIndiceOcupadoError) {
+        setErro(error.message);
+      } else if (
+        error instanceof Error &&
+        (error.message.includes("permission") ||
+          error.message.includes("Permission"))
+      ) {
+        setErro(
+          "Sem permissão para salvar. Confirme login e deploy das Firestore Rules.",
+        );
+      } else {
+        setErro("Não foi possível salvar seus dados. Tente novamente.");
+      }
     } finally {
       setSalvando(false);
     }
@@ -119,8 +132,7 @@ function ContaForm() {
           Minha conta
         </h1>
         <p className="mt-1 text-sm text-zinc-600">
-          Seus dados para entrega e nota fiscal. E-mail da conta:{" "}
-          <span className="font-medium text-zinc-800">{user.email}</span>
+          Seus dados para entrega e nota fiscal.
         </p>
 
         <form
@@ -145,6 +157,20 @@ function ContaForm() {
                 }
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900"
               />
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-zinc-700">E-mail *</span>
+              <input
+                type="email"
+                readOnly
+                value={user.email ?? ""}
+                className="w-full cursor-not-allowed rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-zinc-700 outline-none"
+                aria-describedby="conta-email-hint"
+              />
+              <span id="conta-email-hint" className="text-xs text-zinc-500">
+                E-mail da conta de login — usado no pedido e na entrega
+              </span>
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">

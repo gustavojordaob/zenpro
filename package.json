@@ -9,6 +9,9 @@
     "deploy:firebase": "npm run build:firebase && firebase deploy --only auth,firestore,storage,hosting --project zenpro-capinhas",
     "start": "next start",
     "lint": "eslint",
+    "seed:multitenant": "tsx scripts/seed-multitenant.ts",
+    "seed:admin-auth": "node scripts/seed-admin-auth-rest.mjs",
+    "test:rules:multitenant": "firebase emulators:exec --only firestore --project zenpro-capinhas \"node scripts/test-multitenant-rules.mjs\"",
     "firebase:deploy-rules": "firebase deploy --only storage,firestore --project zenpro-capinhas"
   },
   "dependencies": {
@@ -21,6 +24,7 @@
     "react-konva": "^19.2.5"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/browser-image-compression": "^1.0.13",
     "@types/node": "^20",
@@ -29,7 +33,9 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "firebase-tools": "^15.22.4",
+    "firebase-admin": "^13.6.0",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

@@ -1,24 +1,36 @@
+"use client";
+
 import Link from "next/link";
+import { ProdutoImagem } from "@/components/loja/ProdutoImagem";
 import {
   formatarPreco,
   type ProdutoDestaque,
 } from "@/features/loja/produtosMock";
+import { useLojaPaths } from "@/features/loja/useLojaPaths";
 
 type Props = {
   produto: ProdutoDestaque;
 };
 
 export function ProductCard({ produto }: Props) {
+  const paths = useLojaPaths();
+
   return (
     <Link
-      href={`/personalizar/${produto.modeloId}`}
+      href={`${paths.personalizar(produto.modeloId)}&produto=${encodeURIComponent(produto.produtoBaseId ?? produto.id)}`}
       className="group flex h-full min-h-[340px] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md"
     >
-      <div
-        className="relative flex aspect-square w-full shrink-0 items-center justify-center"
-        style={{ backgroundColor: "#ececec" }}
-      >
-        <PhonePlaceholder />
+      <div className="relative aspect-square w-full shrink-0 bg-white">
+        {produto.imagemUrl ? (
+          <ProdutoImagem src={produto.imagemUrl} alt={produto.nome} />
+        ) : (
+          <div
+            className="flex h-full items-center justify-center"
+            style={{ backgroundColor: "#ececec" }}
+          >
+            <PhonePlaceholder />
+          </div>
+        )}
         {produto.destaque && (
           <span className="absolute left-3 top-3 rounded-full bg-zinc-900 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
             {produto.destaque}
@@ -28,7 +40,7 @@ export function ProductCard({ produto }: Props) {
 
       <div className="flex min-h-[132px] flex-1 flex-col gap-1 p-4">
         <p className="truncate text-xs font-medium text-zinc-500">
-          {produto.marca}
+          {produto.marca || "Capinha personalizável"}
         </p>
         <h3 className="line-clamp-2 min-h-[2.5rem] font-semibold leading-tight text-zinc-900 group-hover:text-zinc-700">
           {produto.nome}

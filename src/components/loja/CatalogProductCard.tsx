@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ProdutoImagem } from "@/components/loja/ProdutoImagem";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
+import { useLojaPaths } from "@/features/loja/useLojaPaths";
 import {
   formatarPreco,
   type ProdutoDestaque,
@@ -16,12 +17,14 @@ type Props = {
 export function CatalogProductCard({ produto }: Props) {
   const { adicionarPronta } = useCarrinho();
   const router = useRouter();
+  const paths = useLojaPaths();
   const [adicionado, setAdicionado] = useState(false);
 
   function handleComprar() {
+    if (produto.esgotado) return;
     adicionarPronta(produto);
     setAdicionado(true);
-    setTimeout(() => router.push("/carrinho"), 400);
+    setTimeout(() => router.push(paths.carrinho), 400);
   }
 
   return (
@@ -56,13 +59,22 @@ export function CatalogProductCard({ produto }: Props) {
         <p className="mt-auto pt-2 text-base font-semibold text-zinc-900">
           {formatarPreco(produto.precoCentavos)}
         </p>
+        {produto.controlaEstoque && !produto.esgotado && (
+          <p className="text-xs text-zinc-500">
+            {produto.disponivelVenda ?? 0} em estoque
+          </p>
+        )}
         <button
           type="button"
           onClick={handleComprar}
-          disabled={adicionado}
+          disabled={adicionado || produto.esgotado}
           className="mt-2 w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
         >
-          {adicionado ? "Indo ao carrinho…" : "Comprar"}
+          {produto.esgotado
+            ? "Esgotado"
+            : adicionado
+              ? "Indo ao carrinho…"
+              : "Comprar"}
         </button>
       </div>
     </article>

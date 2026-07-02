@@ -1,23 +1,45 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CatalogProductCard } from "@/components/loja/CatalogProductCard";
+import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
+import { listarProdutosLojaAtivos } from "@/features/loja/catalogoProdutos";
 import {
   CATEGORIAS_PRODUTO,
   filtrarProdutos,
   PRODUTOS_LOJA,
   type CategoriaProduto,
+  type ProdutoDestaque,
 } from "@/features/loja/produtosMock";
+import { isFirebaseConfigured } from "@/lib/firebase";
 
 export function ProdutosSection() {
+  const loja = useLojaEfetiva();
   const [categoria, setCategoria] = useState<CategoriaProduto | "todos">(
     "todos",
   );
   const [busca, setBusca] = useState("");
+  const [produtos, setProdutos] = useState<ProdutoDestaque[]>(PRODUTOS_LOJA);
+  const [carregando, setCarregando] = useState(isFirebaseConfigured());
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+
+    void (async () => {
+      setCarregando(true);
+      try {
+        setProdutos(await listarProdutosLojaAtivos(loja?.lojaId));
+      } catch {
+        // Offline ou rules — mantém último estado
+      } finally {
+        setCarregando(false);
+      }
+    })();
+  }, [loja?.lojaId]);
 
   const produtosFiltrados = useMemo(
-    () => filtrarProdutos(PRODUTOS_LOJA, categoria, busca),
-    [categoria, busca],
+    () => filtrarProdutos(produtos, categoria, busca),
+    [produtos, categoria, busca],
   );
 
   return (
@@ -71,7 +93,11 @@ export function ProdutosSection() {
         </div>
       </div>
 
-      {produtosFiltrados.length === 0 ? (
+      {carregando ? (
+        <p className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-zinc-600">
+          Carregando produtos...
+        </p>
+      ) : produtosFiltrados.length === 0 ? (
         <p className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-zinc-600">
           Nenhum produto encontrado
           {busca.trim() ? ` para “${busca.trim()}”` : " nesta categoria"}.

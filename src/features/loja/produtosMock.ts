@@ -8,6 +8,8 @@ export type CategoriaProduto =
 
 export type ProdutoDestaque = {
   id: string;
+  /** ID real em produtos/ (quando id do card é composto com modelo) */
+  produtoBaseId?: string;
   nome: string;
   descricao: string;
   modeloId: string;
@@ -18,6 +20,9 @@ export type ProdutoDestaque = {
   destaque?: string;
   imagemUrl?: string;
   gradienteCapa?: string;
+  controlaEstoque?: boolean;
+  disponivelVenda?: number;
+  esgotado?: boolean;
 };
 
 export const CATEGORIAS_PRODUTO: {

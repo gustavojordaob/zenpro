@@ -1,8 +1,12 @@
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import type { PerfilUsuario, PerfilUsuarioFirestore } from "./perfilTypes";
 import { PERFIL_VAZIO } from "./perfilTypes";
+import {
+  extrairCpfAnterior,
+  reservarIndicesPerfil,
+} from "./perfilIndices";
 import { apenasDigitos } from "./perfilUtils";
 
 function docRef(uid: string) {
@@ -51,10 +55,18 @@ export async function salvarPerfilUsuario(
     throw new Error("Firebase não configurado.");
   }
 
+  const db = getFirebaseDb();
+  const cpfNovo = apenasDigitos(dados.cpf);
+  const usuarioRef = docRef(user.uid);
+  const existente = await getDoc(usuarioRef);
+  const cpfAnterior = existente.exists()
+    ? extrairCpfAnterior(existente.data())
+    : "";
+
   const payload: PerfilUsuarioFirestore = {
     email: user.email ?? "",
     nomeCompleto: dados.nomeCompleto.trim(),
-    cpf: apenasDigitos(dados.cpf),
+    cpf: cpfNovo,
     telefone: apenasDigitos(dados.telefone),
     cep: apenasDigitos(dados.cep),
     logradouro: dados.logradouro.trim(),
@@ -66,5 +78,11 @@ export async function salvarPerfilUsuario(
     atualizadoEm: serverTimestamp(),
   };
 
-  await setDoc(docRef(user.uid), payload, { merge: true });
+  await reservarIndicesPerfil({
+    db,
+    user,
+    cpfNovo,
+    cpfAnterior,
+    payload,
+  });
 }

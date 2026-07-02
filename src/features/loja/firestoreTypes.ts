@@ -4,12 +4,15 @@ import type { Transform } from "@/features/personalizacao/types";
 /** Documento em `personalizacoes/{id}` */
 export type PersonalizacaoFirestore = {
   userId: string;
+  tipoPersonalizacao: import("@/features/catalogo/types").TipoPersonalizacao;
   fotoUrl: string;
-  modeloId: string;
-  transform: Transform;
-  textos: TextoCapinha[] | null;
-  titulo: string | null;
-  descricao: string | null;
+  config: Record<string, unknown>;
+  /** Legado — espelha config para capinha */
+  modeloId?: string;
+  transform?: Transform;
+  textos?: TextoCapinha[] | null;
+  titulo?: string | null;
+  descricao?: string | null;
   arteProducaoUrl: string | null;
   criadoEm: unknown;
 };
@@ -28,8 +31,8 @@ export type ItemPedidoFirestore = {
   descricao?: string | null;
   textos?: TextoCapinha[] | null;
   arteProducaoUrl?: string | null;
-  imagemUrl?: string;
-  gradienteCapa?: string;
+  imagemUrl?: string | null;
+  gradienteCapa?: string | null;
 };
 
 export type ClientePedidoFirestore = {

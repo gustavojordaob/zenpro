@@ -6,6 +6,7 @@ import Konva from "konva";
 import type KonvaType from "konva";
 import { CaseTextNode } from "./CaseTextNode";
 import { getCaseLayout } from "./caseGeometry";
+import type { ModeloVisualAssets } from "@/features/catalogo/catalogoRuntimeService";
 import type { ModeloCelular, TextoCapinha, Transform } from "./types";
 import { useCapinhaFontsReady } from "./useCapinhaFontsReady";
 import { useCaseVisualAssets } from "./useCaseVisualAssets";
@@ -19,6 +20,7 @@ const PLACEHOLDER_FILL = "#dddddd";
 
 type Props = {
   modelo: ModeloCelular;
+  visualAssets?: ModeloVisualAssets | null;
   fotoUrl: string | null;
   transform: Transform;
   textos: TextoCapinha[];
@@ -151,7 +153,8 @@ function CaseMaskClip({
 }
 
 export function CaseEditor({
-  modelo: _modelo,
+  modelo,
+  visualAssets: visualAssetsInput,
   fotoUrl,
   transform,
   textos,
@@ -161,13 +164,19 @@ export function CaseEditor({
   onTextoSelecionadoChange,
 }: Props) {
   useCapinhaFontsReady();
-  const visualAssets = useCaseVisualAssets();
+  const visualAssets = useCaseVisualAssets(visualAssetsInput);
   const { image: fotoImage, loadError } = useHtmlImage(fotoUrl);
   const contentLayerRef = useRef<Konva.Layer>(null);
   const shadowRef = useRef<Konva.Image>(null);
   const lastFotoUrl = useRef<string | null>(null);
 
-  const layout = getCaseLayout();
+  const previewWidth = visualAssetsInput?.previewWidth;
+  const layout = getCaseLayout(
+    previewWidth,
+    visualAssetsInput?.larguraPx,
+    visualAssetsInput?.alturaPx,
+    visualAssetsInput?.stagePadding,
+  );
   const {
     stageWidth: W,
     stageHeight: H,

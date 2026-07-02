@@ -1,6 +1,7 @@
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
+import { sanitizarParaFirestore } from "@/lib/firestoreSanitize";
 import type { PerfilUsuario } from "@/features/usuario/perfilTypes";
 import { formatarEnderecoCompleto } from "@/features/usuario/perfilUtils";
 import type { ItemCarrinho } from "./carrinhoTypes";
@@ -47,8 +48,8 @@ export async function criarPedido({
       descricao: item.personalizacao?.descricao ?? null,
       textos: item.personalizacao?.textos ?? null,
       arteProducaoUrl: item.personalizacao?.arteProducaoUrl ?? null,
-      imagemUrl: item.imagemUrl,
-      gradienteCapa: item.gradienteCapa,
+      imagemUrl: item.imagemUrl ?? null,
+      gradienteCapa: item.gradienteCapa ?? null,
     })),
     totalCentavos,
     status: PEDIDO_STATUS.AGUARDANDO_PAGAMENTO,
@@ -64,6 +65,9 @@ export async function criarPedido({
     criadoEm: serverTimestamp(),
   };
 
-  const ref = await addDoc(collection(db, "pedidos"), payload);
+  const ref = await addDoc(
+    collection(db, "pedidos"),
+    sanitizarParaFirestore(payload),
+  );
   return ref.id;
 }

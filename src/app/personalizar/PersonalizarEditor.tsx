@@ -11,9 +11,12 @@ import { PageBackLink } from "@/components/loja/PageBackLink";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
+import { useLojaPaths } from "@/features/loja/useLojaPaths";
 import { salvarPersonalizacao } from "@/features/loja/salvarPersonalizacao";
 import { criarTextoPadrao } from "@/features/personalizacao/caseTextFonts";
 import { getCaseLayout } from "@/features/personalizacao/caseGeometry";
+import type { ModeloVisualAssets } from "@/features/catalogo/catalogoRuntimeService";
+import type { TipoPersonalizacao } from "@/features/catalogo/types";
 import { MODELOS } from "@/features/personalizacao/modelos";
 import {
   DEFAULT_TRANSFORM,
@@ -45,10 +48,17 @@ const CaseEditor = dynamic(
 
 type Props = {
   modelo: ModeloCelular;
+  visualAssets: ModeloVisualAssets;
+  tipoPersonalizacao: TipoPersonalizacao;
 };
 
-export function PersonalizarEditor({ modelo }: Props) {
+export function PersonalizarEditor({
+  modelo,
+  visualAssets,
+  tipoPersonalizacao,
+}: Props) {
   const router = useRouter();
+  const paths = useLojaPaths();
   const { adicionarPersonalizada } = useCarrinho();
   const { user } = useAuth();
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
@@ -79,7 +89,7 @@ export function PersonalizarEditor({ modelo }: Props) {
     }
 
     if (!user) {
-      router.push("/login?redirect=/personalizar/" + modelo.id);
+      router.push(paths.loginRedirect(paths.personalizar(modelo.id)));
       return;
     }
 
@@ -101,7 +111,7 @@ export function PersonalizarEditor({ modelo }: Props) {
   function abrirRevisao() {
     if (!fotoUrl) return;
     if (!user) {
-      router.push("/login?redirect=/personalizar/" + modelo.id);
+      router.push(paths.loginRedirect(paths.personalizar(modelo.id)));
       return;
     }
     setModalRevisao(true);
@@ -123,13 +133,17 @@ export function PersonalizarEditor({ modelo }: Props) {
     };
 
     try {
-      const { id, arteProducaoUrl } = await salvarPersonalizacao(estado, user.uid);
+      const { id, arteProducaoUrl } = await salvarPersonalizacao({
+        dados: estado,
+        userId: user.uid,
+        tipoPersonalizacao,
+      });
       adicionarPersonalizada(
         { ...estado, arteProducaoUrl: arteProducaoUrl ?? undefined },
         id,
       );
       setModalRevisao(false);
-      router.push("/carrinho");
+      router.push(paths.carrinho);
     } catch (error) {
       console.error(error);
       setComprarError(
@@ -166,7 +180,7 @@ export function PersonalizarEditor({ modelo }: Props) {
       <StoreHeader />
       <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-4 pb-12 pt-6 sm:pt-8">
         <header className="space-y-1">
-          <PageBackLink href="/#personalizar" label="← Voltar à loja" />
+          <PageBackLink href={paths.personalizarHash} label="← Voltar à loja" />
           <h1 className="mt-3 text-2xl font-semibold text-zinc-900">
             Personalizar capinha
           </h1>
@@ -179,7 +193,7 @@ export function PersonalizarEditor({ modelo }: Props) {
           {MODELOS.map((m) => (
             <Link
               key={m.id}
-              href={`/personalizar/${m.id}`}
+              href={paths.personalizar(m.id)}
               className={`rounded-full px-3 py-1 text-sm transition ${
                 m.id === modelo.id
                   ? "bg-zinc-900 text-white"
@@ -193,6 +207,7 @@ export function PersonalizarEditor({ modelo }: Props) {
 
         <CaseEditor
           modelo={modelo}
+          visualAssets={visualAssets}
           fotoUrl={fotoUrl}
           transform={transform}
           textos={textos}

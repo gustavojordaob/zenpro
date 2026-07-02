@@ -2,6 +2,217 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ── Helpers multi-tenant (autoridade: capinhas-multitenant.md) ──
+
+    function usuarioPath() {
+      return /databases/$(database)/documents/usuarios/$(request.auth.uid);
+    }
+
+    function usuarioExiste() {
+      return request.auth != null && exists(usuarioPath());
+    }
+
+    function papel() {
+      return usuarioExiste() ? get(usuarioPath()).data.papel : null;
+    }
+
+    function minhaLoja() {
+      return usuarioExiste() && papel() == 'revendedor'
+        ? get(usuarioPath()).data.lojaId
+        : null;
+    }
+
+    function isMarca() {
+      return request.auth != null && papel() == 'marca';
+    }
+
+    function isRevendedor() {
+      return request.auth != null && papel() == 'revendedor';
+    }
+
+    function revendedorDaLoja(lojaId) {
+      return isRevendedor() && minhaLoja() == lojaId;
+    }
+
+    function marcaCriaRevendedor(userId) {
+      return isMarca()
+        && request.resource.data.papel == 'revendedor'
+        && request.resource.data.lojaId is string
+        && request.resource.data.lojaId.size() >= 2
+        && request.resource.data.email is string;
+    }
+
+    function podeGerenciarLoja(lojaId) {
+      return isMarca() || revendedorDaLoja(lojaId);
+    }
+
+    function fieldUnchanged(field) {
+      return (!(field in resource.data) && !(field in request.resource.data))
+        || (field in resource.data && field in request.resource.data
+            && request.resource.data[field] == resource.data[field]);
+    }
+
+    function camposPapelInalterados() {
+      return fieldUnchanged('papel') && fieldUnchanged('lojaId');
+    }
+
+    function pedidoLojaClientePodeCriar() {
+      return request.auth != null
+        && request.resource.data.clienteUid == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'itens', 'totalCentavos', 'status', 'cliente', 'criadoEm', 'clienteUid'
+        ])
+        && request.resource.data.itens is list
+        && request.resource.data.totalCentavos is int
+        && request.resource.data.cliente is map
+        && (
+          request.resource.data.status == 'aguardando_pagamento'
+          || request.resource.data.status == 'pago'
+        );
+    }
+
+    function pedidoLojaPresencialAdminPodeCriar(lojaId) {
+      return request.auth != null
+        && (isMarca() || revendedorDaLoja(lojaId))
+        && request.resource.data.origem == 'presencial'
+        && request.resource.data.registradoPorUid == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'itens', 'totalCentavos', 'status', 'cliente', 'criadoEm',
+          'origem', 'registradoPorUid', 'pagamento'
+        ])
+        && request.resource.data.itens is list
+        && request.resource.data.totalCentavos is int
+        && request.resource.data.totalCentavos > 0
+        && request.resource.data.cliente is map
+        && request.resource.data.pagamento is map
+        && request.resource.data.status in [
+          'aguardando_pagamento', 'pago', 'producao', 'enviado'
+        ];
+    }
+
+    // ── Catálogo central (marca escreve; leitura pública) ──
+
+    match /produtos/{produtoId} {
+      allow read: if true;
+      allow create, update, delete: if isMarca();
+    }
+
+    match /modelos_celular/{modeloId} {
+      allow read: if true;
+      allow create, update, delete: if isMarca();
+    }
+
+    match /tipos/{tipoId} {
+      allow read: if true;
+      allow create, update, delete: if isMarca();
+    }
+
+    match /marcas/{marcaId} {
+      allow read: if true;
+      allow create, update, delete: if isMarca();
+    }
+
+    match /modelos/{modeloId} {
+      allow read: if true;
+      allow create, update, delete: if isMarca();
+    }
+
+    // ── Lojas / revendedores ──
+
+    match /lojas/{lojaId} {
+      allow read: if true;
+
+      // Marca cria lojas; revendedor edita só a própria (sem trocar dono/slug)
+      allow create: if isMarca()
+        && request.resource.data.keys().hasAll(['nome', 'slug', 'donoUid', 'ativo', 'config'])
+        && request.resource.data.slug is string
+        && request.resource.data.slug.size() >= 2
+        && request.resource.data.donoUid is string
+        && request.resource.data.ativo is bool;
+
+      allow update: if isMarca()
+        || (
+          revendedorDaLoja(lojaId)
+          && request.resource.data.donoUid == resource.data.donoUid
+          && request.resource.data.slug == resource.data.slug
+        );
+
+      allow delete: if isMarca();
+
+      match /pedidos/{pedidoId} {
+        // Cliente final (checkout) ou admin (venda presencial na loja)
+        allow create: if pedidoLojaClientePodeCriar()
+          || pedidoLojaPresencialAdminPodeCriar(lojaId);
+
+        // Marca vê tudo; revendedor só pedidos da própria loja
+        allow read, update: if request.auth != null
+          && (isMarca() || revendedorDaLoja(lojaId));
+
+        allow delete: if isMarca();
+      }
+
+      match /estoque/{produtoId} {
+        allow read: if true;
+        allow create, update: if isMarca() || revendedorDaLoja(lojaId);
+        allow delete: if isMarca();
+      }
+    }
+
+    // ── Usuários (perfil cliente + papéis admin) ──
+
+    match /usuarios/{userId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == userId || isMarca());
+
+      // Cliente cria perfil sem papel/lojaId; marca cria revendedor ao cadastrar loja
+      allow create: if request.auth != null && (
+        (request.auth.uid == userId
+          && !request.resource.data.keys().hasAny(['papel', 'lojaId']))
+        || marcaCriaRevendedor(userId)
+      );
+
+      // Cliente atualiza perfil; papel/lojaId só via marca (seed/admin)
+      allow update: if request.auth != null && (
+        (request.auth.uid == userId && camposPapelInalterados())
+        || isMarca()
+      );
+
+      allow delete: if false;
+    }
+
+    // Índices de unicidade — CPF e e-mail (doc id = cpf ou e-mail normalizado)
+    match /indices_cpf/{cpf} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && cpf.size() == 11
+        && (!exists(/databases/$(database)/documents/indices_cpf/$(cpf))
+            || get(/databases/$(database)/documents/indices_cpf/$(cpf)).data.uid
+               == request.auth.uid);
+      allow update: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+    }
+
+    match /indices_email/{emailKey} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email is string
+        && (!exists(/databases/$(database)/documents/indices_email/$(emailKey))
+            || get(/databases/$(database)/documents/indices_email/$(emailKey)).data.uid
+               == request.auth.uid);
+      allow update: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+    }
+
+    // ── Fluxo loja single-tenant atual (cliente final) ──
+
     match /personalizacoes/{personalizacaoId} {
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid;
@@ -13,12 +224,32 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.clienteUid == request.auth.uid;
       allow read: if request.auth != null
-        && resource.data.clienteUid == request.auth.uid;
+        && (resource.data.clienteUid == request.auth.uid || isMarca());
     }
 
-    match /usuarios/{userId} {
-      allow read, create, update: if request.auth != null
-        && request.auth.uid == userId;
+    match /solicitacoes_revendedor/{solicitacaoId} {
+      allow create: if request.resource.data.keys().hasAll([
+            'nomeCompleto', 'email', 'telefone', 'cnpj', 'razaoSocial',
+            'nomeLoja', 'slugDesejado', 'cep', 'logradouro', 'numero',
+            'bairro', 'cidade', 'uf', 'status', 'criadoEm'
+          ])
+        && request.resource.data.status == 'pendente'
+        && request.resource.data.nomeCompleto is string
+        && request.resource.data.nomeCompleto.size() >= 3
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 5
+        && request.resource.data.telefone is string
+        && request.resource.data.telefone.size() >= 8
+        && request.resource.data.cnpj is string
+        && request.resource.data.cnpj.size() == 14
+        && request.resource.data.razaoSocial is string
+        && request.resource.data.nomeLoja is string
+        && request.resource.data.slugDesejado is string
+        && request.resource.data.slugDesejado.size() >= 2
+        && request.resource.data.cep is string
+        && request.resource.data.cep.size() == 8;
+
+      allow read, update: if isMarca();
       allow delete: if false;
     }
 
@@ -41,6 +272,17 @@ service cloud.firestore {
         && request.resource.data.emailDestino is string
         && request.resource.data.status == 'novo';
       allow read, update, delete: if false;
+    }
+
+    match /emails_outbox/{emailId} {
+      allow create: if isMarca()
+        && request.resource.data.keys().hasAll(['to', 'subject', 'text', 'tipo', 'status'])
+        && request.resource.data.to is string
+        && request.resource.data.subject is string
+        && request.resource.data.text is string
+        && request.resource.data.status == 'pendente';
+      allow read: if isMarca();
+      allow update, delete: if false;
     }
 
     match /{document=**} {
