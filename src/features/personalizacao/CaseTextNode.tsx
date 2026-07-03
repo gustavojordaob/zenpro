@@ -16,7 +16,9 @@ type Props = {
 
 export function CaseTextNode({
   texto,
-  selecionado,
+  // `selecionado` é usado apenas pela lógica de arraste/painel — NÃO altera o
+  // visual do texto (nada de contorno/cor em volta que confunda o cliente).
+  selecionado: _selecionado,
   editavel,
   onChange,
   onSelect,
@@ -25,14 +27,20 @@ export function CaseTextNode({
 
   function centralizarOffset() {
     const node = ref.current;
-    if (!node || texto.align !== "center") return;
-    node.offsetX(node.width() / 2);
-    node.offsetY(node.height() / 2);
+    if (!node) return;
+    if (texto.align === "center") {
+      node.offsetX(node.width() / 2);
+      node.offsetY(node.height() / 2);
+    } else {
+      node.offsetX(0);
+      node.offsetY(0);
+    }
     node.getLayer()?.batchDraw();
   }
 
   useEffect(() => {
     centralizarOffset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [texto.conteudo, texto.fontSize, texto.fontId, texto.fontStyle, texto.align]);
 
   const fontStyle =
@@ -57,10 +65,8 @@ export function CaseTextNode({
       draggable={editavel}
       listening={editavel}
       shadowColor="rgba(0,0,0,0.45)"
-      shadowBlur={selecionado ? 0 : 4}
+      shadowBlur={4}
       shadowOffset={{ x: 0, y: 1 }}
-      stroke={selecionado ? "#3b82f6" : undefined}
-      strokeWidth={selecionado ? 1 : 0}
       onClick={onSelect}
       onTap={onSelect}
       onDragEnd={(e) => {

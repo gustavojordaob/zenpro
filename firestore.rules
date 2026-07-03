@@ -144,8 +144,17 @@ service cloud.firestore {
         allow create: if pedidoLojaClientePodeCriar()
           || pedidoLojaPresencialAdminPodeCriar(lojaId);
 
-        // Marca vê tudo; revendedor só pedidos da própria loja
-        allow read, update: if request.auth != null
+        // Marca/revendedor da loja veem tudo; o cliente vê o próprio pedido
+        // (acompanhar status em "Meus pedidos").
+        allow read: if request.auth != null
+          && (
+            isMarca()
+            || revendedorDaLoja(lojaId)
+            || resource.data.clienteUid == request.auth.uid
+          );
+
+        // Só admin muda o status.
+        allow update: if request.auth != null
           && (isMarca() || revendedorDaLoja(lojaId));
 
         allow delete: if isMarca();
@@ -158,11 +167,46 @@ service cloud.firestore {
       }
     }
 
+    // ── Pedidos de reposição (revendedor compra estoque do dono/marca) ──
+
+    match /pedidos_reposicao/{pedidoId} {
+      allow create: if isRevendedor()
+        && request.resource.data.revendedorUid == request.auth.uid
+        && request.resource.data.lojaId == minhaLoja()
+        && request.resource.data.status == 'solicitado'
+        && request.resource.data.keys().hasAll([
+          'lojaId', 'revendedorUid', 'itens', 'totalCentavos', 'status', 'criadoEm'
+        ])
+        && request.resource.data.itens is list
+        && request.resource.data.totalCentavos is int;
+
+      allow read: if isMarca()
+        || (isRevendedor() && resource.data.revendedorUid == request.auth.uid);
+
+      // Marca gerencia o status; revendedor só pode cancelar o próprio pedido
+      allow update: if isMarca()
+        || (
+          isRevendedor()
+          && resource.data.revendedorUid == request.auth.uid
+          && request.resource.data.status == 'cancelado'
+        );
+
+      allow delete: if false;
+    }
+
     // ── Usuários (perfil cliente + papéis admin) ──
 
     match /usuarios/{userId} {
       allow read: if request.auth != null
         && (request.auth.uid == userId || isMarca());
+
+      // Índice pessoal de pedidos do cliente (ponteiros p/ lojas/*/pedidos)
+      match /pedidos/{pedidoId} {
+        allow read, create: if request.auth != null
+          && request.auth.uid == userId;
+        allow update, delete: if request.auth != null
+          && request.auth.uid == userId;
+      }
 
       // Cliente cria perfil sem papel/lojaId; marca cria revendedor ao cadastrar loja
       allow create: if request.auth != null && (

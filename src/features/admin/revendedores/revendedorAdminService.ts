@@ -24,6 +24,7 @@ import {
   type LojaConfig,
   type LojaFirestore,
 } from "@/features/multitenant/types";
+import { MARCA_LOJA_ID, MARCA_LOJA_SLUG } from "@/features/multitenant/catalogoSeedData";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import { normalizarSlugLoja, slugLojaValido } from "./revendedorAdminUtils";
 
@@ -166,7 +167,15 @@ export async function listarRevendedoresAdmin(): Promise<RevendedorAdmin[]> {
   const snap = await getDocs(collection(db, COLECOES.LOJAS));
 
   const lojas = await Promise.all(
-    snap.docs.map(async (d) => {
+    snap.docs
+      // A loja da MARCA (Zen Pro, raiz "/") não é um revendedor — não listar.
+      .filter(
+        (d) =>
+          d.id !== MARCA_LOJA_ID &&
+          String(d.data().slug ?? "") !== MARCA_LOJA_SLUG &&
+          d.data().papel !== "marca",
+      )
+      .map(async (d) => {
       const data = d.data();
       let donoNome: string | null = null;
       const donoUid = String(data.donoUid ?? "");

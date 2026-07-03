@@ -5,31 +5,30 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { PageBackLink } from "@/components/loja/PageBackLink";
-import {
-  modeloCatalogoParaCelular,
-  modeloParaVisualAssets,
-  obterModeloCatalogo,
-} from "@/features/catalogo/catalogoRuntimeService";
+import { carregarContextoPersonalizacao } from "@/features/catalogo/personalizacaoContext";
 import {
   ROTULOS_TIPO_PERSONALIZACAO,
   tipoPersonalizacaoImplementado,
   type TipoPersonalizacao,
 } from "@/features/catalogo/types";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
+import { PersonalizacaoVisualProvider } from "@/features/personalizacao/PersonalizacaoVisualContext";
 import { PersonalizarEditor } from "./PersonalizarEditor";
 
 export function PersonalizarPageClient() {
   const paths = useLojaPaths();
   const searchParams = useSearchParams();
   const modeloId = searchParams.get("modelo") ?? "";
+  const produtoId = searchParams.get("produto");
   const tipoParam = searchParams.get("tipoPersonalizacao") as TipoPersonalizacao | null;
 
   const [carregando, setCarregando] = useState(true);
   const [naoEncontrado, setNaoEncontrado] = useState(false);
   const [tipoPersonalizacao, setTipoPersonalizacao] =
     useState<TipoPersonalizacao>("mascara_modelo");
-  const [modelo, setModelo] = useState<ReturnType<typeof modeloCatalogoParaCelular> | null>(null);
-  const [visualAssets, setVisualAssets] = useState<ReturnType<typeof modeloParaVisualAssets> | null>(null);
+  const [ctx, setCtx] = useState<Awaited<
+    ReturnType<typeof carregarContextoPersonalizacao>
+  > | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -39,19 +38,20 @@ export function PersonalizarPageClient() {
         setCarregando(false);
         return;
       }
-      const catalogo = await obterModeloCatalogo(modeloId);
-      if (!catalogo) {
+
+      const contexto = await carregarContextoPersonalizacao(modeloId, produtoId);
+      if (!contexto) {
         setNaoEncontrado(true);
         setCarregando(false);
         return;
       }
-      setModelo(modeloCatalogoParaCelular(catalogo));
-      setVisualAssets(modeloParaVisualAssets(catalogo));
+
+      setCtx(contexto);
       setTipoPersonalizacao(tipoParam ?? "mascara_modelo");
       setNaoEncontrado(false);
       setCarregando(false);
     })();
-  }, [modeloId, tipoParam]);
+  }, [modeloId, produtoId, tipoParam]);
 
   if (carregando) {
     return (
@@ -61,12 +61,16 @@ export function PersonalizarPageClient() {
     );
   }
 
-  if (naoEncontrado || !modelo) {
+  if (naoEncontrado || !ctx) {
     return (
       <div className="min-h-screen bg-zinc-50">
         <StoreHeader />
         <main className="mx-auto max-w-lg px-4 py-16 text-center">
-          <p className="text-zinc-600">Modelo não encontrado.</p>
+          <p className="text-zinc-600">
+            {produtoId
+              ? "Produto ou modelo não encontrado para esta combinação."
+              : "Modelo não encontrado."}
+          </p>
           <Link href={paths.home} className="mt-4 inline-block text-sm underline">
             Voltar
           </Link>
@@ -99,10 +103,11 @@ export function PersonalizarPageClient() {
   }
 
   return (
-    <PersonalizarEditor
-      modelo={modelo}
-      visualAssets={visualAssets!}
-      tipoPersonalizacao={tipoPersonalizacao}
-    />
+    <PersonalizacaoVisualProvider visual={ctx.visual}>
+      <PersonalizarEditor
+        contexto={ctx}
+        tipoPersonalizacao={tipoPersonalizacao}
+      />
+    </PersonalizacaoVisualProvider>
   );
 }

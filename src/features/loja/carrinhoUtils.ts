@@ -6,17 +6,27 @@ import { getPrecoPorModelo, getRotuloModelo } from "./carrinhoCatalogo";
 export function criarItemPersonalizado(
   personalizacao: Personalizacao,
   personalizacaoId: string,
-  produtoId = `custom-${personalizacao.modeloId}`,
+  produtoId?: string,
 ) {
+  const id =
+    produtoId ??
+    personalizacao.produtoId ??
+    `custom-${personalizacao.modeloId}`;
+
   return {
     id: crypto.randomUUID(),
     tipo: "personalizada" as const,
-    produtoId,
-    nomeProduto: "Capinha personalizada",
+    produtoId: id,
+    nomeProduto:
+      personalizacao.produtoNome ??
+      (personalizacao.material
+        ? `Capinha ${personalizacao.material}`
+        : "Capinha personalizada"),
     modeloId: personalizacao.modeloId,
     personalizacaoId,
     personalizacao,
-    precoCentavos: getPrecoPorModelo(personalizacao.modeloId),
+    precoCentavos:
+      personalizacao.precoCentavos ?? getPrecoPorModelo(personalizacao.modeloId),
     rotuloModelo: getRotuloModelo(personalizacao.modeloId),
   };
 }

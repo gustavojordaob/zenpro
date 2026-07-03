@@ -79,7 +79,7 @@ export function RevisarPersonalizacaoModal({
           </div>
         )}
 
-        <div className="flex flex-col gap-2 border-t border-zinc-200 px-5 py-4 sm:flex-row-reverse">
+        <div className="pb-safe flex flex-col gap-2 border-t border-zinc-200 px-5 py-4 sm:flex-row-reverse sm:pb-4">
           {somenteLeitura ? (
             <button
               type="button"
@@ -94,7 +94,7 @@ export function RevisarPersonalizacaoModal({
                 type="button"
                 disabled={confirmando}
                 onClick={onConfirmar}
-                className="rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="btn-gold rounded-xl py-3 text-sm disabled:opacity-50"
               >
                 {confirmando ? "Salvando..." : tituloBotao}
               </button>

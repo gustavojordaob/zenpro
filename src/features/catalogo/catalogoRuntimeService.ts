@@ -19,6 +19,7 @@ import {
   type TipoPersonalizacao,
   type TipoProdutoCatalogoFirestore,
 } from "./types";
+import { parsePersonalizacaoVisualJson } from "./personalizacaoVisual";
 
 export type TipoCatalogo = { id: string } & TipoProdutoCatalogoFirestore;
 export type MarcaCatalogo = { id: string } & MarcaFirestore;
@@ -73,6 +74,8 @@ function mapModelo(id: string, data: DocumentData): ModeloCatalogo {
     larguraPx: Number(data.larguraPx ?? data.largura_px ?? IPHONE_ASSETS.width),
     alturaPx: Number(data.alturaPx ?? data.altura_px ?? IPHONE_ASSETS.height),
     ativo: Boolean(data.ativo ?? true),
+    personalizacao:
+      parsePersonalizacaoVisualJson(data.personalizacao) ?? undefined,
     criadoEm: data.criadoEm,
     atualizadoEm: data.atualizadoEm,
   };

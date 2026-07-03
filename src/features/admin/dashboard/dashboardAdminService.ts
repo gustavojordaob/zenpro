@@ -41,7 +41,12 @@ export type DashboardData = {
   intervaloLabel: string;
 };
 
-const STATUS_FATURADOS: PedidoLojaStatus[] = ["pago", "producao", "enviado"];
+const STATUS_FATURADOS: PedidoLojaStatus[] = [
+  "pago",
+  "producao",
+  "enviado",
+  "entregue",
+];
 const STATUS_EM_ANDAMENTO: PedidoLojaStatus[] = ["pago", "producao"];
 
 const ROTULOS_STATUS: Record<PedidoLojaStatus, string> = {
@@ -49,6 +54,8 @@ const ROTULOS_STATUS: Record<PedidoLojaStatus, string> = {
   pago: "Pago",
   producao: "Em produção",
   enviado: "Enviado",
+  entregue: "Entregue",
+  cancelado: "Cancelado",
 };
 
 function inicioDoDia(date: Date): Date {

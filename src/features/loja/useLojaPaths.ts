@@ -7,12 +7,22 @@ export type LojaPaths = {
   home: string;
   produtosHash: string;
   personalizarHash: string;
-  personalizar: (modeloId: string) => string;
+  personalizar: (modeloId: string, produtoId?: string) => string;
   carrinho: string;
   checkout: string;
   contato: string;
   loginRedirect: (path: string) => string;
 };
+
+function buildPersonalizarUrl(
+  base: string,
+  modeloId: string,
+  produtoId?: string,
+): string {
+  const params = new URLSearchParams({ modelo: modeloId });
+  if (produtoId) params.set("produto", produtoId);
+  return `${base}/personalizar?${params.toString()}`;
+}
 
 export function useLojaPaths(): LojaPaths {
   const loja = useLojaEfetiva();
@@ -23,8 +33,11 @@ export function useLojaPaths(): LojaPaths {
         home: "/",
         produtosHash: "/#produtos",
         personalizarHash: "/#personalizar",
-        personalizar: (modeloId: string) =>
-          `/personalizar?modelo=${encodeURIComponent(modeloId)}`,
+        personalizar: (modeloId: string, produtoId?: string) => {
+          const params = new URLSearchParams({ modelo: modeloId });
+          if (produtoId) params.set("produto", produtoId);
+          return `/personalizar?${params.toString()}`;
+        },
         carrinho: "/carrinho",
         checkout: "/checkout",
         contato: "/contato",
@@ -38,8 +51,8 @@ export function useLojaPaths(): LojaPaths {
       home: base,
       produtosHash: `${base}#produtos`,
       personalizarHash: `${base}#personalizar`,
-      personalizar: (modeloId: string) =>
-        `${base}/personalizar?modelo=${encodeURIComponent(modeloId)}`,
+      personalizar: (modeloId: string, produtoId?: string) =>
+        buildPersonalizarUrl(base, modeloId, produtoId),
       carrinho: `${base}/carrinho`,
       checkout: `${base}/checkout`,
       contato: "/contato",

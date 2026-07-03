@@ -3,13 +3,56 @@
 :root {
   --background: #fafafa;
   --foreground: #171717;
+  /* Identidade Zen Pro — preto + dourado */
+  --gold: #c9a227;
+  --gold-dark: #a9861a;
+  --gold-soft: #f3e6bd;
+  --ink: #0f0f0f;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-gold: var(--gold);
+  --color-gold-dark: var(--gold-dark);
+  --color-gold-soft: var(--gold-soft);
+  --color-ink: var(--ink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+/* Botão primário dourado (CTA) */
+.btn-gold {
+  background-color: var(--gold);
+  color: #000;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+.btn-gold:hover {
+  background-color: var(--gold-dark);
+}
+.btn-gold:disabled {
+  opacity: 0.45;
+}
+
+/* Botão preto com detalhe dourado */
+.btn-ink {
+  background-color: var(--ink);
+  color: var(--gold);
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+.btn-ink:hover {
+  background-color: #1f1f1f;
+}
+
+/* Respeita a barra inferior/gesture do celular para os botões de ação
+   (checkout, modais) não colarem no fim da tela. */
+.pb-safe {
+  padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+}
+.mb-safe {
+  margin-bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem));
 }
 
 body {

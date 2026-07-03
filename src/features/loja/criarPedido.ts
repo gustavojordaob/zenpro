@@ -48,6 +48,8 @@ export async function criarPedido({
       descricao: item.personalizacao?.descricao ?? null,
       textos: item.personalizacao?.textos ?? null,
       arteProducaoUrl: item.personalizacao?.arteProducaoUrl ?? null,
+      arteFotoUrl: item.personalizacao?.arteFotoUrl ?? null,
+      arteTextoUrl: item.personalizacao?.arteTextoUrl ?? null,
       imagemUrl: item.imagemUrl ?? null,
       gradienteCapa: item.gradienteCapa ?? null,
     })),

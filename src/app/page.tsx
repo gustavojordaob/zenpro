@@ -29,7 +29,7 @@ export default function HomePage() {
             </p>
             <Link
               href="/seja-revendedor"
-              className="mt-6 inline-block rounded-xl bg-violet-700 px-6 py-3 text-sm font-semibold text-white hover:bg-violet-800"
+              className="btn-ink mt-6 inline-block rounded-xl px-6 py-3 text-sm"
             >
               Seja um revendedor
             </Link>

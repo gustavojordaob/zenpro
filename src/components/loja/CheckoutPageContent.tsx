@@ -102,6 +102,7 @@ export function CheckoutPageContent() {
 
       const id = await criarPedidoLoja({
         lojaId: loja.lojaId,
+        lojaNome: loja.nome,
         itens,
         totalCentavos,
         user,
@@ -161,7 +162,7 @@ export function CheckoutPageContent() {
   return (
     <div className="min-h-screen bg-zinc-50">
       <StoreHeader />
-      <main className="mx-auto max-w-3xl px-4 pb-12 pt-6 sm:px-6 sm:pb-16 sm:pt-8">
+      <main className="pb-safe mx-auto max-w-3xl px-4 pb-12 pt-6 sm:px-6 sm:pb-16 sm:pt-8">
         <PageBackLink href={paths.carrinho} label="← Voltar ao carrinho" />
         <h1 className="mt-4 text-2xl font-bold text-zinc-900 sm:text-3xl">
           Checkout
@@ -272,7 +273,7 @@ export function CheckoutPageContent() {
           type="button"
           disabled={pagando || !completo}
           onClick={handlePagar}
-          className="mt-8 w-full rounded-xl bg-emerald-600 py-3.5 text-base font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="btn-gold mt-8 w-full rounded-xl py-3.5 text-base disabled:opacity-50"
         >
           {pagando ? "Registrando pedido..." : "Pagar (mock)"}
         </button>
@@ -316,6 +317,9 @@ export function CheckoutPageContent() {
                       fotoUrl={item.personalizacao!.fotoUrl}
                       transform={item.personalizacao!.transform}
                       textos={item.personalizacao!.textos}
+                      modeloId={item.personalizacao!.modeloId}
+                      larguraPx={item.personalizacao!.larguraPx}
+                      alturaPx={item.personalizacao!.alturaPx}
                       previewWidth={220}
                     />
                     {item.personalizacao?.titulo && (
@@ -331,12 +335,12 @@ export function CheckoutPageContent() {
                   </li>
                 ))}
             </ul>
-            <div className="flex flex-col gap-2 border-t border-zinc-200 px-5 py-4 sm:flex-row-reverse">
+            <div className="pb-safe flex flex-col gap-2 border-t border-zinc-200 px-5 py-4 sm:flex-row-reverse sm:pb-4">
               <button
                 type="button"
                 disabled={pagando}
                 onClick={() => void executarPagamento()}
-                className="rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="btn-gold rounded-xl py-3 text-sm disabled:opacity-50"
               >
                 {pagando ? "Registrando..." : "Confirmar pagamento (mock)"}
               </button>

@@ -43,6 +43,7 @@ export function produtoCentralParaDestaque(
     precoCentavos: data.precoBaseCentavos,
     tipo: modoVenda,
     categoria: (data.categoria ?? "capinhas") as CategoriaProduto,
+    material: data.material ?? undefined,
     destaque: data.destaque ?? undefined,
     imagemUrl: data.imagens[0],
     controlaEstoque: controla,

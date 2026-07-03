@@ -61,7 +61,7 @@ export function MarcaHomeHero() {
     <section className="border-b border-zinc-200 bg-[#ececec]">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 px-4 py-14 text-center sm:px-6 sm:py-20 md:flex-row md:text-left">
         <div className="flex-1 space-y-4">
-          <p className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gold-dark">
             Personalização no browser
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl md:text-5xl">
@@ -73,13 +73,13 @@ export function MarcaHomeHero() {
           <div className="flex flex-wrap justify-center gap-3 md:justify-start">
             <Link
               href="#produtos"
-              className="rounded-xl bg-zinc-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+              className="btn-ink rounded-xl px-6 py-3 text-sm"
             >
               Ver produtos
             </Link>
             <Link
               href="#personalizar"
-              className="rounded-xl border border-zinc-300 bg-white px-6 py-3 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50"
+              className="rounded-xl border border-gold bg-white px-6 py-3 text-sm font-semibold text-gold-dark transition hover:bg-gold-soft/40"
             >
               Personalizar com foto
             </Link>

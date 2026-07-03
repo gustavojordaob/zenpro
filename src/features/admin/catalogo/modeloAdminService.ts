@@ -9,6 +9,7 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import { COLECOES_CATALOGO, type ModeloFirestore } from "@/features/catalogo/types";
+import { parsePersonalizacaoVisualJson } from "@/features/catalogo/personalizacaoVisual";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 
 export type ModeloCatalogoAdmin = { id: string } & ModeloFirestore;
@@ -21,6 +22,10 @@ export type ModeloFormInput = {
   larguraPx: number;
   alturaPx: number;
   ativo: boolean;
+  /** Cor do chassi no mock 2D (hex) — ex.: #1a1a1a */
+  corAparelho?: string | null;
+  /** Preset de layout de câmera (ex.: "iphone-pro") */
+  cameraPresetId?: string | null;
 };
 
 function requireDb() {
@@ -29,6 +34,7 @@ function requireDb() {
 }
 
 function mapModelo(id: string, data: DocumentData): ModeloCatalogoAdmin {
+  const personalizacao = parsePersonalizacaoVisualJson(data.personalizacao);
   return {
     id,
     marcaId: String(data.marcaId ?? ""),
@@ -38,9 +44,19 @@ function mapModelo(id: string, data: DocumentData): ModeloCatalogoAdmin {
     larguraPx: Number(data.larguraPx ?? 1568),
     alturaPx: Number(data.alturaPx ?? 3207),
     ativo: Boolean(data.ativo ?? true),
+    personalizacao: personalizacao ?? undefined,
     criadoEm: data.criadoEm,
     atualizadoEm: data.atualizadoEm,
   };
+}
+
+function personalizacaoPayload(input: ModeloFormInput) {
+  const payload: { corAparelho?: string; cameraPresetId?: string } = {};
+  const cor = input.corAparelho?.trim();
+  if (cor) payload.corAparelho = cor;
+  const preset = input.cameraPresetId?.trim();
+  if (preset) payload.cameraPresetId = preset;
+  return Object.keys(payload).length > 0 ? payload : undefined;
 }
 
 export function gerarIdModelo(nome: string): string {
@@ -71,6 +87,7 @@ export async function obterModeloAdmin(
 
 export async function criarModeloAdmin(input: ModeloFormInput): Promise<string> {
   const id = gerarIdModelo(input.nome);
+  const personalizacao = personalizacaoPayload(input);
   await setDoc(doc(requireDb(), COLECOES_CATALOGO.MODELOS, id), {
     marcaId: input.marcaId,
     nome: input.nome.trim(),
@@ -79,6 +96,7 @@ export async function criarModeloAdmin(input: ModeloFormInput): Promise<string> 
     larguraPx: input.larguraPx,
     alturaPx: input.alturaPx,
     ativo: input.ativo,
+    ...(personalizacao ? { personalizacao } : {}),
     criadoEm: serverTimestamp(),
     atualizadoEm: serverTimestamp(),
   });
@@ -89,6 +107,7 @@ export async function atualizarModeloAdmin(
   id: string,
   input: ModeloFormInput,
 ): Promise<void> {
+  const personalizacao = personalizacaoPayload(input);
   await updateDoc(doc(requireDb(), COLECOES_CATALOGO.MODELOS, id), {
     marcaId: input.marcaId,
     nome: input.nome.trim(),
@@ -97,6 +116,7 @@ export async function atualizarModeloAdmin(
     larguraPx: input.larguraPx,
     alturaPx: input.alturaPx,
     ativo: input.ativo,
+    ...(personalizacao ? { personalizacao } : { personalizacao: null }),
     atualizadoEm: serverTimestamp(),
   });
 }

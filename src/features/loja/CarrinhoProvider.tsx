@@ -31,6 +31,7 @@ type CarrinhoContextValue = {
   adicionarPersonalizada: (
     personalizacao: Personalizacao,
     personalizacaoId: string,
+    produtoId?: string,
   ) => void;
   adicionarPronta: (produto: ProdutoDestaque) => void;
   remover: (id: string) => void;
@@ -55,10 +56,14 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const adicionarPersonalizada = useCallback(
-    (personalizacao: Personalizacao, personalizacaoId: string) => {
+    (
+      personalizacao: Personalizacao,
+      personalizacaoId: string,
+      produtoId?: string,
+    ) => {
       setItens((prev) => [
         ...prev,
-        criarItemPersonalizado(personalizacao, personalizacaoId),
+        criarItemPersonalizado(personalizacao, personalizacaoId, produtoId),
       ]);
     },
     [],

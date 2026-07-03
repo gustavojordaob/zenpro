@@ -31,6 +31,12 @@
     "public": "out",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "cleanUrls": true,
+    "rewrites": [
+      { "source": "/*/personalizar", "destination": "/loja/personalizar.html" },
+      { "source": "/*/carrinho", "destination": "/loja/carrinho.html" },
+      { "source": "/*/checkout", "destination": "/loja/checkout.html" },
+      { "source": "/*", "destination": "/loja.html" }
+    ],
     "headers": [
       {
         "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|js|css|woff2)",

@@ -24,6 +24,7 @@ function revendedorRotaPermitida(
   if (rotaDashboardAdmin(pathname)) return true;
   if (rotaPedidosAdmin(pathname)) return true;
   if (pathname === "/admin/estoque") return true;
+  if (pathname === "/admin/reposicao") return true;
   if (lojaId && pathname === `/admin/lojas/${lojaId}`) return true;
   return false;
 }

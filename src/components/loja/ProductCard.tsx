@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { rotuloMaterial } from "@/features/catalogo/materiaisCapinha";
 import { ProdutoImagem } from "@/components/loja/ProdutoImagem";
 import {
   formatarPreco,
@@ -17,7 +18,10 @@ export function ProductCard({ produto }: Props) {
 
   return (
     <Link
-      href={`${paths.personalizar(produto.modeloId)}&produto=${encodeURIComponent(produto.produtoBaseId ?? produto.id)}`}
+      href={paths.personalizar(
+        produto.modeloId,
+        produto.produtoBaseId ?? produto.id,
+      )}
       className="group flex h-full min-h-[340px] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md"
     >
       <div className="relative aspect-square w-full shrink-0 bg-white">
@@ -45,10 +49,15 @@ export function ProductCard({ produto }: Props) {
         <h3 className="line-clamp-2 min-h-[2.5rem] font-semibold leading-tight text-zinc-900 group-hover:text-zinc-700">
           {produto.nome}
         </h3>
+        {produto.material && (
+          <p className="text-xs text-zinc-500">
+            {rotuloMaterial(produto.material)}
+          </p>
+        )}
         <p className="mt-auto pt-2 text-base font-semibold text-zinc-900">
           {formatarPreco(produto.precoCentavos)}
         </p>
-        <span className="mt-2 text-sm font-medium text-emerald-600 group-hover:text-emerald-700">
+        <span className="mt-2 text-sm font-semibold text-gold-dark group-hover:text-gold">
           Personalizar →
         </span>
       </div>

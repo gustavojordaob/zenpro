@@ -7,7 +7,11 @@ import {
 import { personalizacaoParaConfig } from "@/features/catalogo/personalizacaoConfig";
 import type { TipoPersonalizacao } from "@/features/catalogo/types";
 import type { Personalizacao } from "@/features/personalizacao/types";
-import { exportCaseArtBlob } from "@/features/personalizacao/exportCaseArt";
+import {
+  exportCaseArtBlob,
+  exportFotoArtBlob,
+  exportTextoArtBlob,
+} from "@/features/personalizacao/exportCaseArt";
 import { subirArteProducao } from "@/features/personalizacao/uploadArteProducao";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import { sanitizarParaFirestore } from "@/lib/firestoreSanitize";
@@ -21,22 +25,38 @@ type SalvarPersonalizacaoInput = {
   fotoExportUrl?: string;
 };
 
+export type ArtesPersonalizacao = {
+  /** Foto + texto, na forma do modelo (produção). */
+  arteProducaoUrl: string | null;
+  /** Só a foto do cliente (sem texto). */
+  arteFotoUrl: string | null;
+  /** Só o texto do cliente, fundo transparente. */
+  arteTextoUrl: string | null;
+};
+
 export async function salvarPersonalizacao({
   dados,
   userId,
   tipoPersonalizacao = "mascara_modelo",
   fotoExportUrl,
-}: SalvarPersonalizacaoInput): Promise<{ id: string; arteProducaoUrl: string | null }> {
+}: SalvarPersonalizacaoInput): Promise<{ id: string } & ArtesPersonalizacao> {
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase não configurado.");
   }
 
   const db = getFirebaseDb();
   const config = personalizacaoParaConfig(dados);
+  const textos = dados.textos ?? [];
+  const temTexto = textos.length > 0;
 
-  const payload: Omit<PersonalizacaoFirestore, "criadoEm" | "arteProducaoUrl"> & {
+  const payload: Omit<
+    PersonalizacaoFirestore,
+    "criadoEm" | "arteProducaoUrl" | "arteFotoUrl" | "arteTextoUrl"
+  > & {
     criadoEm: ReturnType<typeof serverTimestamp>;
     arteProducaoUrl: string | null;
+    arteFotoUrl: string | null;
+    arteTextoUrl: string | null;
   } = {
     userId,
     tipoPersonalizacao,
@@ -44,10 +64,12 @@ export async function salvarPersonalizacao({
     config,
     modeloId: dados.modeloId,
     transform: dados.transform,
-    textos: dados.textos?.length ? dados.textos : null,
+    textos: temTexto ? textos : null,
     titulo: dados.titulo?.trim() || null,
     descricao: dados.descricao?.trim() || null,
     arteProducaoUrl: null,
+    arteFotoUrl: null,
+    arteTextoUrl: null,
     criadoEm: serverTimestamp(),
   };
 
@@ -56,17 +78,51 @@ export async function salvarPersonalizacao({
     sanitizarParaFirestore(payload),
   );
 
+  const fotoFonte = fotoExportUrl ?? dados.fotoUrl;
+  const geo = {
+    larguraPx: dados.larguraPx,
+    alturaPx: dados.alturaPx,
+    maskUrl: dados.maskUrl,
+  };
+
   try {
-    const blob = await exportCaseArtBlob(
-      fotoExportUrl ?? dados.fotoUrl,
-      dados.transform,
-      dados.textos ?? [],
-    );
-    const arteProducaoUrl = await subirArteProducao(userId, ref.id, blob);
-    await updateDoc(ref, { arteProducaoUrl });
-    return { id: ref.id, arteProducaoUrl };
+    // Arte combinada (foto + texto) + arte só da foto — sempre.
+    const [blobCombinada, blobFoto] = await Promise.all([
+      exportCaseArtBlob(fotoFonte, dados.transform, textos, undefined, geo),
+      exportFotoArtBlob(fotoFonte, dados.transform, undefined, geo),
+    ]);
+
+    const [arteProducaoUrl, arteFotoUrl] = await Promise.all([
+      subirArteProducao(userId, ref.id, blobCombinada, "combinada"),
+      subirArteProducao(userId, ref.id, blobFoto, "foto"),
+    ]);
+
+    // Arte só do texto — apenas quando há texto.
+    let arteTextoUrl: string | null = null;
+    if (temTexto) {
+      const blobTexto = await exportTextoArtBlob(
+        dados.transform,
+        textos,
+        undefined,
+        geo,
+      );
+      arteTextoUrl = await subirArteProducao(
+        userId,
+        ref.id,
+        blobTexto,
+        "texto",
+      );
+    }
+
+    await updateDoc(ref, { arteProducaoUrl, arteFotoUrl, arteTextoUrl });
+    return { id: ref.id, arteProducaoUrl, arteFotoUrl, arteTextoUrl };
   } catch (error) {
     console.error("Falha ao gerar arte de produção:", error);
-    return { id: ref.id, arteProducaoUrl: null };
+    return {
+      id: ref.id,
+      arteProducaoUrl: null,
+      arteFotoUrl: null,
+      arteTextoUrl: null,
+    };
   }
 }

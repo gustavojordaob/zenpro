@@ -15,17 +15,23 @@ export function AuthLink() {
 
   if (user) {
     return (
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-4 sm:gap-5">
+        <Link
+          href="/meus-pedidos"
+          className="hidden text-sm font-medium text-zinc-600 transition hover:text-gold-dark sm:inline"
+        >
+          Meus pedidos
+        </Link>
         <Link
           href="/conta"
-          className="hidden rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 sm:inline-block"
+          className="hidden text-sm font-medium text-zinc-600 transition hover:text-gold-dark sm:inline"
         >
           Minha conta
         </Link>
         <button
           type="button"
           onClick={() => void sair()}
-          className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          className="text-sm font-medium text-zinc-400 transition hover:text-zinc-700"
         >
           Sair
         </button>

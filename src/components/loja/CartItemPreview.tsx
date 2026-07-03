@@ -16,6 +16,9 @@ export function CartItemPreview({ item, previewWidth = 120 }: Props) {
         fotoUrl={item.personalizacao.fotoUrl}
         transform={item.personalizacao.transform}
         textos={item.personalizacao.textos}
+        modeloId={item.personalizacao.modeloId}
+        larguraPx={item.personalizacao.larguraPx}
+        alturaPx={item.personalizacao.alturaPx}
         previewWidth={previewWidth}
       />
     );

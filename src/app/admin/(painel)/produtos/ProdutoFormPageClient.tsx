@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { MATERIAIS_CAPINHA } from "@/features/catalogo/materiaisCapinha";
 import {
   centavosParaReaisInput,
   reaisInputParaCentavos,
@@ -36,6 +37,7 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
   const [tipoId, setTipoId] = useState<string>(SEED_CATALOGO.TIPO_CAPINHA);
   const [modoVenda, setModoVenda] = useState<"personalizada" | "pronta">("pronta");
   const [personalizavel, setPersonalizavel] = useState(false);
+  const [material, setMaterial] = useState("");
   const [controlaEstoque, setControlaEstoque] = useState(true);
   const [estoqueCentral, setEstoqueCentral] = useState("0");
   const [marcaId, setMarcaId] = useState<string>("");
@@ -99,6 +101,7 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
         setTipoId(produto.tipoId);
         setModoVenda(produto.modoVenda);
         setPersonalizavel(Boolean(produto.personalizavel));
+        setMaterial(produto.material ?? "");
         setControlaEstoque(Boolean(produto.controlaEstoque));
         setEstoqueCentral(String(produto.estoqueCentral ?? 0));
         setMarcaId(produto.marcaId ?? "");
@@ -123,6 +126,7 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
       tipoId,
       modoVenda: personalizavel ? ("personalizada" as const) : modoVenda,
       personalizavel: podePersonalizar ? personalizavel : false,
+      material: material.trim() || null,
       controlaEstoque: personalizavel ? false : controlaEstoque,
       estoqueCentral: personalizavel ? 0 : Math.max(0, parseInt(estoqueCentral, 10) || 0),
       marcaId: marcaId || null,
@@ -136,6 +140,7 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
       tipoId,
       modoVenda,
       personalizavel,
+      material,
       podePersonalizar,
       controlaEstoque,
       estoqueCentral,
@@ -320,6 +325,30 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
               são o mock usado no editor quando o cliente personaliza a foto.
               Depois, selecione os modelos compatíveis abaixo.
             </div>
+          )}
+
+          {ehCapinhaCelular && (
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-zinc-700">
+                Material / acabamento
+              </span>
+              <select
+                value={material}
+                onChange={(e) => setMaterial(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2.5"
+              >
+                <option value="">— Não informado —</option>
+                {MATERIAIS_CAPINHA.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.rotulo}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-zinc-500">
+                Variantes do mesmo aparelho (couro, silicone, acrílico…) têm
+                preços diferentes e aparecem como produtos separados na vitrine.
+              </span>
+            </label>
           )}
         </div>
 

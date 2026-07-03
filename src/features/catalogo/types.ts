@@ -1,5 +1,6 @@
 import type { TextoCapinha } from "@/features/personalizacao/caseTextFonts";
 import type { Transform } from "@/features/personalizacao/types";
+import type { PersonalizacaoVisualFirestore } from "./personalizacaoVisual";
 
 /** Como o produto se personaliza — extensível no futuro */
 export const TIPOS_PERSONALIZACAO = [
@@ -39,7 +40,7 @@ export type MarcaFirestore = {
   atualizadoEm?: unknown;
 };
 
-/** `modelos/{modeloId}` */
+/** `modelos/{modeloId}` — aparelho (geometria + câmera) */
 export type ModeloFirestore = {
   marcaId: string;
   nome: string;
@@ -48,6 +49,8 @@ export type ModeloFirestore = {
   larguraPx: number;
   alturaPx: number;
   ativo: boolean;
+  /** Overrides visuais (câmera, moldura, cor) — sobrescreve SPECS em código */
+  personalizacao?: PersonalizacaoVisualFirestore;
   criadoEm: unknown;
   atualizadoEm?: unknown;
 };
@@ -55,6 +58,14 @@ export type ModeloFirestore = {
 /** Config flexível — capinha (`mascara_modelo`) */
 export type ConfigPersonalizacaoMascaraModelo = {
   modeloId: string;
+  /** SKU da variante (couro, silicone…) */
+  produtoId?: string | null;
+  material?: string | null;
+  /** Dimensões do modelo — proporção da capa. */
+  larguraPx?: number | null;
+  alturaPx?: number | null;
+  /** Molde do modelo (PNG/SVG). */
+  maskUrl?: string | null;
   transform: Transform;
   textos?: TextoCapinha[] | null;
   titulo?: string | null;

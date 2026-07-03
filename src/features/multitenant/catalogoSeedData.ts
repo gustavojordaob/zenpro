@@ -58,8 +58,19 @@ export function getModelosSeed(): ({
     larguraPx: modelo.larguraPx,
     alturaPx: modelo.alturaPx,
     ativo: true,
+    personalizacao: PERSONALIZACAO_POR_MODELO[modelo.id],
   }));
 }
+
+/** Preset de câmera + cor por modelo conhecido (espelha cameraModules). */
+const PERSONALIZACAO_POR_MODELO: Record<
+  string,
+  ModeloFirestore["personalizacao"]
+> = {
+  "iphone-17-pro-max": { cameraPresetId: "iphone-pro", corAparelho: "#d1732a" },
+  "iphone-15": { cameraPresetId: "iphone-padrao", corAparelho: "#e7e0d3" },
+  "samsung-s24": { cameraPresetId: "android-triplo", corAparelho: "#3a3f44" },
+};
 
 export function produtoDestaqueParaCentral(
   produto: ProdutoDestaque,
@@ -79,6 +90,8 @@ export function produtoDestaqueParaCentral(
     ativo: true,
     tipoId: SEED_CATALOGO.TIPO_CAPINHA,
     modoVenda: produto.tipo,
+    personalizavel: produto.tipo === "personalizada",
+    material: produto.material ?? null,
     tipo: produto.tipo,
     categoria: produto.categoria,
     destaque: produto.destaque ?? null,

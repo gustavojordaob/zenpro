@@ -14,6 +14,10 @@ export type PersonalizacaoFirestore = {
   titulo?: string | null;
   descricao?: string | null;
   arteProducaoUrl: string | null;
+  /** Só a foto do cliente (sem texto). */
+  arteFotoUrl?: string | null;
+  /** Só o texto do cliente (fundo transparente). */
+  arteTextoUrl?: string | null;
   criadoEm: unknown;
 };
 
@@ -31,6 +35,8 @@ export type ItemPedidoFirestore = {
   descricao?: string | null;
   textos?: TextoCapinha[] | null;
   arteProducaoUrl?: string | null;
+  arteFotoUrl?: string | null;
+  arteTextoUrl?: string | null;
   imagemUrl?: string | null;
   gradienteCapa?: string | null;
 };

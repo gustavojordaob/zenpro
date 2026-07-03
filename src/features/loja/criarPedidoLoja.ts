@@ -1,4 +1,10 @@
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { COLECOES } from "@/features/multitenant/types";
 import type { PerfilUsuario } from "@/features/usuario/perfilTypes";
@@ -10,6 +16,8 @@ import type { ItemCarrinho } from "./carrinhoTypes";
 
 type CriarPedidoLojaInput = {
   lojaId: string;
+  /** Nome da loja (para exibir em "Meus pedidos" do cliente). */
+  lojaNome?: string;
   itens: ItemCarrinho[];
   totalCentavos: number;
   user: User;
@@ -37,12 +45,16 @@ function itemCarrinhoParaPedidoLoja(item: ItemCarrinho) {
     textos: item.personalizacao?.textos ?? null,
     titulo: item.personalizacao?.titulo ?? null,
     descricao: item.personalizacao?.descricao ?? null,
+    arteProducaoUrl: item.personalizacao?.arteProducaoUrl ?? null,
+    arteFotoUrl: item.personalizacao?.arteFotoUrl ?? null,
+    arteTextoUrl: item.personalizacao?.arteTextoUrl ?? null,
     imagemUrl: item.imagemUrl ?? null,
   };
 }
 
 export async function criarPedidoLoja({
   lojaId,
+  lojaNome,
   itens,
   totalCentavos,
   user,
@@ -88,6 +100,26 @@ export async function criarPedidoLoja({
       atualizadoEm: serverTimestamp(),
     }),
   );
+
+  // Índice pessoal do cliente — permite listar "Meus pedidos" sem varrer lojas.
+  try {
+    await setDoc(
+      doc(db, COLECOES.USUARIOS, user.uid, COLECOES.PEDIDOS, ref.id),
+      sanitizarParaFirestore({
+        lojaId,
+        lojaNome: lojaNome ?? null,
+        pedidoId: ref.id,
+        totalCentavos,
+        qtdItens: itens.length,
+        resumo: itens[0]?.nomeProduto ?? "Pedido",
+        statusInicial: status,
+        criadoEm: serverTimestamp(),
+      }),
+    );
+  } catch (e) {
+    // Não bloqueia o pedido caso o índice falhe (best-effort).
+    console.error("Falha ao gravar índice de pedido do cliente", e);
+  }
 
   return ref.id;
 }

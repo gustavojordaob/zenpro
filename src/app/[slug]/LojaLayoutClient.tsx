@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { LojaProvider } from "@/features/multitenant/LojaContext";
 import { LojaCarrinhoBinder } from "@/features/multitenant/LojaCarrinhoBinder";
@@ -9,6 +10,7 @@ import {
   type LojaPublica,
 } from "@/features/multitenant/lojaPublicaService";
 import { LojaRevendedorStrip } from "@/components/loja/LojaRevendedorStrip";
+import { MARCA_LOJA_SLUG } from "@/features/multitenant/catalogoSeedData";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
 type Props = {
@@ -17,6 +19,10 @@ type Props = {
 };
 
 export function LojaLayoutClient({ slug, children }: Props) {
+  const pathname = usePathname();
+  // Sob `output: export` a casca genérica (/loja) é reescrita para qualquer
+  // /{slug}; o slug REAL vem sempre da URL atual, não do param pré-renderizado.
+  const slugAtual = pathname?.split("/").filter(Boolean)[0] ?? slug;
   const [loja, setLoja] = useState<LojaPublica | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [naoEncontrada, setNaoEncontrada] = useState(false);
@@ -28,10 +34,16 @@ export function LojaLayoutClient({ slug, children }: Props) {
       return;
     }
 
+    // A marca (Zen Pro) mora na raiz "/", nunca em /zenpro como revendedor.
+    if (slugAtual === MARCA_LOJA_SLUG) {
+      window.location.replace("/");
+      return;
+    }
+
     void (async () => {
       setCarregando(true);
       try {
-        const resultado = await buscarLojaPorSlug(slug);
+        const resultado = await buscarLojaPorSlug(slugAtual);
         if (!resultado) {
           setNaoEncontrada(true);
           setLoja(null);
@@ -46,7 +58,7 @@ export function LojaLayoutClient({ slug, children }: Props) {
         setCarregando(false);
       }
     })();
-  }, [slug]);
+  }, [slugAtual]);
 
   if (carregando) {
     return (
@@ -57,7 +69,7 @@ export function LojaLayoutClient({ slug, children }: Props) {
   }
 
   if (naoEncontrada || !loja) {
-    return <LojaNotFound slug={slug} />;
+    return <LojaNotFound slug={slugAtual} />;
   }
 
   return (

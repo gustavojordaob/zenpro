@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Group, Image as KonvaImage, Layer, Rect, Stage } from "react-konva";
 import Konva from "konva";
-import { buildCameraModuleSvg } from "./cameraModules";
-import { CaseTextNode } from "./CaseTextNode";
+import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./cameraModules";
 import { getCaseFrameSpec } from "./caseFrame";
+import { CaseTextNode } from "./CaseTextNode";
 import { getCaseLayout } from "./caseGeometry";
 import { IPHONE_ASSETS } from "./moldura";
+import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { TextoCapinha, Transform } from "./types";
 import { useCapinhaFontsReady } from "./useCapinhaFontsReady";
 import { useCorPredominante } from "./useCorPredominante";
@@ -23,7 +24,15 @@ type Props = {
   modeloId?: string;
   /** Largura visual da capinha (px). Transform usa coords do editor (280px). */
   previewWidth?: number;
+  /** Dimensões físicas do modelo — definem a proporção (aspecto) da capa. */
+  larguraPx?: number;
+  alturaPx?: number;
 };
+
+function comCacheBuster(src: string): string {
+  if (src.startsWith("data:") || src.startsWith("blob:")) return src;
+  return src + (src.includes("?") ? "&" : "?") + "nocors=1";
+}
 
 function loadHtmlImage(
   src: string,
@@ -83,7 +92,9 @@ function useHtmlImage(src: string | null) {
         if (!cancelled) setImage(img);
       })
       .catch(() =>
-        loadHtmlImage(src).then((img) => {
+        // Fallback sem CORS. Usa cache-buster para não colidir com a request
+        // CORS que falhou (bug comum no Safari mobile: imagem não aparecia).
+        loadHtmlImage(comCacheBuster(src)).then((img) => {
           if (!cancelled) setImage(img);
         }),
       )
@@ -105,12 +116,17 @@ export function CasePreview({
   textos = [],
   modeloId = "iphone-17-pro-max",
   previewWidth = 120,
+  larguraPx,
+  alturaPx,
 }: Props) {
   useCapinhaFontsReady();
+  const visualCtx = usePersonalizacaoVisual();
   const fotoImage = useHtmlImage(fotoUrl);
   const bgRef = useRef<Konva.Image>(null);
 
-  const layout = getCaseLayout(EDITOR_PREVIEW_WIDTH);
+  const lw = visualCtx?.larguraPx ?? larguraPx ?? IPHONE_ASSETS.width;
+  const lh = visualCtx?.alturaPx ?? alturaPx ?? IPHONE_ASSETS.height;
+  const layout = getCaseLayout(EDITOR_PREVIEW_WIDTH, lw, lh);
   const {
     stageWidth: W,
     stageHeight: H,
@@ -120,24 +136,36 @@ export function CasePreview({
     molduraH,
   } = layout;
 
-  const frame = getCaseFrameSpec(modeloId);
+  const frame = visualCtx?.caseFrame ?? getCaseFrameSpec(modeloId);
   const radius = frame.radius * molduraW;
   const borderWidth = Math.max(2, molduraW * 0.02);
 
   const cameraUrl = useMemo(() => {
-    const svg = buildCameraModuleSvg(modeloId, molduraW, molduraH);
+    const cameraSpec = visualCtx?.camera ?? getCameraSpec(modeloId);
+    const cor = visualCtx?.corAparelho ?? getCorAparelho(modeloId);
+    const svg = buildCameraModuleSvgFromSpec(
+      cameraSpec,
+      molduraW,
+      molduraH,
+      cor,
+    );
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [modeloId, molduraW, molduraH]);
+  }, [visualCtx, modeloId, molduraW, molduraH]);
   const cameraImage = useHtmlImage(cameraUrl);
 
+  const clipInset = borderWidth;
   const clipRoundRect = (ctx: Konva.Context) => {
-    const r = radius;
+    const x = molduraX + clipInset;
+    const y = molduraY + clipInset;
+    const w = molduraW - clipInset * 2;
+    const h = molduraH - clipInset * 2;
+    const r = Math.max(0, radius - clipInset);
     ctx.beginPath();
-    ctx.moveTo(molduraX + r, molduraY);
-    ctx.arcTo(molduraX + molduraW, molduraY, molduraX + molduraW, molduraY + molduraH, r);
-    ctx.arcTo(molduraX + molduraW, molduraY + molduraH, molduraX, molduraY + molduraH, r);
-    ctx.arcTo(molduraX, molduraY + molduraH, molduraX, molduraY, r);
-    ctx.arcTo(molduraX, molduraY, molduraX + molduraW, molduraY, r);
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
   };
 
@@ -193,26 +221,20 @@ export function CasePreview({
         height: displayH + padOuter * 2,
       }}
     >
-      <div
-        style={{
-          width: displayW,
-          height: displayH,
-          overflow: "hidden",
-        }}
+      {/* Escala aplicada no próprio Stage (scaleX/scaleY) — evita bugs de
+          `transform: scale` do CSS no Safari mobile (preview sumia / foto
+          aparecia no canto). Coordenadas internas seguem a base 280. */}
+      <Stage
+        width={displayW}
+        height={displayH}
+        scaleX={scale}
+        scaleY={scale}
+        listening={false}
       >
-        <div
-          style={{
-            width: W,
-            height: H,
-            transform: `scale(${scale})`,
-            transformOrigin: "top left",
-          }}
-        >
-          <Stage width={W} height={H} listening={false}>
-            <Layer listening={false}>
-              <Rect x={0} y={0} width={W} height={H} fill={STUDIO_BG} />
-            </Layer>
-            <Layer listening={false}>
+        <Layer listening={false}>
+          <Rect x={0} y={0} width={W} height={H} fill={STUDIO_BG} />
+        </Layer>
+        <Layer listening={false}>
               {fotoImage && (
                 <Group>
                   <Group clipFunc={clipRoundRect}>
@@ -278,10 +300,8 @@ export function CasePreview({
                   />
                 </Group>
               )}
-            </Layer>
-          </Stage>
-        </div>
-      </div>
+        </Layer>
+      </Stage>
     </div>
   );
 }

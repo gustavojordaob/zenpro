@@ -17,6 +17,7 @@ export type ProdutoDestaque = {
   precoCentavos: number;
   tipo: TipoProduto;
   categoria: CategoriaProduto;
+  material?: string;
   destaque?: string;
   imagemUrl?: string;
   gradienteCapa?: string;
@@ -251,13 +252,14 @@ export const PRODUTOS_PRONTOS = PRODUTOS_LOJA;
 export const PRODUTOS_PERSONALIZAR: ProdutoDestaque[] = [
   {
     id: "cap-iphone15-classic",
-    nome: "Capinha Classic",
+    nome: "Capinha Classic TPU",
     descricao: "Modelo classic personalizável com sua foto para iPhone 15.",
     modeloId: "iphone-15",
     marca: "Apple iPhone 15",
     precoCentavos: 4990,
     tipo: "personalizada",
     categoria: "capinhas",
+    material: "tpu",
     destaque: "Mais vendida",
   },
   {
@@ -269,16 +271,55 @@ export const PRODUTOS_PERSONALIZAR: ProdutoDestaque[] = [
     precoCentavos: 5990,
     tipo: "personalizada",
     categoria: "capinhas",
+    material: "silicone",
+  },
+  {
+    id: "cap-iphone17-couro",
+    nome: "Capinha Couro Premium",
+    descricao:
+      "Capinha personalizável em couro legítimo para iPhone 17 Pro Max — acabamento premium.",
+    modeloId: "iphone-17-pro-max",
+    marca: "Apple iPhone 17 Pro Max",
+    precoCentavos: 8990,
+    tipo: "personalizada",
+    categoria: "capinhas",
+    material: "couro",
+    destaque: "Premium",
+  },
+  {
+    id: "cap-iphone17-silicone",
+    nome: "Capinha Silicone",
+    descricao:
+      "Capinha de silicone macio personalizável para iPhone 17 Pro Max.",
+    modeloId: "iphone-17-pro-max",
+    marca: "Apple iPhone 17 Pro Max",
+    precoCentavos: 4990,
+    tipo: "personalizada",
+    categoria: "capinhas",
+    material: "silicone",
+  },
+  {
+    id: "cap-iphone17-acrilico",
+    nome: "Capinha Acrílico",
+    descricao:
+      "Capinha acrílica transparente personalizável para iPhone 17 Pro Max.",
+    modeloId: "iphone-17-pro-max",
+    marca: "Apple iPhone 17 Pro Max",
+    precoCentavos: 6490,
+    tipo: "personalizada",
+    categoria: "capinhas",
+    material: "acrilico",
   },
   {
     id: "cap-s24-classic",
-    nome: "Capinha Classic",
+    nome: "Capinha Classic TPU",
     descricao: "Capinha classic personalizável com foto para Galaxy S24.",
     modeloId: "samsung-s24",
     marca: "Samsung Galaxy S24",
     precoCentavos: 4990,
     tipo: "personalizada",
     categoria: "capinhas",
+    material: "tpu",
   },
   {
     id: "cap-s24-art",
@@ -289,6 +330,7 @@ export const PRODUTOS_PERSONALIZAR: ProdutoDestaque[] = [
     precoCentavos: 6490,
     tipo: "personalizada",
     categoria: "capinhas",
+    material: "policarbonato",
   },
 ];
 

@@ -25,6 +25,7 @@ export type ProdutoFormInput = {
   tipoId: string;
   modoVenda: "personalizada" | "pronta";
   personalizavel: boolean;
+  material: string | null;
   controlaEstoque: boolean;
   estoqueCentral: number;
   marcaId: string | null;
@@ -72,6 +73,7 @@ function mapProduto(id: string, data: DocumentData): ProdutoCentral {
     tipoId,
     modoVenda,
     personalizavel: Boolean(data.personalizavel),
+    material: (data.material as string | null | undefined) ?? null,
     controlaEstoque: data.personalizavel
       ? false
       : data.controlaEstoque !== false,
@@ -105,6 +107,7 @@ function payloadFromInput(input: ProdutoFormInput) {
     modoVenda: input.modoVenda,
     tipo: input.modoVenda,
     personalizavel: input.personalizavel,
+    material: input.material?.trim() || null,
     controlaEstoque: input.personalizavel ? false : input.controlaEstoque,
     estoqueCentral: input.personalizavel ? 0 : Math.max(0, input.estoqueCentral),
     categoria: categoriaFromTipoId(input.tipoId),

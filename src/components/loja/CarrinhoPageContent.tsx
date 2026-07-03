@@ -92,7 +92,7 @@ export function CarrinhoPageContent({ mostrarCheckout = true }: Props) {
               {mostrarCheckout ? (
                 <Link
                   href={paths.checkout}
-                  className="rounded-xl bg-emerald-600 px-6 py-3 text-center text-sm font-semibold text-white hover:bg-emerald-700"
+                  className="btn-gold rounded-xl px-6 py-3 text-center text-sm"
                 >
                   Finalizar compra
                 </Link>

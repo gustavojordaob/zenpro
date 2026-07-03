@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Group, Image as KonvaImage, Layer, Rect, Stage } from "react-konva";
 import Konva from "konva";
-import { buildCameraModuleSvg } from "./cameraModules";
+import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./cameraModules";
 import { CaseTextNode } from "./CaseTextNode";
 import { getCaseFrameSpec } from "./caseFrame";
 import { getCaseLayout } from "./caseGeometry";
-import type { ModeloVisualAssets } from "@/features/catalogo/catalogoRuntimeService";
+import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { ModeloCelular, TextoCapinha, Transform } from "./types";
 import { useCapinhaFontsReady } from "./useCapinhaFontsReady";
 import { useCorPredominante } from "./useCorPredominante";
@@ -18,7 +18,6 @@ const BORDER_STROKE = "#cbe6fb";
 
 type Props = {
   modelo: ModeloCelular;
-  visualAssets?: ModeloVisualAssets | null;
   fotoUrl: string | null;
   transform: Transform;
   textos: TextoCapinha[];
@@ -27,6 +26,11 @@ type Props = {
   onTextosChange: (textos: TextoCapinha[]) => void;
   onTextoSelecionadoChange: (id: string | null) => void;
 };
+
+function comCacheBuster(src: string): string {
+  if (src.startsWith("data:") || src.startsWith("blob:")) return src;
+  return src + (src.includes("?") ? "&" : "?") + "nocors=1";
+}
 
 function loadHtmlImage(
   src: string,
@@ -67,7 +71,7 @@ function useHtmlImage(src: string | null) {
         }
       })
       .catch(() =>
-        loadHtmlImage(src).then((img) => {
+        loadHtmlImage(comCacheBuster(src)).then((img) => {
           if (!cancelled) {
             setImage(img);
             setLoadError(false);
@@ -219,14 +223,20 @@ export function CaseEditor({
   onTextoSelecionadoChange,
 }: Props) {
   useCapinhaFontsReady();
+  const visualCtx = usePersonalizacaoVisual();
   const { image: fotoImage, loadError } = useHtmlImage(fotoUrl);
   const contentLayerRef = useRef<Konva.Layer>(null);
   const bgRef = useRef<Konva.Image>(null);
   const lastFotoUrl = useRef<string | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
-  // Referência fixa (280 + aspecto iPhone) compartilhada com CasePreview e
-  // exportCaseArt — garante que o transform salvo mapeie 1:1 no preview/arte.
-  const layout = getCaseLayout();
+  // Base 280px de largura, ALTURA proporcional às dimensões do modelo
+  // (larguraPx × alturaPx). CasePreview e exportCaseArt usam as MESMAS
+  // dimensões, garantindo que o transform salvo mapeie 1:1 no preview/arte.
+  // O Stage é apenas ESCALADO para caber na largura (mobile).
+  const larguraPx = visualCtx?.larguraPx ?? modelo.larguraPx;
+  const alturaPx = visualCtx?.alturaPx ?? modelo.alturaPx;
+  const layout = getCaseLayout(undefined, larguraPx, alturaPx);
   const {
     stageWidth: W,
     stageHeight: H,
@@ -237,25 +247,58 @@ export function CaseEditor({
     areaUtil,
   } = layout;
 
-  const frame = getCaseFrameSpec(modelo.id);
+  // Escala responsiva: encaixa o Stage (base W) na largura do container.
+  const [fitScale, setFitScale] = useState(1);
+  // Só liberamos a foto principal quando o cover já foi aplicado para ESTA url.
+  const [fitUrl, setFitUrl] = useState<string | null>(null);
+  const fotoPronta = !!fotoImage && fitUrl === fotoUrl;
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const INNER_PAD = 24; // padding do quadro (p-3) nos dois lados
+    const atualizar = () => {
+      const disponivel = el.clientWidth - INNER_PAD;
+      const s = disponivel > 0 ? Math.min(1, disponivel / W) : 1;
+      setFitScale(s);
+    };
+    atualizar();
+    const ro = new ResizeObserver(atualizar);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [W]);
+
+  const frame = visualCtx?.caseFrame ?? getCaseFrameSpec(modelo.id);
   const radius = frame.radius * molduraW;
   const borderWidth = Math.max(2, molduraW * 0.02);
 
-  // Módulo de câmera realista desenhado por cima da foto (SVG → imagem).
   const cameraUrl = useMemo(() => {
-    const svg = buildCameraModuleSvg(modelo.id, molduraW, molduraH);
+    const cameraSpec = visualCtx?.camera ?? getCameraSpec(modelo.id);
+    const cor = visualCtx?.corAparelho ?? getCorAparelho(modelo.id);
+    const svg = buildCameraModuleSvgFromSpec(
+      cameraSpec,
+      molduraW,
+      molduraH,
+      cor,
+    );
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [modelo.id, molduraW, molduraH]);
+  }, [visualCtx, modelo.id, molduraW, molduraH]);
   const { image: cameraImage } = useHtmlImage(cameraUrl);
 
+  // Recorta a foto ligeiramente para DENTRO da borda, para nunca "vazar" além
+  // do contorno da capa (principalmente nos cantos arredondados).
+  const clipInset = borderWidth;
   const clipRoundRect = (ctx: Konva.Context) => {
-    const r = radius;
+    const x = molduraX + clipInset;
+    const y = molduraY + clipInset;
+    const w = molduraW - clipInset * 2;
+    const h = molduraH - clipInset * 2;
+    const r = Math.max(0, radius - clipInset);
     ctx.beginPath();
-    ctx.moveTo(molduraX + r, molduraY);
-    ctx.arcTo(molduraX + molduraW, molduraY, molduraX + molduraW, molduraY + molduraH, r);
-    ctx.arcTo(molduraX + molduraW, molduraY + molduraH, molduraX, molduraY + molduraH, r);
-    ctx.arcTo(molduraX, molduraY + molduraH, molduraX, molduraY, r);
-    ctx.arcTo(molduraX, molduraY, molduraX + molduraW, molduraY, r);
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
   };
 
@@ -304,7 +347,10 @@ export function CaseEditor({
     }
     if (lastFotoUrl.current === fotoUrl) return;
     lastFotoUrl.current = fotoUrl;
+    // Aplica o enquadramento (cover) ANTES de liberar a foto na tela — evita o
+    // flash de "super zoom" no mobile enquanto a foto grande ainda decodifica.
     onTransformChange(fitImageToArea(fotoImage, areaUtil));
+    setFitUrl(fotoUrl);
   }, [fotoImage, fotoUrl, areaUtil, onTransformChange]);
 
   // Trava: sempre que o transform mudar (zoom/rotação), reforça a cobertura.
@@ -329,11 +375,13 @@ export function CaseEditor({
   }
 
   return (
-    <div className="flex w-full flex-col items-center">
-      <div className="rounded-2xl p-5" style={{ backgroundColor: STUDIO_BG }}>
+    <div ref={wrapRef} className="flex w-full flex-col items-center">
+      <div className="rounded-2xl p-3 sm:p-4" style={{ backgroundColor: STUDIO_BG }}>
         <Stage
-          width={W}
-          height={H}
+          width={W * fitScale}
+          height={H * fitScale}
+          scaleX={fitScale}
+          scaleY={fitScale}
           onMouseDown={(e) => {
             if (e.target === e.target.getStage()) {
               onTextoSelecionadoChange(null);
@@ -386,7 +434,7 @@ export function CaseEditor({
                     fill={corFundo}
                     listening={false}
                   />
-                  {bg && (
+                  {bg && fotoPronta && (
                     <KonvaImage
                       ref={bgRef}
                       image={fotoImage}
@@ -397,6 +445,7 @@ export function CaseEditor({
                       listening={false}
                     />
                   )}
+                  {fotoPronta && (
                   <KonvaImage
                     image={fotoImage}
                     x={transform.x}
@@ -430,6 +479,7 @@ export function CaseEditor({
                     onClick={() => onTextoSelecionadoChange(null)}
                     onTap={() => onTextoSelecionadoChange(null)}
                   />
+                  )}
                   {textos.map((texto) => (
                     <CaseTextNode
                       key={texto.id}

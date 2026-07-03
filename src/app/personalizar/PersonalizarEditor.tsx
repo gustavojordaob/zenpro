@@ -14,18 +14,15 @@ import { StoreHeader } from "@/components/loja/StoreHeader";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
 import { salvarPersonalizacao } from "@/features/loja/salvarPersonalizacao";
-import { criarTextoPadrao } from "@/features/personalizacao/caseTextFonts";
+import { criarTextoPadrao, type TextoCapinha } from "@/features/personalizacao/caseTextFonts";
 import { getCaseLayout } from "@/features/personalizacao/caseGeometry";
-import type { ModeloVisualAssets } from "@/features/catalogo/catalogoRuntimeService";
-import type { TipoPersonalizacao } from "@/features/catalogo/types";
-import { MODELOS } from "@/features/personalizacao/modelos";
+import { DEFAULT_TRANSFORM, type Personalizacao, type Transform } from "@/features/personalizacao/types";
+import type { PersonalizacaoEditorContext } from "@/features/catalogo/personalizacaoContext";
 import {
-  DEFAULT_TRANSFORM,
-  type ModeloCelular,
-  type Personalizacao,
-  type TextoCapinha,
-  type Transform,
-} from "@/features/personalizacao/types";
+  listarModelosAtivos,
+} from "@/features/catalogo/catalogoRuntimeService";
+import type { TipoPersonalizacao } from "@/features/catalogo/types";
+import { formatarPreco } from "@/features/loja/produtosMock";
 import { subirFoto } from "@/features/personalizacao/uploadFoto";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
@@ -48,16 +45,17 @@ const CaseEditor = dynamic(
 );
 
 type Props = {
-  modelo: ModeloCelular;
-  visualAssets: ModeloVisualAssets;
+  contexto: PersonalizacaoEditorContext;
   tipoPersonalizacao: TipoPersonalizacao;
 };
 
+type ModeloOpcao = { id: string; rotulo: string };
+
 export function PersonalizarEditor({
-  modelo,
-  visualAssets,
+  contexto,
   tipoPersonalizacao,
 }: Props) {
+  const { modelo, produto, modelosDisponiveis } = contexto;
   const router = useRouter();
   const paths = useLojaPaths();
   const { adicionarPersonalizada } = useCarrinho();
@@ -78,7 +76,24 @@ export function PersonalizarEditor({
   const [modalPreview, setModalPreview] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [comprarError, setComprarError] = useState<string | null>(null);
+  const [modelosOpcoes, setModelosOpcoes] = useState<ModeloOpcao[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const produtoId = produto?.produtoId;
+  const personalizarPath = (modeloId: string) =>
+    paths.personalizar(modeloId, produtoId);
+
+  useEffect(() => {
+    void listarModelosAtivos().then((lista) => {
+      const filtrados = lista.filter((m) => modelosDisponiveis.includes(m.id));
+      setModelosOpcoes(
+        filtrados.map((m) => ({
+          id: m.id,
+          rotulo: m.nome,
+        })),
+      );
+    });
+  }, [modelosDisponiveis]);
 
   const handleTransformChange = useCallback((next: Transform) => {
     setTransform(next);
@@ -99,7 +114,7 @@ export function PersonalizarEditor({
     }
 
     if (!user) {
-      router.push(paths.loginRedirect(paths.personalizar(modelo.id)));
+      router.push(paths.loginRedirect(personalizarPath(modelo.id)));
       return;
     }
 
@@ -128,7 +143,7 @@ export function PersonalizarEditor({
   function abrirRevisao() {
     if (!fotoUrl) return;
     if (!user) {
-      router.push(paths.loginRedirect(paths.personalizar(modelo.id)));
+      router.push(paths.loginRedirect(personalizarPath(modelo.id)));
       return;
     }
     setModalRevisao(true);
@@ -142,6 +157,13 @@ export function PersonalizarEditor({
 
     const estado: Personalizacao = {
       modeloId: modelo.id,
+      produtoId: produto?.produtoId,
+      produtoNome: produto?.nome,
+      precoCentavos: produto?.precoCentavos,
+      material: produto?.material,
+      larguraPx: contexto.visual.larguraPx ?? modelo.larguraPx,
+      alturaPx: contexto.visual.alturaPx ?? modelo.alturaPx,
+      maskUrl: contexto.visual.maskUrl,
       fotoUrl,
       transform,
       textos: textos.length ? textos : undefined,
@@ -150,15 +172,22 @@ export function PersonalizarEditor({
     };
 
     try {
-      const { id, arteProducaoUrl } = await salvarPersonalizacao({
-        dados: estado,
-        userId: user.uid,
-        tipoPersonalizacao,
-        fotoExportUrl: fotoLocalUrl ?? undefined,
-      });
+      const { id, arteProducaoUrl, arteFotoUrl, arteTextoUrl } =
+        await salvarPersonalizacao({
+          dados: estado,
+          userId: user.uid,
+          tipoPersonalizacao,
+          fotoExportUrl: fotoLocalUrl ?? undefined,
+        });
       adicionarPersonalizada(
-        { ...estado, arteProducaoUrl: arteProducaoUrl ?? undefined },
+        {
+          ...estado,
+          arteProducaoUrl: arteProducaoUrl ?? undefined,
+          arteFotoUrl: arteFotoUrl ?? undefined,
+          arteTextoUrl: arteTextoUrl ?? undefined,
+        },
         id,
+        produto?.produtoId,
       );
       setModalRevisao(false);
       router.push(paths.carrinho);
@@ -187,7 +216,11 @@ export function PersonalizarEditor({
   }
 
   function adicionarTexto() {
-    const { molduraX, molduraY, molduraW, molduraH } = getCaseLayout();
+    const { molduraX, molduraY, molduraW, molduraH } = getCaseLayout(
+      undefined,
+      contexto.visual.larguraPx ?? modelo.larguraPx,
+      contexto.visual.alturaPx ?? modelo.alturaPx,
+    );
     const novo = criarTextoPadrao(molduraX, molduraY, molduraW, molduraH);
     setTextos((prev) => [...prev, novo]);
     setTextoSelecionadoId(novo.id);
@@ -196,36 +229,43 @@ export function PersonalizarEditor({
   return (
     <div className="min-h-screen bg-zinc-50">
       <StoreHeader />
-      <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-4 pb-12 pt-6 sm:pt-8">
+      <main className="pb-safe mx-auto flex w-full max-w-lg flex-col gap-6 px-4 pb-16 pt-6 sm:pt-8">
         <header className="space-y-1">
           <PageBackLink href={paths.personalizarHash} label="← Voltar à loja" />
           <h1 className="mt-3 text-2xl font-semibold text-zinc-900">
-            Personalizar capinha
+            {produto?.nome ?? "Personalizar capinha"}
           </h1>
           <p className="text-sm text-zinc-600">
             {modelo.marca} {modelo.modelo}
+            {produto?.material ? ` · ${produto.material}` : ""}
           </p>
+          {produto && (
+            <p className="text-base font-semibold text-zinc-900">
+              {formatarPreco(produto.precoCentavos)}
+            </p>
+          )}
         </header>
 
-        <div className="flex flex-wrap gap-2">
-          {MODELOS.map((m) => (
-            <Link
-              key={m.id}
-              href={paths.personalizar(m.id)}
-              className={`rounded-full px-3 py-1 text-sm transition ${
-                m.id === modelo.id
-                  ? "bg-zinc-900 text-white"
-                  : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
-              }`}
-            >
-              {m.modelo}
-            </Link>
-          ))}
-        </div>
+        {modelosOpcoes.length > 1 && (
+          <div className="flex flex-wrap gap-2">
+            {modelosOpcoes.map((m) => (
+              <Link
+                key={m.id}
+                href={personalizarPath(m.id)}
+                className={`rounded-full px-3 py-1 text-sm transition ${
+                  m.id === modelo.id
+                    ? "bg-zinc-900 text-white"
+                    : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
+                }`}
+              >
+                {m.rotulo}
+              </Link>
+            ))}
+          </div>
+        )}
 
         <CaseEditor
           modelo={modelo}
-          visualAssets={visualAssets}
           fotoUrl={fotoLocalUrl ?? fotoUrl}
           transform={transform}
           textos={textos}
@@ -320,7 +360,7 @@ export function PersonalizarEditor({
           type="button"
           disabled={!fotoUrl || comprando}
           onClick={abrirRevisao}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-base font-semibold text-white disabled:opacity-40"
+          className="btn-gold w-full rounded-xl py-3 text-base disabled:opacity-40"
         >
           Revisar e adicionar ao carrinho
         </button>

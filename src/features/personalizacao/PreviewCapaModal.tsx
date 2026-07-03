@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { buildCameraModuleSvg } from "./cameraModules";
-import { buildCaseFrameSvg } from "./caseFrame";
+import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./cameraModules";
+import { buildCaseFrameSvgFromSpec, getCaseFrameSpec } from "./caseFrame";
+import { getCaseLayout } from "./caseGeometry";
 import { exportCaseArtDataUrl } from "./exportCaseArt";
+import { IPHONE_ASSETS } from "./moldura";
+import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { TextoCapinha, Transform } from "./types";
 
 type Props = {
@@ -25,18 +28,27 @@ export function PreviewCapaModal({
   modeloRotulo,
   onFechar,
 }: Props) {
+  const visualCtx = usePersonalizacaoVisual();
   const [arteUrl, setArteUrl] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
+  const frameSpec = visualCtx?.caseFrame ?? getCaseFrameSpec(modeloId);
+  const cameraSpec = visualCtx?.camera ?? getCameraSpec(modeloId);
+  const corAparelho = visualCtx?.corAparelho ?? getCorAparelho(modeloId);
+
+  const larguraPx = visualCtx?.larguraPx ?? IPHONE_ASSETS.width;
+  const alturaPx = visualCtx?.alturaPx ?? IPHONE_ASSETS.height;
+  const previewH = getCaseLayout(280, larguraPx, alturaPx).molduraH;
+
   const borderUrl = useMemo(() => {
-    const svg = buildCaseFrameSvg(modeloId, 280, 572);
+    const svg = buildCaseFrameSvgFromSpec(frameSpec, 280, previewH);
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [modeloId]);
+  }, [frameSpec, previewH]);
 
   const cameraUrl = useMemo(() => {
-    const svg = buildCameraModuleSvg(modeloId, 280, 572);
+    const svg = buildCameraModuleSvgFromSpec(cameraSpec, 280, previewH, corAparelho);
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [modeloId]);
+  }, [cameraSpec, corAparelho, previewH]);
 
   useEffect(() => {
     if (!aberto) {
@@ -46,7 +58,11 @@ export function PreviewCapaModal({
     }
     let ativo = true;
     setErro(null);
-    exportCaseArtDataUrl(fotoUrl, transform, textos, { clip: "retangulo" })
+    exportCaseArtDataUrl(fotoUrl, transform, textos, {
+      clip: "retangulo",
+      larguraPx,
+      alturaPx,
+    })
       .then((url) => {
         if (ativo) setArteUrl(url);
       })
@@ -57,7 +73,7 @@ export function PreviewCapaModal({
     return () => {
       ativo = false;
     };
-  }, [aberto, fotoUrl, transform, textos]);
+  }, [aberto, fotoUrl, transform, textos, larguraPx, alturaPx]);
 
   if (!aberto) return null;
 
@@ -88,7 +104,7 @@ export function PreviewCapaModal({
           ) : arteUrl ? (
             <div
               className="relative overflow-hidden rounded-[12%] shadow-lg ring-1 ring-black/10"
-              style={{ width: 260, aspectRatio: "280 / 572" }}
+              style={{ width: 260, aspectRatio: `280 / ${previewH}` }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

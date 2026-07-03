@@ -11,6 +11,7 @@ import {
   obterModeloAdmin,
 } from "@/features/admin/catalogo/modeloAdminService";
 import { subirAssetModelo } from "@/features/admin/catalogo/uploadAssetModelo";
+import { CAMERA_PRESET_OPCOES } from "@/features/personalizacao/cameraModules";
 import { IPHONE_ASSETS } from "@/features/personalizacao/moldura";
 
 type Props = { modeloId?: string };
@@ -73,6 +74,10 @@ export function ModeloFormPageClient({ modeloId }: Props) {
   const [overlayUrl, setOverlayUrl] = useState("");
   const [larguraPx, setLarguraPx] = useState(1568);
   const [alturaPx, setAlturaPx] = useState(3207);
+  const [corAparelho, setCorAparelho] = useState("#1a1a1a");
+  const [cameraPresetId, setCameraPresetId] = useState<string>(
+    CAMERA_PRESET_OPCOES[0].id,
+  );
   const [ativo, setAtivo] = useState(true);
   const [marcas, setMarcas] = useState<{ id: string; nome: string }[]>([]);
   const [idRascunho, setIdRascunho] = useState(modeloId ?? null);
@@ -95,6 +100,10 @@ export function ModeloFormPageClient({ modeloId }: Props) {
       setOverlayUrl(m.overlayUrl);
       setLarguraPx(m.larguraPx);
       setAlturaPx(m.alturaPx);
+      setCorAparelho(m.personalizacao?.corAparelho ?? "#1a1a1a");
+      setCameraPresetId(
+        m.personalizacao?.cameraPresetId ?? CAMERA_PRESET_OPCOES[0].id,
+      );
       setAtivo(m.ativo);
       setIdRascunho(m.id);
     });
@@ -110,6 +119,8 @@ export function ModeloFormPageClient({ modeloId }: Props) {
       larguraPx,
       alturaPx,
       ativo,
+      corAparelho: corAparelho.trim() || null,
+      cameraPresetId,
     });
     setIdRascunho(id);
     return id;
@@ -141,7 +152,17 @@ export function ModeloFormPageClient({ modeloId }: Props) {
     setSalvando(true);
     setErro(null);
     try {
-      const input = { marcaId, nome, maskUrl, overlayUrl, larguraPx, alturaPx, ativo };
+      const input = {
+        marcaId,
+        nome,
+        maskUrl,
+        overlayUrl,
+        larguraPx,
+        alturaPx,
+        ativo,
+        corAparelho: corAparelho.trim() || null,
+        cameraPresetId,
+      };
       if (modeloId || idRascunho) {
         await atualizarModeloAdmin(modeloId ?? idRascunho!, input);
       } else {
@@ -190,6 +211,48 @@ export function ModeloFormPageClient({ modeloId }: Props) {
           enviando={uploadOverlay}
           onUpload={(file) => void handleUpload("overlay", file)}
         />
+
+        <fieldset className="space-y-3 rounded-xl border border-zinc-200 p-4">
+          <legend className="px-1 text-sm font-medium text-zinc-700">
+            Mockup do aparelho (editor 2D)
+          </legend>
+          <p className="text-xs text-zinc-500">
+            Define como o módulo de câmera aparece no editor e no preview
+            &ldquo;Ver capa&rdquo; deste modelo.
+          </p>
+          <label className="block space-y-1">
+            <span className="text-sm font-medium">Layout da câmera</span>
+            <select
+              value={cameraPresetId}
+              onChange={(e) => setCameraPresetId(e.target.value)}
+              className="w-full rounded-lg border px-3 py-2"
+            >
+              {CAMERA_PRESET_OPCOES.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.rotulo}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block space-y-1">
+            <span className="text-sm font-medium">Cor do aparelho</span>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={corAparelho}
+                onChange={(e) => setCorAparelho(e.target.value)}
+                className="h-10 w-14 cursor-pointer rounded border border-zinc-300"
+              />
+              <input
+                type="text"
+                value={corAparelho}
+                onChange={(e) => setCorAparelho(e.target.value)}
+                placeholder="#1a1a1a"
+                className="flex-1 rounded-lg border px-3 py-2 font-mono text-sm"
+              />
+            </div>
+          </label>
+        </fieldset>
 
         <details className="text-xs text-zinc-500">
           <summary className="cursor-pointer font-medium text-zinc-600">Opções avançadas (tamanho em pixels)</summary>

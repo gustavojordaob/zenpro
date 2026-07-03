@@ -39,6 +39,10 @@ export type ProdutoCentralFirestore = {
   modoVenda: "personalizada" | "pronta";
   /** Aparece na seção “Personalize com sua foto” (por enquanto só capinha) */
   personalizavel?: boolean;
+  /** Material / acabamento da variante — ex.: couro, silicone, acrilico */
+  material?: string | null;
+  /** Overrides visuais desta variante (sobrescreve specs do modelo de celular) */
+  visualPersonalizacao?: import("@/features/catalogo/personalizacaoVisual").PersonalizacaoVisualFirestore;
   categoria: string;
   destaque?: string | null;
   /** Condicional: tipoPersonalizacao === mascara_modelo */
@@ -94,6 +98,12 @@ export type ItemPedidoLojaFirestore = {
   textos?: import("@/features/personalizacao/caseTextFonts").TextoCapinha[] | null;
   titulo?: string | null;
   descricao?: string | null;
+  /** Arte final (foto + texto) para produção. */
+  arteProducaoUrl?: string | null;
+  /** Só a foto do cliente. */
+  arteFotoUrl?: string | null;
+  /** Só o texto do cliente (fundo transparente). */
+  arteTextoUrl?: string | null;
   imagemUrl?: string;
 };
 
@@ -101,7 +111,9 @@ export type PedidoLojaStatus =
   | "aguardando_pagamento"
   | "pago"
   | "producao"
-  | "enviado";
+  | "enviado"
+  | "entregue"
+  | "cancelado";
 
 export type PedidoLojaOrigem = "online" | "presencial";
 

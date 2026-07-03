@@ -26,12 +26,11 @@ function n(v: number): string {
 }
 
 /** SVG só da borda da capa (câmera é desenhada à parte). */
-export function buildCaseFrameSvg(
-  modeloId: string,
+export function buildCaseFrameSvgFromSpec(
+  spec: CaseFrameSpec,
   W: number,
   H: number,
 ): string {
-  const spec = getCaseFrameSpec(modeloId);
   const r = spec.radius * W;
   const border = W * 0.012;
 
@@ -44,4 +43,15 @@ export function buildCaseFrameSvg(
     r,
   )}" fill="none" stroke="#cbe6fb" stroke-width="${n(border)}"/>
 </svg>`;
+}
+
+/** SVG só da borda da capa (câmera é desenhada à parte). */
+export function buildCaseFrameSvg(
+  modeloId: string,
+  W: number,
+  H: number,
+  specOverride?: CaseFrameSpec,
+): string {
+  const spec = specOverride ?? getCaseFrameSpec(modeloId);
+  return buildCaseFrameSvgFromSpec(spec, W, H);
 }

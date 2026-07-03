@@ -11,6 +11,11 @@ export function personalizacaoParaConfig(
 ): ConfigPersonalizacaoMascaraModelo {
   return {
     modeloId: dados.modeloId,
+    produtoId: dados.produtoId ?? null,
+    material: dados.material ?? null,
+    larguraPx: dados.larguraPx ?? null,
+    alturaPx: dados.alturaPx ?? null,
+    maskUrl: dados.maskUrl ?? null,
     transform: dados.transform,
     textos: dados.textos?.length ? dados.textos : null,
     titulo: dados.titulo?.trim() || null,
@@ -41,6 +46,9 @@ export function personalizacaoDeFirestore(data: Record<string, unknown>): {
     fotoUrl,
     personalizacao: {
       modeloId: config.modeloId,
+      larguraPx: config.larguraPx ?? undefined,
+      alturaPx: config.alturaPx ?? undefined,
+      maskUrl: config.maskUrl ?? undefined,
       fotoUrl,
       transform: config.transform,
       textos: config.textos ?? undefined,

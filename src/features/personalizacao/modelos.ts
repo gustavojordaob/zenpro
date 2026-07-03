@@ -17,6 +17,13 @@ export const MODELOS: ModeloCelular[] = [
     larguraPx: MOLDURA_PROD_W,
     alturaPx: MOLDURA_PROD_H,
   },
+  {
+    id: "iphone-17-pro-max",
+    marca: "Apple",
+    modelo: "iPhone 17 Pro Max",
+    larguraPx: MOLDURA_PROD_W,
+    alturaPx: MOLDURA_PROD_H,
+  },
 ];
 
 export function getModeloById(id: string): ModeloCelular | undefined {

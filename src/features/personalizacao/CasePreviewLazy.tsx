@@ -21,7 +21,10 @@ type Props = {
   fotoUrl: string;
   transform: Transform;
   textos?: TextoCapinha[];
+  modeloId?: string;
   previewWidth?: number;
+  larguraPx?: number;
+  alturaPx?: number;
 };
 
 export function CasePreview(props: Props) {

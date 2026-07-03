@@ -5,9 +5,11 @@ export const PEDIDO_STATUS_OPCOES: {
   rotulo: string;
 }[] = [
   { value: "aguardando_pagamento", rotulo: "Aguardando pagamento" },
-  { value: "pago", rotulo: "Pago" },
+  { value: "pago", rotulo: "Pagamento aprovado" },
   { value: "producao", rotulo: "Em produção" },
   { value: "enviado", rotulo: "Enviado" },
+  { value: "entregue", rotulo: "Entregue" },
+  { value: "cancelado", rotulo: "Cancelado" },
 ];
 
 export function rotuloStatusPedido(status: PedidoLojaStatus): string {

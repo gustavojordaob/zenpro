@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { AuthLink } from "@/components/loja/AuthLink";
 import { CartLink } from "@/components/loja/CartLink";
 import { ZenProLogo } from "@/components/loja/ZenProLogo";
@@ -11,7 +13,36 @@ import { useLojaPaths } from "@/features/loja/useLojaPaths";
 export function StoreHeader() {
   const loja = useLojaEfetiva();
   const paths = useLojaPaths();
+  const pathname = usePathname();
   const corAccent = loja?.config.cor ?? undefined;
+  const [menuAberto, setMenuAberto] = useState(false);
+
+  // Dourado só quando é a página atual (não antes de clicar). Links com âncora
+  // (#) apontam para a home, então não entram no destaque de rota ativa.
+  const rotaAtiva = (href: string) => {
+    const base = href.split("#")[0];
+    return base.length > 1 ? pathname === base : false;
+  };
+  const classeLink = (href: string) =>
+    `transition ${
+      rotaAtiva(href)
+        ? "text-gold-dark"
+        : "text-zinc-600 hover:text-gold-dark"
+    }`;
+
+  const links = [
+    { href: paths.produtosHash, label: "Produtos" },
+    { href: paths.personalizarHash, label: "Personalizar" },
+    { href: "/meus-pedidos", label: "Meus pedidos" },
+    { href: "/conta", label: "Minha conta" },
+    ...(loja
+      ? []
+      : [
+          { href: "/seja-revendedor", label: "Seja um revendedor", destaque: true },
+          { href: paths.contato, label: "Contato" },
+          { href: "/#como-funciona", label: "Como funciona" },
+        ]),
+  ];
 
   return (
     <header
@@ -54,24 +85,24 @@ export function StoreHeader() {
           className="hidden items-center gap-6 text-sm font-medium text-zinc-600 md:flex"
           aria-label="Principal"
         >
-          <Link href={paths.produtosHash} className="transition hover:text-zinc-900">
+          <Link href={paths.produtosHash} className={classeLink(paths.produtosHash)}>
             Produtos
           </Link>
           <Link
             href={paths.personalizarHash}
-            className="transition hover:text-zinc-900"
+            className={classeLink(paths.personalizarHash)}
           >
             Personalizar
           </Link>
           {!loja && (
             <>
-              <Link href="/seja-revendedor" className="font-medium text-violet-700 transition hover:text-violet-900">
+              <Link href="/seja-revendedor" className={classeLink("/seja-revendedor")}>
                 Seja um revendedor
               </Link>
-              <Link href={paths.contato} className="transition hover:text-zinc-900">
+              <Link href={paths.contato} className={classeLink(paths.contato)}>
                 Contato
               </Link>
-              <Link href="/#como-funciona" className="transition hover:text-zinc-900">
+              <Link href="/#como-funciona" className={classeLink("/#como-funciona")}>
                 Como funciona
               </Link>
             </>
@@ -93,8 +124,56 @@ export function StoreHeader() {
           )}
           <AuthLink />
           <CartLink />
+          <button
+            type="button"
+            aria-label="Abrir menu"
+            aria-expanded={menuAberto}
+            onClick={() => setMenuAberto((v) => !v)}
+            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-zinc-300 p-2 text-zinc-700 md:hidden"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              {menuAberto ? (
+                <path d="M6 6l12 12M18 6L6 18" />
+              ) : (
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              )}
+            </svg>
+          </button>
         </div>
       </div>
+
+      {/* Menu mobile */}
+      {menuAberto && (
+        <nav
+          className="border-t border-zinc-200 bg-white px-4 py-2 md:hidden"
+          aria-label="Principal mobile"
+        >
+          <div className="mx-auto flex max-w-6xl flex-col">
+            {links.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={() => setMenuAberto(false)}
+                className={`rounded-lg px-2 py-2.5 text-sm font-medium ${
+                  "destaque" in l && l.destaque
+                    ? "text-gold-dark hover:bg-gold-soft/30"
+                    : "text-zinc-700 hover:bg-zinc-50 hover:text-gold-dark"
+                }`}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }

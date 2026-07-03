@@ -6,6 +6,8 @@ const ESTILOS: Record<PedidoLojaStatus, string> = {
   pago: "bg-sky-100 text-sky-900",
   producao: "bg-violet-100 text-violet-900",
   enviado: "bg-emerald-100 text-emerald-900",
+  entregue: "bg-emerald-100 text-emerald-900",
+  cancelado: "bg-rose-100 text-rose-900",
 };
 
 type Props = {
