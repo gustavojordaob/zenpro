@@ -1,0 +1,12 @@
+[
+  {
+    "origin": [
+      "https://zenpro-capinhas.web.app",
+      "https://zenpro-capinhas.firebaseapp.com",
+      "http://localhost:3000"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Content-Length", "Content-Disposition", "Access-Control-Allow-Origin"],
+    "maxAgeSeconds": 3600
+  }
+]

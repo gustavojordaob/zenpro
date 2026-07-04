@@ -4,15 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./cameraModules";
 import { buildCaseFrameSvgFromSpec, getCaseFrameSpec } from "./caseFrame";
 import { getCaseLayout } from "./caseGeometry";
-import { exportCaseArtDataUrl } from "./exportCaseArt";
-import { IPHONE_ASSETS } from "./moldura";
+import { ART_CANVAS } from "./caseVisualConstants";
+import { exportCaseArtDataUrl, type FotoExportInput } from "./exportCaseArt";
 import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { TextoCapinha, Transform } from "./types";
 
 type Props = {
   aberto: boolean;
-  fotoUrl: string;
-  transform: Transform;
+  fotos: FotoExportInput[];
+  corFundo?: string;
   textos: TextoCapinha[];
   modeloId: string;
   modeloRotulo: string;
@@ -21,8 +21,8 @@ type Props = {
 
 export function PreviewCapaModal({
   aberto,
-  fotoUrl,
-  transform,
+  fotos,
+  corFundo,
   textos,
   modeloId,
   modeloRotulo,
@@ -36,19 +36,28 @@ export function PreviewCapaModal({
   const cameraSpec = visualCtx?.camera ?? getCameraSpec(modeloId);
   const corAparelho = visualCtx?.corAparelho ?? getCorAparelho(modeloId);
 
-  const larguraPx = visualCtx?.larguraPx ?? IPHONE_ASSETS.width;
-  const alturaPx = visualCtx?.alturaPx ?? IPHONE_ASSETS.height;
-  const previewH = getCaseLayout(280, larguraPx, alturaPx).molduraH;
+  const previewLayout = getCaseLayout(ART_CANVAS.previewWidth);
+  const { molduraW, molduraH } = previewLayout;
 
   const borderUrl = useMemo(() => {
-    const svg = buildCaseFrameSvgFromSpec(frameSpec, 280, previewH);
+    const svg = buildCaseFrameSvgFromSpec(frameSpec, molduraW, molduraH);
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [frameSpec, previewH]);
+  }, [frameSpec, molduraW, molduraH]);
 
   const cameraUrl = useMemo(() => {
-    const svg = buildCameraModuleSvgFromSpec(cameraSpec, 280, previewH, corAparelho);
+    const svg = buildCameraModuleSvgFromSpec(
+      cameraSpec,
+      molduraW,
+      molduraH,
+      corAparelho,
+    );
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [cameraSpec, corAparelho, previewH]);
+  }, [cameraSpec, corAparelho, molduraW, molduraH]);
+
+  const fotosValidas = useMemo(
+    () => fotos.filter((f) => f.url.trim()),
+    [fotos],
+  );
 
   useEffect(() => {
     if (!aberto) {
@@ -56,12 +65,20 @@ export function PreviewCapaModal({
       setErro(null);
       return;
     }
+    if (fotosValidas.length === 0) {
+      setErro("Adicione pelo menos uma foto para ver a prévia.");
+      return;
+    }
+
     let ativo = true;
+    setArteUrl(null);
     setErro(null);
-    exportCaseArtDataUrl(fotoUrl, transform, textos, {
+
+    exportCaseArtDataUrl(fotosValidas, fotosValidas[0].transform, textos, {
       clip: "retangulo",
-      larguraPx,
-      alturaPx,
+      exportWidth: ART_CANVAS.previewWidth * 2,
+      maskUrl: visualCtx?.maskUrl,
+      corFundo,
     })
       .then((url) => {
         if (ativo) setArteUrl(url);
@@ -70,12 +87,15 @@ export function PreviewCapaModal({
         console.error(e);
         if (ativo) setErro("Não foi possível gerar a prévia.");
       });
+
     return () => {
       ativo = false;
     };
-  }, [aberto, fotoUrl, transform, textos, larguraPx, alturaPx]);
+  }, [aberto, fotosValidas, textos, visualCtx?.maskUrl, corFundo]);
 
   if (!aberto) return null;
+
+  const aspectRatio = `${molduraW} / ${molduraH}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -104,15 +124,14 @@ export function PreviewCapaModal({
           ) : arteUrl ? (
             <div
               className="relative overflow-hidden rounded-[12%] shadow-lg ring-1 ring-black/10"
-              style={{ width: 260, aspectRatio: `280 / ${previewH}` }}
+              style={{ width: 260, aspectRatio }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={arteUrl}
                 alt="Sua arte na capa"
-                className="absolute inset-0 h-full w-full object-fill"
+                className="absolute inset-0 h-full w-full object-cover"
               />
-              {/* módulo de câmera realista por cima */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={cameraUrl}
@@ -120,7 +139,6 @@ export function PreviewCapaModal({
                 aria-hidden
                 className="pointer-events-none absolute inset-0 h-full w-full"
               />
-              {/* borda da capa */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={borderUrl}
@@ -137,7 +155,9 @@ export function PreviewCapaModal({
         </div>
 
         <p className="px-4 py-3 text-center text-xs text-zinc-500">
-          Visual ilustrativo da capa — a arte impressa é a do editor.
+          Visual ilustrativo — {fotosValidas.length} foto
+          {fotosValidas.length !== 1 ? "s" : ""} empilhada
+          {fotosValidas.length !== 1 ? "s" : ""} na capa.
         </p>
       </div>
     </div>

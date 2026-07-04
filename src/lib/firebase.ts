@@ -1,6 +1,7 @@
 import { type FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
 import { type Auth, getAuth } from "firebase/auth";
 import { type Firestore, getFirestore } from "firebase/firestore";
+import { type Functions, getFunctions } from "firebase/functions";
 import { type FirebaseStorage, getStorage } from "firebase/storage";
 
 function getFirebaseConfig() {
@@ -52,4 +53,8 @@ export function getFirebaseDb(): Firestore {
 
 export function getFirebaseStorage(): FirebaseStorage {
   return getStorage(getFirebaseApp());
+}
+
+export function getFirebaseFunctions(): Functions {
+  return getFunctions(getFirebaseApp(), "us-central1");
 }

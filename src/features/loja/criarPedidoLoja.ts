@@ -2,11 +2,13 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { COLECOES } from "@/features/multitenant/types";
+import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
 import type { PerfilUsuario } from "@/features/usuario/perfilTypes";
 import { formatarEnderecoCompleto } from "@/features/usuario/perfilUtils";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
@@ -52,6 +54,31 @@ function itemCarrinhoParaPedidoLoja(item: ItemCarrinho) {
   };
 }
 
+function pedidoTemPersonalizacao(itens: ItemCarrinho[]): boolean {
+  return itens.some((i) => i.tipo === "personalizada" || i.personalizacaoId);
+}
+
+/** Espelha pedido de revendedor na fila de produção Zen Pro (lojas/zenpro/pedidos). */
+async function espelharPedidoFilaProducaoMarca(
+  pedidoOrigemId: string,
+  origemLojaId: string,
+  origemLojaNome: string | undefined,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const db = getFirebaseDb();
+  await addDoc(
+    collection(db, COLECOES.LOJAS, MARCA_LOJA_ID, COLECOES.PEDIDOS),
+    sanitizarParaFirestore({
+      ...payload,
+      filaProducaoMarca: true,
+      origemLojaId,
+      origemLojaNome: origemLojaNome ?? origemLojaId,
+      origemPedidoId: pedidoOrigemId,
+      observacao: `Produção — pedido da loja ${origemLojaNome ?? origemLojaId}`,
+    }),
+  );
+}
+
 export async function criarPedidoLoja({
   lojaId,
   lojaNome,
@@ -79,27 +106,54 @@ export async function criarPedidoLoja({
 
   const status = simularPagamentoMock ? "pago" : "aguardando_pagamento";
 
+  const payload = sanitizarParaFirestore({
+    itens: itens.map(itemCarrinhoParaPedidoLoja),
+    totalCentavos,
+    status,
+    cliente: {
+      nome: perfil.nomeCompleto,
+      contato,
+      endereco: formatarEnderecoCompleto(perfil),
+    },
+    pagamento: {
+      provider: simularPagamentoMock ? "mock" : null,
+      id: null,
+      status: simularPagamentoMock ? "aprovado" : null,
+    },
+    clienteUid: user.uid,
+    origem: "online" as const,
+    criadoEm: serverTimestamp(),
+    atualizadoEm: serverTimestamp(),
+  });
+
   const ref = await addDoc(
     collection(db, COLECOES.LOJAS, lojaId, COLECOES.PEDIDOS),
-    sanitizarParaFirestore({
-      itens: itens.map(itemCarrinhoParaPedidoLoja),
-      totalCentavos,
-      status,
-      cliente: {
-        nome: perfil.nomeCompleto,
-        contato,
-        endereco: formatarEnderecoCompleto(perfil),
-      },
-      pagamento: {
-        provider: simularPagamentoMock ? "mock" : null,
-        id: null,
-        status: simularPagamentoMock ? "aprovado" : null,
-      },
-      clienteUid: user.uid,
-      criadoEm: serverTimestamp(),
-      atualizadoEm: serverTimestamp(),
-    }),
+    payload,
   );
+
+  // Revendedor: espelha na fila de produção da marca (Zen Pro fabrica).
+  if (
+    lojaId !== MARCA_LOJA_ID &&
+    pedidoTemPersonalizacao(itens)
+  ) {
+    try {
+      let nomeLoja = lojaNome;
+      if (!nomeLoja) {
+        const lojaSnap = await getDoc(doc(db, COLECOES.LOJAS, lojaId));
+        nomeLoja = lojaSnap.exists()
+          ? String(lojaSnap.data().nome ?? lojaId)
+          : lojaId;
+      }
+      await espelharPedidoFilaProducaoMarca(
+        ref.id,
+        lojaId,
+        nomeLoja,
+        payload,
+      );
+    } catch (e) {
+      console.error("Falha ao espelhar pedido na fila Zen Pro", e);
+    }
+  }
 
   // Índice pessoal do cliente — permite listar "Meus pedidos" sem varrer lojas.
   try {
@@ -117,7 +171,6 @@ export async function criarPedidoLoja({
       }),
     );
   } catch (e) {
-    // Não bloqueia o pedido caso o índice falhe (best-effort).
     console.error("Falha ao gravar índice de pedido do cliente", e);
   }
 

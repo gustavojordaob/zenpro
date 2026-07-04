@@ -12,7 +12,8 @@
     "seed:multitenant": "tsx scripts/seed-multitenant.ts",
     "seed:admin-auth": "node scripts/seed-admin-auth-rest.mjs",
     "test:rules:multitenant": "firebase emulators:exec --only firestore --project zenpro-capinhas \"node scripts/test-multitenant-rules.mjs\"",
-    "firebase:deploy-rules": "firebase deploy --only storage,firestore --project zenpro-capinhas"
+    "firebase:deploy-rules": "firebase deploy --only storage,firestore --project zenpro-capinhas",
+    "storage:configure-cors": "gsutil cors set storage.cors.json gs://zenpro-capinhas.firebasestorage.app"
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",

@@ -11,6 +11,7 @@ import {
   exportCaseArtBlob,
   exportFotoArtBlob,
   exportTextoArtBlob,
+  type FotoExportInput,
 } from "@/features/personalizacao/exportCaseArt";
 import { subirArteProducao } from "@/features/personalizacao/uploadArteProducao";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
@@ -21,8 +22,8 @@ type SalvarPersonalizacaoInput = {
   dados: Personalizacao;
   userId: string;
   tipoPersonalizacao?: TipoPersonalizacao;
-  /** Fonte local (blob:) da foto para gerar a arte sem depender de CORS. */
-  fotoExportUrl?: string;
+  /** Fontes locais (blob:) — preferir sobre Storage para export sem CORS. */
+  fotosExport?: FotoExportInput[];
 };
 
 export type ArtesPersonalizacao = {
@@ -38,7 +39,7 @@ export async function salvarPersonalizacao({
   dados,
   userId,
   tipoPersonalizacao = "mascara_modelo",
-  fotoExportUrl,
+  fotosExport,
 }: SalvarPersonalizacaoInput): Promise<{ id: string } & ArtesPersonalizacao> {
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase não configurado.");
@@ -78,18 +79,25 @@ export async function salvarPersonalizacao({
     sanitizarParaFirestore(payload),
   );
 
-  const fotoFonte = fotoExportUrl ?? dados.fotoUrl;
+  const fotosParaArte: FotoExportInput[] =
+    fotosExport?.length
+      ? fotosExport
+      : dados.fotos?.length
+        ? dados.fotos.map((f) => ({ url: f.fotoUrl, transform: f.transform }))
+        : [{ url: dados.fotoUrl, transform: dados.transform }];
+
+  const transformRef = fotosParaArte[0]?.transform ?? dados.transform;
   const geo = {
     larguraPx: dados.larguraPx,
     alturaPx: dados.alturaPx,
     maskUrl: dados.maskUrl,
+    corFundo: dados.corFundo,
   };
 
   try {
-    // Arte combinada (foto + texto) + arte só da foto — sempre.
     const [blobCombinada, blobFoto] = await Promise.all([
-      exportCaseArtBlob(fotoFonte, dados.transform, textos, undefined, geo),
-      exportFotoArtBlob(fotoFonte, dados.transform, undefined, geo),
+      exportCaseArtBlob(fotosParaArte, transformRef, textos, undefined, geo),
+      exportFotoArtBlob(fotosParaArte, transformRef, undefined, geo),
     ]);
 
     const [arteProducaoUrl, arteFotoUrl] = await Promise.all([
@@ -101,7 +109,7 @@ export async function salvarPersonalizacao({
     let arteTextoUrl: string | null = null;
     if (temTexto) {
       const blobTexto = await exportTextoArtBlob(
-        dados.transform,
+        transformRef,
         textos,
         undefined,
         geo,

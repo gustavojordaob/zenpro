@@ -2,8 +2,11 @@ import * as admin from "firebase-admin";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineString } from "firebase-functions/params";
 import * as nodemailer from "nodemailer";
+import { gerarFotoCriativaIA } from "./gerarFotoCriativaIA";
 
 admin.initializeApp();
+
+export { gerarFotoCriativaIA };
 
 const resendApiKey = defineString("RESEND_API_KEY", { default: "" });
 const emailFrom = defineString("EMAIL_FROM", {

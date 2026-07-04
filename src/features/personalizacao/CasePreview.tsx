@@ -7,7 +7,7 @@ import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./c
 import { getCaseFrameSpec } from "./caseFrame";
 import { CaseTextNode } from "./CaseTextNode";
 import { getCaseLayout } from "./caseGeometry";
-import { IPHONE_ASSETS } from "./moldura";
+import { ART_CANVAS } from "./caseVisualConstants";
 import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { TextoCapinha, Transform } from "./types";
 import { useCapinhaFontsReady } from "./useCapinhaFontsReady";
@@ -15,7 +15,7 @@ import { useCorPredominante } from "./useCorPredominante";
 
 const STUDIO_BG = "#ececec";
 const BORDER_STROKE = "#cbe6fb";
-const EDITOR_PREVIEW_WIDTH = IPHONE_ASSETS.previewWidth;
+const EDITOR_PREVIEW_WIDTH = ART_CANVAS.previewWidth;
 
 type Props = {
   fotoUrl: string;
@@ -24,8 +24,9 @@ type Props = {
   modeloId?: string;
   /** Largura visual da capinha (px). Transform usa coords do editor (280px). */
   previewWidth?: number;
-  /** Dimensões físicas do modelo — definem a proporção (aspecto) da capa. */
+  /** @deprecated Canvas 9:16 fixo — não afeta layout. */
   larguraPx?: number;
+  /** @deprecated Canvas 9:16 fixo — não afeta layout. */
   alturaPx?: number;
 };
 
@@ -116,17 +117,13 @@ export function CasePreview({
   textos = [],
   modeloId = "iphone-17-pro-max",
   previewWidth = 120,
-  larguraPx,
-  alturaPx,
 }: Props) {
   useCapinhaFontsReady();
   const visualCtx = usePersonalizacaoVisual();
   const fotoImage = useHtmlImage(fotoUrl);
   const bgRef = useRef<Konva.Image>(null);
 
-  const lw = visualCtx?.larguraPx ?? larguraPx ?? IPHONE_ASSETS.width;
-  const lh = visualCtx?.alturaPx ?? alturaPx ?? IPHONE_ASSETS.height;
-  const layout = getCaseLayout(EDITOR_PREVIEW_WIDTH, lw, lh);
+  const layout = getCaseLayout(EDITOR_PREVIEW_WIDTH);
   const {
     stageWidth: W,
     stageHeight: H,
@@ -134,6 +131,7 @@ export function CasePreview({
     molduraY,
     molduraW,
     molduraH,
+    areaUtil,
   } = layout;
 
   const frame = visualCtx?.caseFrame ?? getCaseFrameSpec(modeloId);
@@ -169,12 +167,7 @@ export function CasePreview({
     ctx.closePath();
   };
 
-  const corFundo = useCorPredominante(fotoImage, transform, {
-    x: molduraX,
-    y: molduraY,
-    w: molduraW,
-    h: molduraH,
-  });
+  const corFundo = useCorPredominante(fotoImage, transform, areaUtil);
 
   const canBlur = useCanBlur(fotoImage);
 
@@ -182,15 +175,15 @@ export function CasePreview({
     if (!fotoImage || !canBlur) return null;
     const boost = 1.18;
     const s =
-      Math.max(molduraW / fotoImage.width, molduraH / fotoImage.height) * boost;
+      Math.max(areaUtil.w / fotoImage.width, areaUtil.h / fotoImage.height) * boost;
     const w = fotoImage.width * s;
     const h = fotoImage.height * s;
     return {
-      x: molduraX + (molduraW - w) / 2,
-      y: molduraY + (molduraH - h) / 2,
+      x: areaUtil.x + (areaUtil.w - w) / 2,
+      y: areaUtil.y + (areaUtil.h - h) / 2,
       scale: s,
     };
-  }, [fotoImage, canBlur, molduraX, molduraY, molduraW, molduraH]);
+  }, [fotoImage, canBlur, areaUtil]);
 
   const blurRadius = Math.round(molduraW * 0.16);
 
@@ -237,12 +230,16 @@ export function CasePreview({
         <Layer listening={false}>
               {fotoImage && (
                 <Group>
-                  <Group clipFunc={clipRoundRect}>
+                  <Group clipFunc={(ctx) => {
+                    ctx.beginPath();
+                    ctx.rect(areaUtil.x, areaUtil.y, areaUtil.w, areaUtil.h);
+                    ctx.closePath();
+                  }}>
                     <Rect
-                      x={molduraX}
-                      y={molduraY}
-                      width={molduraW}
-                      height={molduraH}
+                      x={areaUtil.x}
+                      y={areaUtil.y}
+                      width={areaUtil.w}
+                      height={areaUtil.h}
                       fill={corFundo}
                       listening={false}
                     />

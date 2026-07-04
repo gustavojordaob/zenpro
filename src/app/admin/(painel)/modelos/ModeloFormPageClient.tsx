@@ -227,10 +227,21 @@ export function ModeloFormPageClient({ modeloId }: Props) {
               onChange={(e) => setCameraPresetId(e.target.value)}
               className="w-full rounded-lg border px-3 py-2"
             >
-              {CAMERA_PRESET_OPCOES.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.rotulo}
-                </option>
+              {Array.from(
+                CAMERA_PRESET_OPCOES.reduce((mapa, opt) => {
+                  const lista = mapa.get(opt.grupo) ?? [];
+                  lista.push(opt);
+                  mapa.set(opt.grupo, lista);
+                  return mapa;
+                }, new Map<string, typeof CAMERA_PRESET_OPCOES>()),
+              ).map(([grupo, itens]) => (
+                <optgroup key={grupo} label={grupo}>
+                  {itens.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.rotulo}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>

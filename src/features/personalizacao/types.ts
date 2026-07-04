@@ -7,6 +7,13 @@ export type Transform = {
   rotation: number;
 };
 
+/** Uma foto na personalização (até 4). */
+export type FotoPersonalizacao = {
+  id: string;
+  fotoUrl: string;
+  transform: Transform;
+};
+
 export type CaseLayout = {
   molduraX: number;
   molduraY: number;
@@ -14,7 +21,10 @@ export type CaseLayout = {
   molduraH: number;
   stageWidth: number;
   stageHeight: number;
+  /** Canvas 9:16 — posicionamento da foto e exportação. */
   areaUtil: { x: number; y: number; w: number; h: number };
+  /** Recorte visual da capa no editor (formato celular). */
+  areaMoldura: { x: number; y: number; w: number; h: number };
 };
 
 export type ModeloCelular = {
@@ -37,11 +47,15 @@ export type Personalizacao = {
   alturaPx?: number;
   /** Molde do modelo (PNG/SVG) para o recorte da arte de produção. */
   maskUrl?: string;
+  /** Até 4 fotos — quando presente, substitui fotoUrl/transform únicos. */
+  fotos?: FotoPersonalizacao[];
   fotoUrl: string;
   transform: Transform;
   textos?: import("./caseTextFonts").TextoCapinha[];
   titulo?: string;
   descricao?: string;
+  /** Cor de preenchimento nos vãos (espaço sem foto). */
+  corFundo?: string;
   arteProducaoUrl?: string;
   /** Só a foto do cliente (sem texto). */
   arteFotoUrl?: string;

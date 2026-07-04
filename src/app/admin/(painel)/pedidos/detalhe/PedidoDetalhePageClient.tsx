@@ -133,12 +133,27 @@ export function PedidoDetalhePageClient({ lojaId, pedidoId }: Props) {
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <PedidoStatusBadge status={pedido.status} />
+              {pedido.filaProducaoMarca && (
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900">
+                  {rotuloOrigemPedido(pedido.origem, {
+                    filaProducaoMarca: true,
+                    origemLojaNome: pedido.origemLojaNome,
+                  })}
+                </span>
+              )}
               {pedido.origem === "presencial" && (
                 <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-900">
                   {rotuloOrigemPedido(pedido.origem)}
                 </span>
               )}
             </div>
+            {pedido.filaProducaoMarca && pedido.origemPedidoId && (
+              <p className="mt-2 text-sm text-zinc-600">
+                Pedido revendedor:{" "}
+                <strong>{numeroPedidoCurto(pedido.origemPedidoId)}</strong>
+                {pedido.origemLojaId ? ` · loja ${pedido.origemLojaId}` : null}
+              </p>
+            )}
             {pedido.origem === "presencial" && (
               <p className="mt-2 text-sm text-zinc-600">
                 Pagamento:{" "}

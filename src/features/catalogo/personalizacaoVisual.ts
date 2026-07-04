@@ -33,7 +33,7 @@ export type ResolvedPersonalizacaoVisual = {
   caseFrame: CaseFrameSpec;
   camera: CameraModuleSpec;
   corAparelho: string;
-  /** Dimensões físicas do aparelho — definem a proporção (aspecto) da capa. */
+  /** Legado/admin — não altera layout do editor (canvas 9:16 fixo). */
   larguraPx: number;
   alturaPx: number;
   /** Molde (PNG/SVG) do modelo — usado no recorte da arte de produção. */

@@ -3,28 +3,28 @@
 import { useEffect, useState } from "react";
 import { ProductCard } from "@/components/loja/ProductCard";
 import { listarProdutosPersonalizaveisAtivos } from "@/features/loja/catalogoProdutos";
-import {
-  PRODUTOS_PERSONALIZAR,
-  type ProdutoDestaque,
-} from "@/features/loja/produtosMock";
+import type { ProdutoDestaque } from "@/features/loja/produtosMock";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
 export function PersonalizarSection() {
-  const [produtos, setProdutos] = useState<ProdutoDestaque[]>(
-    PRODUTOS_PERSONALIZAR,
-  );
+  const [produtos, setProdutos] = useState<ProdutoDestaque[]>([]);
   const [carregando, setCarregando] = useState(isFirebaseConfigured());
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isFirebaseConfigured()) return;
 
     void (async () => {
       setCarregando(true);
+      setErro(null);
       try {
-        const lista = await listarProdutosPersonalizaveisAtivos();
-        if (lista.length > 0) setProdutos(lista);
-      } catch {
-        // mantém mock
+        setProdutos(await listarProdutosPersonalizaveisAtivos());
+      } catch (e) {
+        console.error(e);
+        setErro(
+          e instanceof Error ? e.message : "Não foi possível carregar os produtos.",
+        );
+        setProdutos([]);
       } finally {
         setCarregando(false);
       }
@@ -46,6 +46,13 @@ export function PersonalizarSection() {
           </p>
         </div>
 
+        {erro && (
+          <p className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-center text-sm text-red-700">
+            {erro.includes("permission") || erro.includes("Permission")
+              ? "Erro de permissão ao carregar produtos. Verifique as regras do Firebase."
+              : erro}
+          </p>
+        )}
         {carregando ? (
           <p className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 text-center text-zinc-600">
             Carregando produtos personalizáveis...

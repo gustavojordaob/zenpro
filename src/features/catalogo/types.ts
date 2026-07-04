@@ -70,6 +70,7 @@ export type ConfigPersonalizacaoMascaraModelo = {
   textos?: TextoCapinha[] | null;
   titulo?: string | null;
   descricao?: string | null;
+  corFundo?: string | null;
 };
 
 export const COLECOES_CATALOGO = {

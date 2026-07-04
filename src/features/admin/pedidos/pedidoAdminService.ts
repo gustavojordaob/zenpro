@@ -90,6 +90,10 @@ function mapPedido(
     registradoPorUid: (data.registradoPorUid as string | null | undefined) ?? null,
     observacao: (data.observacao as string | null | undefined) ?? null,
     clienteUid: (data.clienteUid as string | null | undefined) ?? null,
+    filaProducaoMarca: Boolean(data.filaProducaoMarca),
+    origemLojaId: (data.origemLojaId as string | null | undefined) ?? null,
+    origemLojaNome: (data.origemLojaNome as string | null | undefined) ?? null,
+    origemPedidoId: (data.origemPedidoId as string | null | undefined) ?? null,
     criadoEm: data.criadoEm,
     atualizadoEm: data.atualizadoEm,
   };

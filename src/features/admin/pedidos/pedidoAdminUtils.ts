@@ -19,7 +19,15 @@ export function rotuloStatusPedido(status: PedidoLojaStatus): string {
   );
 }
 
-export function rotuloOrigemPedido(origem?: PedidoLojaOrigem | null): string {
+export function rotuloOrigemPedido(
+  origem?: PedidoLojaOrigem | null,
+  opts?: { filaProducaoMarca?: boolean; origemLojaNome?: string | null },
+): string {
+  if (opts?.filaProducaoMarca) {
+    return opts.origemLojaNome
+      ? `Produção (${opts.origemLojaNome})`
+      : "Produção revendedor";
+  }
   return origem === "presencial" ? "Presencial" : "Online";
 }
 

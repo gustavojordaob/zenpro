@@ -17,6 +17,7 @@ import {
   type LojaResumo,
   type PedidoAdmin,
 } from "@/features/admin/pedidos/pedidoAdminService";
+import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
 import { formatarPreco } from "@/features/loja/produtosMock";
 
 export function PedidosAdminPageClient() {
@@ -26,6 +27,12 @@ export function PedidosAdminPageClient() {
   const [filtroLoja, setFiltroLoja] = useState<string>("");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isMarca && filtroLoja === "") {
+      setFiltroLoja(MARCA_LOJA_ID);
+    }
+  }, [isMarca, filtroLoja]);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -144,7 +151,14 @@ export function PedidosAdminPageClient() {
                       {formatarPreco(pedido.totalCentavos)}
                     </td>
                     <td className="px-4 py-3">
-                      {pedido.origem === "presencial" ? (
+                      {pedido.filaProducaoMarca ? (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                          {rotuloOrigemPedido(pedido.origem, {
+                            filaProducaoMarca: true,
+                            origemLojaNome: pedido.origemLojaNome,
+                          })}
+                        </span>
+                      ) : pedido.origem === "presencial" ? (
                         <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-900">
                           {rotuloOrigemPedido(pedido.origem)}
                         </span>
@@ -200,7 +214,12 @@ export function PedidosAdminPageClient() {
                   {numeroPedidoCurto(pedido.id)}
                 </span>
                 {isMarca && <span>{pedido.lojaId}</span>}
-                <span>{rotuloOrigemPedido(pedido.origem)}</span>
+                <span>
+                  {rotuloOrigemPedido(pedido.origem, {
+                    filaProducaoMarca: pedido.filaProducaoMarca,
+                    origemLojaNome: pedido.origemLojaNome,
+                  })}
+                </span>
                 <span>{formatarDataPedido(pedido.criadoEm, pedido.atualizadoEm)}</span>
               </div>
 

@@ -32,12 +32,12 @@ export function CapinhaNovaPageClient() {
   const [carregandoMarcas, setCarregandoMarcas] = useState(true);
 
   // Passo 1 — aparelho
-  const [presetId, setPresetId] = useState<string>("galaxy-s");
+  const [presetId, setPresetId] = useState<string>("galaxy-s24");
   const [modeloNome, setModeloNome] = useState("");
   const [marcaMode, setMarcaMode] = useState<"existente" | "nova">("nova");
   const [marcaId, setMarcaId] = useState("");
   const [marcaNovaNome, setMarcaNovaNome] = useState("");
-  const [cameraPresetId, setCameraPresetId] = useState<string>("android-triplo");
+  const [cameraPresetId, setCameraPresetId] = useState<string>("galaxy-s24");
   const [corAparelho, setCorAparelho] = useState("#1a1a1a");
   const [avancado, setAvancado] = useState(false);
   const [larguraPx, setLarguraPx] = useState(1080);
@@ -91,6 +91,13 @@ export function CapinhaNovaPageClient() {
   const materialRotulo = useMemo(
     () => MATERIAIS_CAPINHA.find((m) => m.id === material)?.rotulo ?? "",
     [material],
+  );
+
+  const cameraRotulo = useMemo(
+    () =>
+      CAMERA_PRESET_OPCOES.find((o) => o.id === cameraPresetId)?.rotulo ??
+      cameraPresetId,
+    [cameraPresetId],
   );
 
   // Sugestão automática do nome do produto.
@@ -226,10 +233,14 @@ export function CapinhaNovaPageClient() {
               onChange={(e) => aplicarPreset(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm"
             >
-              {DISPOSITIVOS_PRESETS.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.rotulo}
-                </option>
+              {agrupar(DISPOSITIVOS_PRESETS).map(([grupo, itens]) => (
+                <optgroup key={grupo} label={grupo}>
+                  {itens.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.rotulo}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>
@@ -294,24 +305,19 @@ export function CapinhaNovaPageClient() {
             )}
           </div>
 
-          {/* Câmera + cor + resumo */}
+          {/* Câmera (automática do modelo) + cor */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block space-y-1.5">
+            <div className="space-y-1.5">
               <span className="text-sm font-medium text-zinc-700">
-                Câmera (mock no editor)
+                Câmera do mock
               </span>
-              <select
-                value={cameraPresetId}
-                onChange={(e) => setCameraPresetId(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm"
-              >
-                {CAMERA_PRESET_OPCOES.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.rotulo}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-700">
+                {cameraRotulo}
+                <span className="ml-1 text-xs text-zinc-400">
+                  (definida pelo modelo base)
+                </span>
+              </div>
+            </div>
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-zinc-700">
                 Cor do aparelho
@@ -333,30 +339,54 @@ export function CapinhaNovaPageClient() {
             onClick={() => setAvancado((v) => !v)}
             className="text-xs font-medium text-violet-700 underline"
           >
-            {avancado ? "Ocultar dimensões" : "Ajustar dimensões (avançado)"}
+            {avancado
+              ? "Ocultar ajustes avançados"
+              : "Ajustar câmera e dimensões (avançado)"}
           </button>
           {avancado && (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-4">
               <label className="block space-y-1.5">
-                <span className="text-xs text-zinc-600">Largura (px)</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={larguraPx}
-                  onChange={(e) => setLarguraPx(Number(e.target.value) || 0)}
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                />
+                <span className="text-sm font-medium text-zinc-700">
+                  Trocar câmera do mock (opcional)
+                </span>
+                <select
+                  value={cameraPresetId}
+                  onChange={(e) => setCameraPresetId(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm"
+                >
+                  {agrupar(CAMERA_PRESET_OPCOES).map(([grupo, itens]) => (
+                    <optgroup key={grupo} label={grupo}>
+                      {itens.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.rotulo}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
               </label>
-              <label className="block space-y-1.5">
-                <span className="text-xs text-zinc-600">Altura (px)</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={alturaPx}
-                  onChange={(e) => setAlturaPx(Number(e.target.value) || 0)}
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                />
-              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block space-y-1.5">
+                  <span className="text-xs text-zinc-600">Largura (px)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={larguraPx}
+                    onChange={(e) => setLarguraPx(Number(e.target.value) || 0)}
+                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs text-zinc-600">Altura (px)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={alturaPx}
+                    onChange={(e) => setAlturaPx(Number(e.target.value) || 0)}
+                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  />
+                </label>
+              </div>
             </div>
           )}
         </section>
@@ -464,6 +494,19 @@ export function CapinhaNovaPageClient() {
       </div>
     </AdminShell>
   );
+}
+
+function agrupar<T extends { grupo: string }>(itens: T[]): [string, T[]][] {
+  const ordem: string[] = [];
+  const mapa = new Map<string, T[]>();
+  for (const it of itens) {
+    if (!mapa.has(it.grupo)) {
+      mapa.set(it.grupo, []);
+      ordem.push(it.grupo);
+    }
+    mapa.get(it.grupo)!.push(it);
+  }
+  return ordem.map((g) => [g, mapa.get(g)!] as [string, T[]]);
 }
 
 function rotuloMarcaSugerida(id: string): string {

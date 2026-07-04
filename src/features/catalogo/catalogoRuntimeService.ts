@@ -170,7 +170,7 @@ export async function listarModelosAtivos(
   }
 
   if (modelos.length === 0) {
-    return MODELOS.map(modeloMockParaCatalogo);
+    return [];
   }
 
   if (marcaId) {
@@ -205,7 +205,7 @@ export async function obterModeloCatalogo(
   }
 
   const mock = getModeloMockById(modeloId);
-  return mock ? modeloMockParaCatalogo(mock) : null;
+  return mock && !isFirebaseConfigured() ? modeloMockParaCatalogo(mock) : null;
 }
 
 export async function obterTipoCatalogo(

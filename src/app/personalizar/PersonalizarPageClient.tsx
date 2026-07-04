@@ -24,6 +24,7 @@ export function PersonalizarPageClient() {
 
   const [carregando, setCarregando] = useState(true);
   const [naoEncontrado, setNaoEncontrado] = useState(false);
+  const [erroCarregar, setErroCarregar] = useState<string | null>(null);
   const [tipoPersonalizacao, setTipoPersonalizacao] =
     useState<TipoPersonalizacao>("mascara_modelo");
   const [ctx, setCtx] = useState<Awaited<
@@ -33,23 +34,33 @@ export function PersonalizarPageClient() {
   useEffect(() => {
     void (async () => {
       setCarregando(true);
+      setErroCarregar(null);
       if (!modeloId) {
         setNaoEncontrado(true);
         setCarregando(false);
         return;
       }
 
-      const contexto = await carregarContextoPersonalizacao(modeloId, produtoId);
-      if (!contexto) {
+      try {
+        const contexto = await carregarContextoPersonalizacao(modeloId, produtoId);
+        if (!contexto) {
+          setNaoEncontrado(true);
+          return;
+        }
+        setCtx(contexto);
+        setTipoPersonalizacao(tipoParam ?? "mascara_modelo");
+        setNaoEncontrado(false);
+      } catch (e) {
+        console.error(e);
+        setErroCarregar(
+          e instanceof Error
+            ? e.message
+            : "Erro ao carregar o editor. Verifique sua conexão ou tente novamente.",
+        );
         setNaoEncontrado(true);
+      } finally {
         setCarregando(false);
-        return;
       }
-
-      setCtx(contexto);
-      setTipoPersonalizacao(tipoParam ?? "mascara_modelo");
-      setNaoEncontrado(false);
-      setCarregando(false);
     })();
   }, [modeloId, produtoId, tipoParam]);
 
@@ -67,9 +78,13 @@ export function PersonalizarPageClient() {
         <StoreHeader />
         <main className="mx-auto max-w-lg px-4 py-16 text-center">
           <p className="text-zinc-600">
-            {produtoId
-              ? "Produto ou modelo não encontrado para esta combinação."
-              : "Modelo não encontrado."}
+            {erroCarregar?.includes("permission") ||
+            erroCarregar?.includes("Permission")
+              ? "Sem permissão para acessar o catálogo. As regras do Firebase podem estar desatualizadas — tente recarregar em alguns minutos ou contate o suporte."
+              : erroCarregar ??
+                (produtoId
+                  ? "Produto ou modelo não encontrado para esta combinação."
+                  : "Modelo não encontrado.")}
           </p>
           <Link href={paths.home} className="mt-4 inline-block text-sm underline">
             Voltar

@@ -145,6 +145,13 @@ export type PedidoLojaFirestore = {
   origem?: PedidoLojaOrigem;
   registradoPorUid?: string | null;
   observacao?: string | null;
+  /** Pedido espelhado na fila de produção da marca (lojas/zenpro). */
+  filaProducaoMarca?: boolean;
+  /** Loja revendedora de origem (quando filaProducaoMarca). */
+  origemLojaId?: string | null;
+  origemLojaNome?: string | null;
+  /** ID do pedido na loja revendedora (quando filaProducaoMarca). */
+  origemPedidoId?: string | null;
   criadoEm: unknown;
   atualizadoEm?: unknown;
 };

@@ -20,6 +20,7 @@ export function personalizacaoParaConfig(
     textos: dados.textos?.length ? dados.textos : null,
     titulo: dados.titulo?.trim() || null,
     descricao: dados.descricao?.trim() || null,
+    corFundo: dados.corFundo ?? null,
   };
 }
 

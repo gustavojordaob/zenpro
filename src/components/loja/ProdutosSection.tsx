@@ -7,7 +7,6 @@ import { listarProdutosLojaAtivos } from "@/features/loja/catalogoProdutos";
 import {
   CATEGORIAS_PRODUTO,
   filtrarProdutos,
-  PRODUTOS_LOJA,
   type CategoriaProduto,
   type ProdutoDestaque,
 } from "@/features/loja/produtosMock";
@@ -19,18 +18,24 @@ export function ProdutosSection() {
     "todos",
   );
   const [busca, setBusca] = useState("");
-  const [produtos, setProdutos] = useState<ProdutoDestaque[]>(PRODUTOS_LOJA);
+  const [produtos, setProdutos] = useState<ProdutoDestaque[]>([]);
   const [carregando, setCarregando] = useState(isFirebaseConfigured());
+  const [erroLista, setErroLista] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isFirebaseConfigured()) return;
 
     void (async () => {
       setCarregando(true);
+      setErroLista(null);
       try {
         setProdutos(await listarProdutosLojaAtivos(loja?.lojaId));
-      } catch {
-        // Offline ou rules — mantém último estado
+      } catch (e) {
+        console.error(e);
+        setErroLista(
+          e instanceof Error ? e.message : "Não foi possível carregar produtos.",
+        );
+        setProdutos([]);
       } finally {
         setCarregando(false);
       }
@@ -92,6 +97,14 @@ export function ProdutosSection() {
           })}
         </div>
       </div>
+
+      {erroLista && (
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-center text-sm text-red-700">
+          {erroLista.includes("permission") || erroLista.includes("Permission")
+            ? "Erro de permissão ao carregar produtos."
+            : erroLista}
+        </p>
+      )}
 
       {carregando ? (
         <p className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-zinc-600">

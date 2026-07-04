@@ -1,16 +1,20 @@
 import Konva from "konva";
 import { getFonteFamilia } from "./caseTextFonts";
 import { getCaseLayout } from "./caseGeometry";
-import { EXPORT_ART_WIDTH } from "./caseVisualConstants";
+import { ART_CANVAS, EXPORT_ART_WIDTH } from "./caseVisualConstants";
 import { extrairCorPredominante } from "./extrairCorPredominante";
 import { loadImageForCanvasExport } from "./loadImageForCanvasExport";
 import { IPHONE_ASSETS } from "./moldura";
 import type { TextoCapinha, Transform } from "./types";
 
-const EDITOR_WIDTH = IPHONE_ASSETS.previewWidth;
+const EDITOR_WIDTH = ART_CANVAS.previewWidth;
+
+export type FotoExportInput = {
+  url: string;
+  transform: Transform;
+};
 
 async function loadMaskImage(maskUrl?: string): Promise<HTMLImageElement> {
-  // Máscara pode vir do Storage (molde por modelo) — usar loader sem taint.
   return loadImageForCanvasExport(maskUrl || IPHONE_ASSETS.maskUrl);
 }
 
@@ -29,9 +33,6 @@ async function garantirFontesCarregadas() {
 }
 
 function escalaTransform(transform: Transform, fator: number): Transform {
-  // `scale` é multiplicador do tamanho natural da imagem no editor (base 280px).
-  // Ao exportar/pré-visualizar numa largura maior, a escala precisa crescer no
-  // mesmo fator, senão a foto sai menor que no editor ("Ver capa" errado).
   return {
     x: transform.x * fator,
     y: transform.y * fator,
@@ -82,51 +83,112 @@ function criarTextoKonva(texto: TextoCapinha): Konva.Text {
 
 type ExportOpts = {
   exportWidth?: number;
-  /** "mascara" = forma exata do modelo (produção); "retangulo" = capa cheia (preview) */
   clip?: "mascara" | "retangulo";
-  /** Desenhar a foto do cliente (default: true). */
   incluirFoto?: boolean;
-  /** Desenhar os textos do cliente (default: true). */
   incluirTexto?: boolean;
-  /** Dimensões físicas do modelo — proporção da capa (default: iPhone). */
   larguraPx?: number;
   alturaPx?: number;
-  /** Molde do modelo (PNG/SVG) para o recorte de produção. */
   maskUrl?: string;
+  corFundo?: string;
 };
 
-/** Arte só da área útil (para impressão) — alta resolução, como dataURL */
+function normalizarFotos(
+  fotoUrlOrFotos: string | FotoExportInput[],
+  transformLegado: Transform,
+): FotoExportInput[] {
+  if (typeof fotoUrlOrFotos === "string") {
+    if (!fotoUrlOrFotos.trim()) return [];
+    return [{ url: fotoUrlOrFotos, transform: transformLegado }];
+  }
+  return fotoUrlOrFotos.filter((f) => f.url.trim());
+}
+
+async function desenharFotoNoLayer(
+  layer: Konva.Layer,
+  fotoImage: HTMLImageElement,
+  transform: Transform,
+  areaUtil: { x: number; y: number; w: number; h: number },
+  molduraW: number,
+  comBlur: boolean,
+) {
+  if (comBlur) {
+    const bgBoost = 1.18;
+    const bgScale =
+      Math.max(areaUtil.w / fotoImage.width, areaUtil.h / fotoImage.height) *
+      bgBoost;
+    const bgW = fotoImage.width * bgScale;
+    const bgH = fotoImage.height * bgScale;
+    const bgFoto = new Konva.Image({
+      image: fotoImage,
+      x: areaUtil.x + (areaUtil.w - bgW) / 2,
+      y: areaUtil.y + (areaUtil.h - bgH) / 2,
+      scaleX: bgScale,
+      scaleY: bgScale,
+    });
+    try {
+      bgFoto.cache();
+      bgFoto.filters([Konva.Filters.Blur]);
+      bgFoto.blurRadius(Math.round(molduraW * 0.16));
+    } catch {
+      // segue sem blur
+    }
+    layer.add(bgFoto);
+  }
+
+  layer.add(
+    new Konva.Image({
+      image: fotoImage,
+      x: transform.x,
+      y: transform.y,
+      scaleX: transform.scale,
+      scaleY: transform.scale,
+      rotation: transform.rotation,
+    }),
+  );
+}
+
+/** Arte 9:16 — uma ou várias fotos empilhadas + textos. */
 export async function exportCaseArtDataUrl(
-  fotoUrl: string,
+  fotoUrlOrFotos: string | FotoExportInput[],
   transform: Transform,
   textos: TextoCapinha[] = [],
   opts: ExportOpts = {},
 ): Promise<string> {
+  const fotos = normalizarFotos(fotoUrlOrFotos, transform);
   const exportWidth = opts.exportWidth ?? EXPORT_ART_WIDTH;
   const clip = opts.clip ?? "mascara";
   const incluirFoto = opts.incluirFoto ?? true;
   const incluirTexto = opts.incluirTexto ?? true;
+
+  if (incluirFoto && fotos.length === 0) {
+    throw new Error("Nenhuma foto para exportar.");
+  }
+
   await garantirFontesCarregadas();
 
-  const lw = opts.larguraPx && opts.larguraPx > 0 ? opts.larguraPx : IPHONE_ASSETS.width;
-  const lh = opts.alturaPx && opts.alturaPx > 0 ? opts.alturaPx : IPHONE_ASSETS.height;
-
   const fator = exportWidth / EDITOR_WIDTH;
-  const layoutEditor = getCaseLayout(EDITOR_WIDTH, lw, lh);
-  const layout = getCaseLayout(exportWidth, lw, lh);
-  const { molduraX, molduraY, molduraW, molduraH, stageWidth, stageHeight } =
+  const layout = getCaseLayout(
+    exportWidth,
+    ART_CANVAS.width,
+    ART_CANVAS.height,
+  );
+  const { molduraX, molduraY, molduraW, molduraH, stageWidth, stageHeight, areaUtil } =
     layout;
-  const t = escalaTransform(transform, fator);
 
   const precisaMascara = incluirFoto && clip === "mascara";
-  const [fotoImage, maskImage] = await Promise.all([
-    incluirFoto
-      ? loadImageForCanvasExport(fotoUrl)
-      : Promise.resolve<HTMLImageElement | null>(null),
-    precisaMascara
-      ? loadMaskImage(opts.maskUrl)
-      : Promise.resolve<HTMLImageElement | null>(null),
-  ]);
+  const imagens = incluirFoto
+    ? await Promise.all(
+        fotos.map(async (f) => ({
+          ...f,
+          img: await loadImageForCanvasExport(f.url),
+          t: escalaTransform(f.transform, fator),
+        })),
+      )
+    : [];
+
+  const maskImage = precisaMascara
+    ? await loadMaskImage(opts.maskUrl)
+    : null;
 
   const container = document.createElement("div");
   const stage = new Konva.Stage({
@@ -137,56 +199,42 @@ export async function exportCaseArtDataUrl(
   const layer = new Konva.Layer();
   stage.add(layer);
 
-  if (incluirFoto && fotoImage) {
-    const corFundo = extrairCorPredominante(fotoImage, transform, {
-      x: layoutEditor.molduraX,
-      y: layoutEditor.molduraY,
-      w: layoutEditor.molduraW,
-      h: layoutEditor.molduraH,
-    });
-
-    const fundo = new Konva.Rect({
-      x: molduraX,
-      y: molduraY,
-      width: molduraW,
-      height: molduraH,
-      fill: corFundo,
-    });
-
-    // Fundo borrado = a própria foto cobrindo toda a capa (preenche vãos).
-    const bgBoost = 1.18;
-    const bgScale =
-      Math.max(molduraW / fotoImage.width, molduraH / fotoImage.height) *
-      bgBoost;
-    const bgW = fotoImage.width * bgScale;
-    const bgH = fotoImage.height * bgScale;
-    const bgFoto = new Konva.Image({
-      image: fotoImage,
-      x: molduraX + (molduraW - bgW) / 2,
-      y: molduraY + (molduraH - bgH) / 2,
-      scaleX: bgScale,
-      scaleY: bgScale,
-    });
-    try {
-      bgFoto.cache();
-      bgFoto.filters([Konva.Filters.Blur]);
-      bgFoto.blurRadius(Math.round(molduraW * 0.16));
-    } catch {
-      // imagem não permite leitura de pixels — segue sem blur (cor cobre)
+  if (incluirFoto) {
+    const corEscolhida = opts.corFundo?.trim();
+    let corBase = corEscolhida || "#d4d4d4";
+    if (!corEscolhida && imagens[0]) {
+      try {
+        corBase = extrairCorPredominante(
+          imagens[0].img,
+          imagens[0].t,
+          areaUtil,
+        );
+      } catch {
+        // mantém fallback
+      }
     }
 
-    const foto = new Konva.Image({
-      image: fotoImage,
-      x: t.x,
-      y: t.y,
-      scaleX: t.scale,
-      scaleY: t.scale,
-      rotation: t.rotation,
-    });
+    layer.add(
+      new Konva.Rect({
+        x: areaUtil.x,
+        y: areaUtil.y,
+        width: areaUtil.w,
+        height: areaUtil.h,
+        fill: corBase,
+      }),
+    );
 
-    layer.add(fundo);
-    layer.add(bgFoto);
-    layer.add(foto);
+    for (let i = 0; i < imagens.length; i++) {
+      const { img, t } = imagens[i];
+      await desenharFotoNoLayer(
+        layer,
+        img,
+        t,
+        areaUtil,
+        molduraW,
+        i === 0 && !corEscolhida,
+      );
+    }
   }
 
   if (incluirTexto) {
@@ -195,7 +243,6 @@ export async function exportCaseArtDataUrl(
     }
   }
 
-  // Recorte só quando há foto. Arte só-texto sai com fundo transparente.
   if (incluirFoto) {
     if (clip === "mascara" && maskImage) {
       layer.add(
@@ -209,16 +256,12 @@ export async function exportCaseArtDataUrl(
         }),
       );
     } else {
-      // retângulo arredondado (capa cheia, sem furo de câmera).
-      // Inset pequeno para a foto não vazar além do contorno nos cantos.
-      const inset = molduraW * 0.02;
       layer.add(
         new Konva.Rect({
-          x: molduraX + inset,
-          y: molduraY + inset,
-          width: molduraW - inset * 2,
-          height: molduraH - inset * 2,
-          cornerRadius: molduraW * 0.12,
+          x: areaUtil.x,
+          y: areaUtil.y,
+          width: areaUtil.w,
+          height: areaUtil.h,
           fill: "#000",
           globalCompositeOperation: "destination-in",
         }),
@@ -231,14 +274,13 @@ export async function exportCaseArtDataUrl(
   const dataUrl = stage.toDataURL({
     pixelRatio: 1,
     mimeType: "image/png",
-    x: molduraX,
-    y: molduraY,
-    width: molduraW,
-    height: molduraH,
+    x: areaUtil.x,
+    y: areaUtil.y,
+    width: areaUtil.w,
+    height: areaUtil.h,
   });
 
   stage.destroy();
-
   return dataUrl;
 }
 
@@ -247,53 +289,50 @@ async function dataUrlParaBlob(dataUrl: string): Promise<Blob> {
   return res.blob();
 }
 
-/** Geometria/molde do modelo repassados às artes de produção. */
 export type ArtGeo = {
   larguraPx?: number;
   alturaPx?: number;
   maskUrl?: string;
+  corFundo?: string;
 };
 
-/** Arte combinada (foto + texto) recortada na forma do modelo — produção. */
 export async function exportCaseArtBlob(
-  fotoUrl: string,
+  fotoUrlOrFotos: string | FotoExportInput[],
   transform: Transform,
   textos: TextoCapinha[] = [],
   exportWidth = EXPORT_ART_WIDTH,
   geo: ArtGeo = {},
 ): Promise<Blob> {
-  const dataUrl = await exportCaseArtDataUrl(fotoUrl, transform, textos, {
+  const dataUrl = await exportCaseArtDataUrl(fotoUrlOrFotos, transform, textos, {
     exportWidth,
-    clip: "mascara",
+    clip: "retangulo",
     ...geo,
   });
   return dataUrlParaBlob(dataUrl);
 }
 
-/** Arte só com a foto do cliente (sem texto), recortada no modelo. */
 export async function exportFotoArtBlob(
-  fotoUrl: string,
+  fotoUrlOrFotos: string | FotoExportInput[],
   transform: Transform,
   exportWidth = EXPORT_ART_WIDTH,
   geo: ArtGeo = {},
 ): Promise<Blob> {
-  const dataUrl = await exportCaseArtDataUrl(fotoUrl, transform, [], {
+  const dataUrl = await exportCaseArtDataUrl(fotoUrlOrFotos, transform, [], {
     exportWidth,
-    clip: "mascara",
+    clip: "retangulo",
     incluirTexto: false,
     ...geo,
   });
   return dataUrlParaBlob(dataUrl);
 }
 
-/** Arte só com o texto do cliente, fundo transparente (PNG). */
 export async function exportTextoArtBlob(
   transform: Transform,
   textos: TextoCapinha[],
   exportWidth = EXPORT_ART_WIDTH,
   geo: ArtGeo = {},
 ): Promise<Blob> {
-  const dataUrl = await exportCaseArtDataUrl("", transform, textos, {
+  const dataUrl = await exportCaseArtDataUrl([], transform, textos, {
     exportWidth,
     incluirFoto: false,
     ...geo,
