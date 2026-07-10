@@ -55,7 +55,7 @@ export function ProdutosSection() {
             Produtos
           </h2>
           <p className="mt-1 text-zinc-600">
-            Capinhas, acessórios, películas e carregadores — prontos para
+            Cases, acessórios, películas e carregadores — prontos para
             comprar.
           </p>
         </div>

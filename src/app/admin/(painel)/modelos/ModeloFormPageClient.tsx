@@ -146,7 +146,7 @@ export function ModeloFormPageClient({ modeloId }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!maskUrl || !overlayUrl) {
-      setErro("Envie as duas imagens: área da foto e moldura da capinha.");
+      setErro("Envie as duas imagens: área da foto e moldura da case.");
       return;
     }
     setSalvando(true);
@@ -205,7 +205,7 @@ export function ModeloFormPageClient({ modeloId }: Props) {
         />
 
         <AssetUploadBlock
-          titulo="2. Moldura da capinha"
+          titulo="2. Moldura da case"
           descricao="PNG com bordas, câmera e detalhes por cima da personalização."
           url={overlayUrl}
           enviando={uploadOverlay}

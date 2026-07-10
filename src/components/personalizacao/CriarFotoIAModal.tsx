@@ -127,7 +127,7 @@ export function CriarFotoIAModal({
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
           {substituirExistente && (
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              A nova imagem substitui a foto atual na capa. Depois você ainda
+              A nova imagem substitui a foto atual na case. Depois você ainda
               pode ajustar posição, zoom e texto.
             </p>
           )}
@@ -258,7 +258,7 @@ export function CriarFotoIAModal({
                 onClick={handleUsarNaCapa}
                 className="btn-gold w-full rounded-xl py-3 text-base disabled:opacity-40"
               >
-                Usar esta foto na capa
+                Usar esta foto na case
               </button>
             </>
           )}

@@ -1,6 +1,5 @@
 import { ART_CANVAS } from "./caseVisualConstants";
 
-/** Largura alvo do JPEG pré-processado (metade do export — suficiente para editor). */
 const PREVIEW_WIDTH = 540;
 
 function loadImageFromFile(file: File): Promise<HTMLImageElement> {
@@ -26,6 +25,23 @@ function coverRect(
   areaH: number,
 ): { x: number; y: number; w: number; h: number } {
   const scale = Math.max(areaW / imgW, areaH / imgH);
+  const w = imgW * scale;
+  const h = imgH * scale;
+  return {
+    x: (areaW - w) / 2,
+    y: (areaH - h) / 2,
+    w,
+    h,
+  };
+}
+
+function containRect(
+  imgW: number,
+  imgH: number,
+  areaW: number,
+  areaH: number,
+): { x: number; y: number; w: number; h: number } {
+  const scale = Math.min(areaW / imgW, areaH / imgH);
   const w = imgW * scale;
   const h = imgH * scale;
   return {
@@ -74,6 +90,48 @@ export async function expandirFotoPara916(file: File): Promise<File> {
 
   const base = file.name.replace(/\.[^.]+$/, "") || "foto";
   return new File([blob], `${base}-916.jpg`, { type: "image/jpeg" });
+}
+
+/**
+ * Normaliza saída da IA para case 9:16: pessoas inteiras na zona segura
+ * (margem ~8%), sem celular/câmera na composição — só a foto.
+ */
+export async function normalizarArteCase916(file: File): Promise<File> {
+  const img = await loadImageFromFile(file);
+  const artW = ART_CANVAS.width;
+  const artH = ART_CANVAS.height;
+  const outW = PREVIEW_WIDTH;
+  const outH = Math.round((artH / artW) * outW);
+
+  const margem = 1 - ART_CANVAS.safeTopRatio - ART_CANVAS.safeBottomRatio;
+  const safeW = outW * margem;
+  const safeH = outH * margem;
+  const safeX = (outW - safeW) / 2;
+  const safeY = outH * ART_CANVAS.safeTopRatio;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas indisponível");
+
+  const bg = coverRect(img.width, img.height, outW, outH);
+  ctx.filter = "blur(32px) saturate(1.1) brightness(0.95)";
+  ctx.drawImage(img, bg.x, bg.y, bg.w, bg.h);
+  ctx.filter = "none";
+
+  const fg = containRect(img.width, img.height, safeW, safeH);
+  ctx.drawImage(img, safeX + fg.x, safeY + fg.y, fg.w, fg.h);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("Falha ao gerar JPEG"))),
+      "image/jpeg",
+      0.92,
+    );
+  });
+
+  return new File([blob], `ia-case-${Date.now()}.jpg`, { type: "image/jpeg" });
 }
 
 /** Data URL estável para export/preview no browser (sem CORS). */

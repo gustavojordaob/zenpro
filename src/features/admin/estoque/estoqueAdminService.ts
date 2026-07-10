@@ -90,6 +90,45 @@ export async function definirEstoqueLojaProduto(
   );
 }
 
+/**
+ * Loja oficial da marca (zenpro): um único número — atualiza galpão central
+ * e estoque da loja ao mesmo tempo (evita min(central, loja) zerado por engano).
+ */
+export async function definirEstoqueLojaOficialMarca(
+  produtoId: string,
+  quantidade: number,
+  marcaLojaId: string,
+): Promise<void> {
+  const qtd = Math.max(0, Math.floor(quantidade));
+  const db = requireDb();
+
+  await runTransaction(db, async (tx) => {
+    const produtoRef = doc(db, COLECOES.PRODUTOS, produtoId);
+    const estoqueRef = doc(db, COLECOES.LOJAS, marcaLojaId, COLECOES.ESTOQUE, produtoId);
+    const produtoSnap = await tx.get(produtoRef);
+    if (!produtoSnap.exists()) {
+      throw new Error("Produto não encontrado.");
+    }
+    const produto = produtoSnap.data() as ProdutoCentralFirestore;
+    if (!produtoControlaEstoque(produto)) {
+      throw new Error("Este produto não controla estoque.");
+    }
+
+    tx.update(produtoRef, {
+      estoqueCentral: qtd,
+      atualizadoEm: serverTimestamp(),
+    });
+    tx.set(
+      estoqueRef,
+      {
+        quantidade: qtd,
+        atualizadoEm: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  });
+}
+
 export async function listarProdutosEstoqueAdmin(
   lojaId: string,
   produtos: { id: string; data: DocumentData }[],

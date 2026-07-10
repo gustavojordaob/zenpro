@@ -67,9 +67,9 @@ const PERSONALIZACAO_POR_MODELO: Record<
   string,
   ModeloFirestore["personalizacao"]
 > = {
-  "iphone-17-pro-max": { cameraPresetId: "iphone-pro", corAparelho: "#d1732a" },
-  "iphone-15": { cameraPresetId: "iphone-padrao", corAparelho: "#e7e0d3" },
-  "samsung-s24": { cameraPresetId: "android-triplo", corAparelho: "#3a3f44" },
+  "iphone-17-pro-max": { cameraPresetId: "iphone-17-pro", corAparelho: "#d1732a" },
+  "iphone-15": { cameraPresetId: "iphone-15", corAparelho: "#e7e0d3" },
+  "samsung-s24": { cameraPresetId: "galaxy-s24", corAparelho: "#3a3f44" },
 };
 
 export function produtoDestaqueParaCentral(

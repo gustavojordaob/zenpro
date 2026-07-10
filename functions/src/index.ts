@@ -3,10 +3,24 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineString } from "firebase-functions/params";
 import * as nodemailer from "nodemailer";
 import { gerarFotoCriativaIA } from "./gerarFotoCriativaIA";
+import { criarCheckoutMercadoPago } from "./mercadoPagoCheckout";
+import { webhookMercadoPago } from "./mercadoPagoWebhook";
+import { sincronizarPagamentoMercadoPago } from "./sincronizarPagamentoMercadoPago";
+import { processarNotaFiscalOutbox } from "./processarNotaFiscalOutbox";
+import { reemitirNotaFiscalPedido } from "./reemitirNotaFiscalPedido";
+import { sincronizarNotaFiscalPedido } from "./sincronizarNotaFiscalPedido";
 
 admin.initializeApp();
 
-export { gerarFotoCriativaIA };
+export {
+  gerarFotoCriativaIA,
+  criarCheckoutMercadoPago,
+  webhookMercadoPago,
+  sincronizarPagamentoMercadoPago,
+  processarNotaFiscalOutbox,
+  reemitirNotaFiscalPedido,
+  sincronizarNotaFiscalPedido,
+};
 
 const resendApiKey = defineString("RESEND_API_KEY", { default: "" });
 const emailFrom = defineString("EMAIL_FROM", {
@@ -194,10 +208,18 @@ async function decrementarEstoqueItem(
 export const decrementarEstoquePedidoLoja = onDocumentCreated(
   "lojas/{lojaId}/pedidos/{pedidoId}",
   async (event) => {
-    const data = event.data?.data() as { itens?: PedidoItem[]; origem?: string } | undefined;
+    const data = event.data?.data() as {
+      itens?: PedidoItem[];
+      origem?: string;
+      status?: string;
+      pagamento?: { provider?: string };
+    } | undefined;
     if (!data?.itens?.length) return;
 
     if (data.origem === "presencial") return;
+    // Pagamentos Mercado Pago decrementam estoque no webhook (após aprovação).
+    if (data.pagamento?.provider === "mercadopago") return;
+    if (data.status !== "pago") return;
 
     const lojaId = event.params.lojaId;
 

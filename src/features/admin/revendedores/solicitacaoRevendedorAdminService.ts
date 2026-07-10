@@ -16,6 +16,7 @@ import {
   type SolicitacaoRevendedorFirestore,
   type SolicitacaoRevendedorStatus,
 } from "@/features/revendedor/solicitacaoRevendedorTypes";
+import { COLECOES, type EnderecoExpedicao } from "@/features/multitenant/types";
 import { montarMailtoAprovacaoRevendedor } from "./emailRevendedorUtils";
 import { enfileirarEmailAprovacaoRevendedor } from "./emailOutboxService";
 
@@ -115,7 +116,23 @@ export async function aprovarSolicitacaoRevendedorAdmin(
     nomeDono: solicitacao.nomeCompleto,
   });
 
+  const expedicao: EnderecoExpedicao = {
+    cep: solicitacao.cep,
+    logradouro: solicitacao.logradouro,
+    numero: solicitacao.numero,
+    complemento: solicitacao.complemento,
+    bairro: solicitacao.bairro,
+    cidade: solicitacao.cidade,
+    uf: solicitacao.uf,
+    nomeRemetente: solicitacao.razaoSocial,
+  };
+
   const db = requireDb();
+  await updateDoc(doc(db, COLECOES.LOJAS, lojaId), {
+    "config.expedicao": expedicao,
+    atualizadoEm: serverTimestamp(),
+  });
+
   await updateDoc(doc(db, COLECAO_SOLICITACOES_REVENDEDOR, solicitacaoId), {
     status: "aprovada",
     processadoEm: serverTimestamp(),

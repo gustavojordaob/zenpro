@@ -1,11 +1,36 @@
 /** Papéis multi-tenant — ver obsidian/fabrica/capinhas-multitenant.md */
 export type PapelUsuario = "marca" | "revendedor";
 
+/** Remetente na etiqueta de envio (Melhor Envio / Correios). */
+export type EnderecoExpedicao = {
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento?: string | null;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  /** Razão social ou nome na etiqueta */
+  nomeRemetente?: string | null;
+};
+
 /** `lojas/{lojaId}` */
 export type LojaConfig = {
   logo?: string | null;
   cor?: string | null;
   whatsapp?: string | null;
+  /** Limite de crédito B2B definido pela Zen Pro (centavos). */
+  limiteCreditoCentavos?: number | null;
+  /** Pedido mínimo para este revendedor (centavos); padrão global se omitido. */
+  pedidoMinimoCentavos?: number | null;
+  /** Comissão % sobre itens vendidos pelo revendedor. */
+  comissaoPercentual?: number | null;
+  /** Prazo de entrega (dias) quando o item está no estoque do revendedor. */
+  prazoEntregaDiasLocal?: number | null;
+  /** Prazo de entrega (dias) quando só há estoque na Seven Tech / Zen Pro. */
+  prazoEntregaDiasZenPro?: number | null;
+  /** CEP/endereço de onde esta loja expede produtos prontos. */
+  expedicao?: EnderecoExpedicao | null;
 };
 
 export type LojaFirestore = {
@@ -123,6 +148,36 @@ export type PedidoLojaFormaPagamentoPresencial =
   | "cartao"
   | "outro";
 
+export type PedidoLojaFormaPagamentoOnline = "pix" | "boleto" | "cartao";
+
+export type PedidoEnvioFirestore = {
+  transportadora?: string | null;
+  codigoRastreio?: string | null;
+  urlRastreio?: string | null;
+  enviadoEm?: unknown;
+  previsaoEntregaEm?: unknown;
+};
+
+export type NotaFiscalStatus =
+  | "pendente"
+  | "processando"
+  | "emitida"
+  | "erro"
+  | "cancelada";
+
+export type NotaFiscalFirestore = {
+  status: NotaFiscalStatus;
+  numero?: string | null;
+  serie?: string | null;
+  chaveAcesso?: string | null;
+  pdfUrl?: string | null;
+  xmlUrl?: string | null;
+  emitidaEm?: unknown;
+  provedor?: string | null;
+  referencia?: string | null;
+  erro?: string | null;
+};
+
 /** `lojas/{lojaId}/pedidos/{pedidoId}` */
 export type PedidoLojaFirestore = {
   itens: ItemPedidoLojaFirestore[];
@@ -139,7 +194,18 @@ export type PedidoLojaFirestore = {
     status: string | null;
     /** Venda presencial — dinheiro, pix, etc. */
     forma?: PedidoLojaFormaPagamentoPresencial | null;
+    /** Checkout online — pix, boleto ou cartão */
+    formaOnline?: PedidoLojaFormaPagamentoOnline | null;
+    preferenceId?: string | null;
+    checkoutUrl?: string | null;
+    metodoMp?: string | null;
+    parcelas?: number | null;
+    aprovadoEm?: unknown;
   };
+  /** Só true após confirmação do Mercado Pago (boleto/PIX/cartão aprovado). */
+  pagamentoLiberadoEnvio?: boolean;
+  envio?: PedidoEnvioFirestore | null;
+  notaFiscal?: NotaFiscalFirestore | null;
   /** Checkout online preenche clienteUid; presencial usa registradoPorUid */
   clienteUid?: string | null;
   origem?: PedidoLojaOrigem;

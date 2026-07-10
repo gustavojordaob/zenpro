@@ -16,9 +16,27 @@ import {
   type PedidoReposicao,
   type ReposicaoStatus,
 } from "@/features/admin/reposicao/reposicaoService";
+import {
+  obterRevendedorAdmin,
+  type RevendedorAdmin,
+} from "@/features/admin/revendedores/revendedorAdminService";
 import { formatarPreco } from "@/features/loja/produtosMock";
+import {
+  criarCheckoutMercadoPago,
+  urlCheckoutMercadoPago,
+} from "@/features/pagamentos/mercadoPagoClient";
+import { pagamentoMockAtivo } from "@/features/pagamentos/pagamentoConfig";
+import { SeletorFormaPagamentoOnline } from "@/components/loja/SeletorFormaPagamentoOnline";
+import type { PedidoLojaFormaPagamentoOnline } from "@/features/multitenant/types";
+import { linkWhatsAppAtendimento } from "@/features/revendedor/revendedorComercialConstants";
+import {
+  formatarReaisCentavos,
+  pedidoMinimoRevendedorCentavos,
+} from "@/features/revendedor/revendedorComercialUtils";
 
 const ESTILO_STATUS: Record<ReposicaoStatus, string> = {
+  aguardando_pagamento: "bg-amber-100 text-amber-900",
+  pago: "bg-emerald-100 text-emerald-900",
   solicitado: "bg-amber-100 text-amber-900",
   aprovado: "bg-sky-100 text-sky-900",
   enviado: "bg-violet-100 text-violet-900",
@@ -37,12 +55,52 @@ export function ReposicaoPageClient() {
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  const [pagandoId, setPagandoId] = useState<string | null>(null);
+  const [formaPagamento, setFormaPagamento] =
+    useState<PedidoLojaFormaPagamentoOnline>("pix");
+  const [parcelas, setParcelas] = useState(1);
+  const mockPagamento = pagamentoMockAtivo();
+
+  const [lojaRevendedor, setLojaRevendedor] = useState<RevendedorAdmin | null>(
+    null,
+  );
+
+  const pedidoMinimo = pedidoMinimoRevendedorCentavos(lojaRevendedor?.config);
+  const limiteCredito = lojaRevendedor?.config.limiteCreditoCentavos ?? null;
+
+  async function irParaPagamentoReposicao(pedidoId: string) {
+    setPagandoId(pedidoId);
+    setErro(null);
+    try {
+      const checkout = await criarCheckoutMercadoPago({
+        tipo: "reposicao",
+        pedidoId,
+        formaPagamento,
+        parcelas: formaPagamento === "cartao" ? parcelas : 1,
+        returnBasePath: `${window.location.origin}/admin/reposicao`,
+      });
+      window.location.href = urlCheckoutMercadoPago(checkout);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Falha ao iniciar pagamento.");
+      setPagandoId(null);
+    }
+  }
+
+  const totalPedidoCentavos = produtos.reduce((soma, p) => {
+    const q = Number(qtd[p.id] ?? 0);
+    return soma + (q > 0 ? p.precoBaseCentavos * q : 0);
+  }, 0);
 
   const carregar = useCallback(async () => {
     if (!papel) return;
     setCarregando(true);
     setErro(null);
     try {
+      const loja =
+        isRevendedor && lojaId
+          ? await obterRevendedorAdmin(lojaId)
+          : null;
+      setLojaRevendedor(loja);
       const [prods, lista] = await Promise.all([
         isRevendedor ? listarProdutosCentral() : Promise.resolve([]),
         listarReposicoes({ marca: isMarca, revendedorUid: uid ?? undefined }),
@@ -56,7 +114,7 @@ export function ReposicaoPageClient() {
     } finally {
       setCarregando(false);
     }
-  }, [papel, isMarca, isRevendedor, uid]);
+  }, [papel, isMarca, isRevendedor, uid, lojaId]);
 
   useEffect(() => {
     void carregar();
@@ -85,18 +143,24 @@ export function ReposicaoPageClient() {
 
     setEnviando(true);
     try {
-      await criarPedidoReposicao({
+      const novoId = await criarPedidoReposicao({
         lojaId,
         lojaNome: lojaId,
         revendedorUid: uid,
         revendedorEmail: user?.email ?? null,
         itens,
         observacao,
+        pedidoMinimoCentavos: pedidoMinimo,
+        limiteCreditoCentavos: limiteCredito,
       });
       setQtd({});
       setObservacao("");
-      setOk("Pedido de reposição enviado ao dono da Zen Pro.");
-      await carregar();
+      if (mockPagamento) {
+        setOk("Pedido de reposição registrado (mock — marque como pago no admin).");
+        await carregar();
+        return;
+      }
+      await irParaPagamentoReposicao(novoId);
     } catch (e) {
       setErro(
         e instanceof Error ? e.message : "Não foi possível enviar o pedido.",
@@ -107,8 +171,9 @@ export function ReposicaoPageClient() {
   }
 
   async function mudarStatus(id: string, status: ReposicaoStatus) {
+    const atual = pedidos.find((p) => p.id === id);
     try {
-      await atualizarStatusReposicao(id, status);
+      await atualizarStatusReposicao(id, status, atual);
       setPedidos((prev) =>
         prev.map((p) => (p.id === id ? { ...p, status } : p)),
       );
@@ -139,12 +204,77 @@ export function ReposicaoPageClient() {
 
       {isRevendedor && (
         <section className="mb-8 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-900">
-            Novo pedido de reposição
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Escolha as quantidades de cada produto do catálogo Zen Pro.
-          </p>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Novo pedido de reposição
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                Escolha as quantidades de cada produto do catálogo Zen Pro.
+              </p>
+            </div>
+            <a
+              href={linkWhatsAppAtendimento(
+                "Olá! Preciso falar sobre pedido de reposição Zen Pro.",
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+            >
+              Fale conosco
+            </a>
+          </div>
+
+          <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+            <p>
+              <strong>Pedido mínimo:</strong> {formatarReaisCentavos(pedidoMinimo)}
+              {totalPedidoCentavos > 0 && (
+                <>
+                  {" "}
+                  · <strong>Total atual:</strong>{" "}
+                  {formatarReaisCentavos(totalPedidoCentavos)}
+                </>
+              )}
+            </p>
+            {typeof limiteCredito === "number" && limiteCredito > 0 && (
+              <p className="mt-1">
+                <strong>Limite de crédito:</strong>{" "}
+                {formatarReaisCentavos(limiteCredito)} (definido pela Zen Pro)
+              </p>
+            )}
+            {lojaRevendedor?.config.comissaoPercentual != null && (
+              <p className="mt-1">
+                <strong>Comissão:</strong>{" "}
+                {lojaRevendedor.config.comissaoPercentual}% por item vendido
+              </p>
+            )}
+            <p className="mt-2 text-xs text-sky-800">
+              Prazo de entrega: itens no seu estoque — você define; somente na
+              Seven Tech / Zen Pro — prazo maior conforme política da marca (
+              {lojaRevendedor?.config.prazoEntregaDiasZenPro ?? "a combinar"}{" "}
+              dias úteis).
+            </p>
+          </div>
+
+          {!mockPagamento && (
+            <div className="mb-4 space-y-3 rounded-xl border border-zinc-200 bg-white p-4">
+              <h3 className="text-sm font-semibold text-zinc-900">
+                Forma de pagamento
+              </h3>
+              <p className="text-xs text-zinc-500">
+                PIX, boleto ou cartão via Mercado Pago. PIX é o padrão e costuma
+                ser o mais rápido.
+              </p>
+              <SeletorFormaPagamentoOnline
+                formaPagamento={formaPagamento}
+                onFormaChange={setFormaPagamento}
+                parcelas={parcelas}
+                onParcelasChange={setParcelas}
+                totalCentavos={totalPedidoCentavos || pedidoMinimo}
+                compact
+              />
+            </div>
+          )}
 
           {carregando ? (
             <p className="mt-4 text-sm text-zinc-500">Carregando produtos...</p>
@@ -201,7 +331,7 @@ export function ReposicaoPageClient() {
             onClick={() => void enviarPedido()}
             className="btn-gold mt-4 rounded-xl px-5 py-2.5 text-sm disabled:opacity-50"
           >
-            {enviando ? "Enviando..." : "Enviar pedido de reposição"}
+            {enviando ? "Enviando..." : mockPagamento ? "Enviar pedido (mock)" : "Enviar e pagar"}
           </button>
         </section>
       )}
@@ -286,14 +416,62 @@ export function ReposicaoPageClient() {
                   </div>
                 )}
 
-                {isRevendedor && p.status === "solicitado" && (
-                  <button
-                    type="button"
-                    onClick={() => void mudarStatus(p.id, "cancelado")}
-                    className="mt-3 rounded-lg border border-rose-300 px-3 py-1 text-xs text-rose-700 hover:bg-rose-50"
-                  >
-                    Cancelar pedido
-                  </button>
+                {p.envio?.codigoRastreio && (
+                  <p className="mt-2 text-sm text-zinc-600">
+                    Rastreio:{" "}
+                    {p.envio.urlRastreio ? (
+                      <a
+                        href={p.envio.urlRastreio}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-sky-700 underline"
+                      >
+                        {p.envio.codigoRastreio}
+                      </a>
+                    ) : (
+                      <strong>{p.envio.codigoRastreio}</strong>
+                    )}
+                    {p.envio.transportadora ? ` · ${p.envio.transportadora}` : null}
+                  </p>
+                )}
+
+                {p.notaFiscal?.status === "emitida" && p.notaFiscal.pdfUrl && (
+                  <p className="mt-2 text-sm">
+                    <a
+                      href={p.notaFiscal.pdfUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-sky-700 underline"
+                    >
+                      Baixar nota fiscal
+                    </a>
+                  </p>
+                )}
+
+                {isRevendedor &&
+                  (p.status === "aguardando_pagamento" ||
+                    p.status === "solicitado") && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {!mockPagamento && (
+                      <button
+                        type="button"
+                        disabled={pagandoId === p.id}
+                        onClick={() => void irParaPagamentoReposicao(p.id)}
+                        className="btn-gold rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
+                      >
+                        {pagandoId === p.id
+                          ? "Abrindo..."
+                          : `Pagar com ${formaPagamento === "pix" ? "PIX" : formaPagamento === "boleto" ? "boleto" : "cartão"}`}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void mudarStatus(p.id, "cancelado")}
+                      className="rounded-lg border border-rose-300 px-3 py-1 text-xs text-rose-700 hover:bg-rose-50"
+                    >
+                      Cancelar pedido
+                    </button>
+                  </div>
                 )}
               </li>
             ))}

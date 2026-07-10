@@ -12,6 +12,17 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
 import { validarEstoqueVenda } from "@/features/admin/estoque/estoqueAdminService";
 import { criarPedidoLoja } from "@/features/loja/criarPedidoLoja";
+import {
+  criarCheckoutMercadoPago,
+  urlCheckoutMercadoPago,
+} from "@/features/pagamentos/mercadoPagoClient";
+import { SeletorFormaPagamentoOnline } from "@/components/loja/SeletorFormaPagamentoOnline";
+import {
+  pagamentoMockAtivo,
+  PARCELAMENTO_MAXIMO,
+  siteUrlBase,
+} from "@/features/pagamentos/pagamentoConfig";
+import type { PedidoLojaFormaPagamentoOnline } from "@/features/multitenant/types";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
 import { formatarPreco } from "@/features/loja/produtosMock";
@@ -38,6 +49,10 @@ export function CheckoutPageContent() {
   const [erro, setErro] = useState<string | null>(null);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
   const [modalConfirmar, setModalConfirmar] = useState(false);
+  const [formaPagamento, setFormaPagamento] =
+    useState<PedidoLojaFormaPagamentoOnline>("pix");
+  const [parcelas, setParcelas] = useState(1);
+  const mockPagamento = pagamentoMockAtivo();
 
   const temPersonalizada = itens.some((i) => i.tipo === "personalizada");
   const checkoutPath = loja.basePath ? `${loja.basePath}/checkout` : "/checkout";
@@ -107,10 +122,30 @@ export function CheckoutPageContent() {
         totalCentavos,
         user,
         perfil,
-        simularPagamentoMock: true,
+        simularPagamentoMock: mockPagamento,
       });
-      setPedidoId(id);
+
+      if (mockPagamento) {
+        setPedidoId(id);
+        limpar();
+        return;
+      }
+
+      const returnBase = loja.basePath
+        ? `${siteUrlBase()}${loja.basePath}`
+        : siteUrlBase();
+
+      const checkout = await criarCheckoutMercadoPago({
+        tipo: "loja",
+        lojaId: loja.lojaId,
+        pedidoId: id,
+        formaPagamento,
+        parcelas: formaPagamento === "cartao" ? parcelas : 1,
+        returnBasePath: returnBase,
+      });
+
       limpar();
+      window.location.href = urlCheckoutMercadoPago(checkout);
     } catch (error) {
       console.error(error);
       setErro(
@@ -146,7 +181,9 @@ export function CheckoutPageContent() {
             <code className="rounded bg-zinc-100 px-2 py-0.5 text-sm">{pedidoId}</code>
           </p>
           <p className="mt-1 text-sm text-zinc-500">
-            Pagamento mock aprovado — pedido visível no admin.
+            {mockPagamento
+              ? "Pagamento mock aprovado — pedido visível no admin."
+              : "Você será redirecionado ao Mercado Pago para concluir."}
           </p>
           <Link
             href={paths.home}
@@ -212,6 +249,25 @@ export function CheckoutPageContent() {
           </p>
         </section>
 
+        <section className="mt-8 space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+            Pagamento
+          </h2>
+          {mockPagamento ? (
+            <p className="text-sm text-zinc-600">
+              Modo desenvolvimento — pagamento simulado (mock).
+            </p>
+          ) : (
+            <SeletorFormaPagamentoOnline
+              formaPagamento={formaPagamento}
+              onFormaChange={setFormaPagamento}
+              parcelas={parcelas}
+              onParcelasChange={setParcelas}
+              totalCentavos={totalCentavos}
+            />
+          )}
+        </section>
+
         <section className="mt-10 space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
@@ -275,11 +331,18 @@ export function CheckoutPageContent() {
           onClick={handlePagar}
           className="btn-gold mt-8 w-full rounded-xl py-3.5 text-base disabled:opacity-50"
         >
-          {pagando ? "Registrando pedido..." : "Pagar (mock)"}
+          {pagando ? "Processando..." : mockPagamento ? "Pagar (mock)" : "Ir para pagamento"}
         </button>
-        <p className="mt-2 text-center text-xs text-zinc-500">
-          Simula pagamento aprovado e registra o pedido no admin.
-        </p>
+        {!mockPagamento && (
+          <p className="mt-2 text-center text-xs text-zinc-500">
+            PIX, boleto e cartão em até {PARCELAMENTO_MAXIMO}x via Mercado Pago.
+          </p>
+        )}
+        {mockPagamento && (
+          <p className="mt-2 text-center text-xs text-zinc-500">
+            Simula pagamento aprovado e registra o pedido no admin.
+          </p>
+        )}
 
         <button
           type="button"
@@ -299,7 +362,7 @@ export function CheckoutPageContent() {
           <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl">
             <div className="border-b border-zinc-200 px-5 py-4">
               <h2 className="text-lg font-bold text-zinc-900">
-                Confirmar capinhas personalizadas
+                Confirmar cases personalizadas
               </h2>
               <p className="mt-1 text-sm text-zinc-600">
                 Confira como ficou antes de finalizar o pagamento.
@@ -342,7 +405,7 @@ export function CheckoutPageContent() {
                 onClick={() => void executarPagamento()}
                 className="btn-gold rounded-xl py-3 text-sm disabled:opacity-50"
               >
-                {pagando ? "Registrando..." : "Confirmar pagamento (mock)"}
+                {pagando ? "Processando..." : mockPagamento ? "Confirmar (mock)" : "Confirmar e pagar"}
               </button>
               <button
                 type="button"

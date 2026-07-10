@@ -137,7 +137,7 @@ export function MontarColagemModal({
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
           {substituirExistente && (
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              A colagem substitui a foto atual na capa. Depois você ainda pode
+              A colagem substitui a foto atual na case. Depois você ainda pode
               arrastar, dar zoom e adicionar texto no editor.
             </p>
           )}
@@ -253,7 +253,7 @@ export function MontarColagemModal({
             onClick={() => void handleConfirmar()}
             className="btn-gold w-full rounded-xl py-3 text-base disabled:opacity-40"
           >
-            {gerando ? "Enviando colagem..." : "Usar esta colagem na capa"}
+            {gerando ? "Enviando colagem..." : "Usar esta colagem na case"}
           </button>
           <p className="mt-2 text-center text-xs text-zinc-500">
             Gera uma foto única — depois ajuste posição e tamanho no editor.

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ContinuarPagamentoPedido } from "@/components/loja/ContinuarPagamentoPedido";
 import { PageBackLink } from "@/components/loja/PageBackLink";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { PedidoStatusBadge } from "@/components/admin/PedidoStatusBadge";
@@ -64,13 +65,19 @@ export function MeusPedidosPageClient() {
   const { user, carregando: authCarregando } = useAuth();
   const [pedidos, setPedidos] = useState<MeuPedido[] | null>(null);
 
+  async function recarregarPedidos() {
+    if (!user) return;
+    const lista = await listarMeusPedidos(user.uid);
+    setPedidos(lista);
+  }
+
   useEffect(() => {
     if (authCarregando) return;
     if (!user) {
       router.replace(paths.loginRedirect("/meus-pedidos"));
       return;
     }
-    void listarMeusPedidos(user.uid).then(setPedidos);
+    void recarregarPedidos();
   }, [authCarregando, user, router, paths]);
 
   return (
@@ -130,6 +137,43 @@ export function MeusPedidosPageClient() {
                 </div>
 
                 <Stepper status={p.status} />
+
+                <ContinuarPagamentoPedido
+                  pedido={p}
+                  onAtualizado={() => void recarregarPedidos()}
+                />
+
+                {p.envio?.codigoRastreio && (
+                  <p className="mt-3 text-sm text-zinc-700">
+                    Rastreio:{" "}
+                    {p.envio.urlRastreio ? (
+                      <a
+                        href={p.envio.urlRastreio}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-semibold text-sky-700 underline"
+                      >
+                        {p.envio.codigoRastreio}
+                      </a>
+                    ) : (
+                      <strong>{p.envio.codigoRastreio}</strong>
+                    )}
+                    {p.envio.transportadora ? ` · ${p.envio.transportadora}` : null}
+                  </p>
+                )}
+
+                {p.notaFiscal?.status === "emitida" && p.notaFiscal.pdfUrl && (
+                  <p className="mt-2 text-sm">
+                    <a
+                      href={p.notaFiscal.pdfUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-sky-700 underline"
+                    >
+                      Baixar nota fiscal
+                    </a>
+                  </p>
+                )}
               </li>
             ))}
           </ul>

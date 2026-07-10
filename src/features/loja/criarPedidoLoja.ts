@@ -2,15 +2,14 @@ import {
   addDoc,
   collection,
   doc,
-  getDoc,
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { COLECOES } from "@/features/multitenant/types";
-import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
 import type { PerfilUsuario } from "@/features/usuario/perfilTypes";
 import { formatarEnderecoCompleto } from "@/features/usuario/perfilUtils";
+import { pagamentoMockAtivo } from "@/features/pagamentos/pagamentoConfig";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import { sanitizarParaFirestore } from "@/lib/firestoreSanitize";
 import { personalizacaoParaConfig } from "@/features/catalogo/personalizacaoConfig";
@@ -54,31 +53,6 @@ function itemCarrinhoParaPedidoLoja(item: ItemCarrinho) {
   };
 }
 
-function pedidoTemPersonalizacao(itens: ItemCarrinho[]): boolean {
-  return itens.some((i) => i.tipo === "personalizada" || i.personalizacaoId);
-}
-
-/** Espelha pedido de revendedor na fila de produção Zen Pro (lojas/zenpro/pedidos). */
-async function espelharPedidoFilaProducaoMarca(
-  pedidoOrigemId: string,
-  origemLojaId: string,
-  origemLojaNome: string | undefined,
-  payload: Record<string, unknown>,
-): Promise<void> {
-  const db = getFirebaseDb();
-  await addDoc(
-    collection(db, COLECOES.LOJAS, MARCA_LOJA_ID, COLECOES.PEDIDOS),
-    sanitizarParaFirestore({
-      ...payload,
-      filaProducaoMarca: true,
-      origemLojaId,
-      origemLojaNome: origemLojaNome ?? origemLojaId,
-      origemPedidoId: pedidoOrigemId,
-      observacao: `Produção — pedido da loja ${origemLojaNome ?? origemLojaId}`,
-    }),
-  );
-}
-
 export async function criarPedidoLoja({
   lojaId,
   lojaNome,
@@ -86,7 +60,7 @@ export async function criarPedidoLoja({
   totalCentavos,
   user,
   perfil,
-  simularPagamentoMock = true,
+  simularPagamentoMock = pagamentoMockAtivo(),
 }: CriarPedidoLojaInput): Promise<string> {
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase não configurado.");
@@ -118,8 +92,9 @@ export async function criarPedidoLoja({
     pagamento: {
       provider: simularPagamentoMock ? "mock" : null,
       id: null,
-      status: simularPagamentoMock ? "aprovado" : null,
+      status: simularPagamentoMock ? "approved" : null,
     },
+    pagamentoLiberadoEnvio: simularPagamentoMock,
     clienteUid: user.uid,
     origem: "online" as const,
     criadoEm: serverTimestamp(),
@@ -131,29 +106,8 @@ export async function criarPedidoLoja({
     payload,
   );
 
-  // Revendedor: espelha na fila de produção da marca (Zen Pro fabrica).
-  if (
-    lojaId !== MARCA_LOJA_ID &&
-    pedidoTemPersonalizacao(itens)
-  ) {
-    try {
-      let nomeLoja = lojaNome;
-      if (!nomeLoja) {
-        const lojaSnap = await getDoc(doc(db, COLECOES.LOJAS, lojaId));
-        nomeLoja = lojaSnap.exists()
-          ? String(lojaSnap.data().nome ?? lojaId)
-          : lojaId;
-      }
-      await espelharPedidoFilaProducaoMarca(
-        ref.id,
-        lojaId,
-        nomeLoja,
-        payload,
-      );
-    } catch (e) {
-      console.error("Falha ao espelhar pedido na fila Zen Pro", e);
-    }
-  }
+  // Espelhamento na fila Zen Pro e baixa de estoque ocorrem após pagamento aprovado (webhook MP).
+  // Mock: status já nasce "pago" e a function decrementarEstoquePedidoLoja trata no onCreate.
 
   // Índice pessoal do cliente — permite listar "Meus pedidos" sem varrer lojas.
   try {

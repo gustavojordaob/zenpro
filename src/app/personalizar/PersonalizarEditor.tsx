@@ -263,7 +263,7 @@ export function PersonalizarEditor({
     }
 
     if (!substituir && fotos.length >= MAX_FOTOS_PERSONALIZACAO) {
-      setUploadError(`Máximo de ${MAX_FOTOS_PERSONALIZACAO} fotos por capinha.`);
+      setUploadError(`Máximo de ${MAX_FOTOS_PERSONALIZACAO} fotos por case.`);
       return;
     }
 
@@ -447,7 +447,7 @@ export function PersonalizarEditor({
         <header className="space-y-1">
           <PageBackLink href={paths.personalizarHash} label="← Voltar à loja" />
           <h1 className="mt-3 text-2xl font-semibold text-zinc-900">
-            {produto?.nome ?? "Personalizar capinha"}
+            {produto?.nome ?? "Personalizar case"}
           </h1>
           <p className="text-sm text-zinc-600">
             {modelo.marca} {modelo.modelo}
@@ -613,7 +613,7 @@ export function PersonalizarEditor({
             onClick={() => setModalPreview(true)}
             className="rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
           >
-            Ver na capa
+            Ver na case
           </button>
         </div>
 

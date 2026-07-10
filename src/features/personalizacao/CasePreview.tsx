@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Group, Image as KonvaImage, Layer, Rect, Stage } from "react-konva";
 import Konva from "konva";
 import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./cameraModules";
+import { ZenProLogoOverlay } from "./ZenProLogoOverlay";
 import { getCaseFrameSpec } from "./caseFrame";
 import { CaseTextNode } from "./CaseTextNode";
 import { getCaseLayout } from "./caseGeometry";
@@ -138,8 +139,9 @@ export function CasePreview({
   const radius = frame.radius * molduraW;
   const borderWidth = Math.max(2, molduraW * 0.02);
 
+  const cameraSpec = visualCtx?.camera ?? getCameraSpec(modeloId);
+
   const cameraUrl = useMemo(() => {
-    const cameraSpec = visualCtx?.camera ?? getCameraSpec(modeloId);
     const cor = visualCtx?.corAparelho ?? getCorAparelho(modeloId);
     const svg = buildCameraModuleSvgFromSpec(
       cameraSpec,
@@ -148,7 +150,7 @@ export function CasePreview({
       cor,
     );
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [visualCtx, modeloId, molduraW, molduraH]);
+  }, [cameraSpec, visualCtx, modeloId, molduraW, molduraH]);
   const cameraImage = useHtmlImage(cameraUrl);
 
   const clipInset = borderWidth;
@@ -275,6 +277,13 @@ export function CasePreview({
                     ))}
                   </Group>
 
+                  <ZenProLogoOverlay
+                    cameraSpec={cameraSpec}
+                    molduraX={molduraX}
+                    molduraY={molduraY}
+                    molduraW={molduraW}
+                    molduraH={molduraH}
+                  />
                   {cameraImage && (
                     <KonvaImage
                       image={cameraImage}

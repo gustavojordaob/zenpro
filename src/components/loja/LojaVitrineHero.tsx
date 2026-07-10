@@ -24,7 +24,7 @@ export function LojaVitrineHero() {
             {loja.nome}
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl md:text-5xl">
-            Capinhas personalizadas
+            Cases personalizadas
           </h1>
           <p className="max-w-lg text-base text-zinc-600 sm:text-lg">
             Catálogo oficial Zen Pro — personalize com sua foto ou compre

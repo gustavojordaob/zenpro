@@ -8,6 +8,7 @@ import { ART_CANVAS } from "./caseVisualConstants";
 import { exportCaseArtDataUrl, type FotoExportInput } from "./exportCaseArt";
 import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { TextoCapinha, Transform } from "./types";
+import { getZenProLogoCssStyle, ZENPRO_LOGO_SRC } from "./zenProBrandOverlay";
 
 type Props = {
   aberto: boolean;
@@ -37,7 +38,7 @@ export function PreviewCapaModal({
   const corAparelho = visualCtx?.corAparelho ?? getCorAparelho(modeloId);
 
   const previewLayout = getCaseLayout(ART_CANVAS.previewWidth);
-  const { molduraW, molduraH } = previewLayout;
+  const { molduraX, molduraY, molduraW, molduraH } = previewLayout;
 
   const borderUrl = useMemo(() => {
     const svg = buildCaseFrameSvgFromSpec(frameSpec, molduraW, molduraH);
@@ -53,6 +54,18 @@ export function PreviewCapaModal({
     );
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }, [cameraSpec, corAparelho, molduraW, molduraH]);
+
+  const logoStyle = useMemo(
+    () =>
+      getZenProLogoCssStyle(
+        cameraSpec,
+        molduraW,
+        molduraH,
+        molduraX,
+        molduraY,
+      ),
+    [cameraSpec, molduraX, molduraY, molduraW, molduraH],
+  );
 
   const fotosValidas = useMemo(
     () => fotos.filter((f) => f.url.trim()),
@@ -103,7 +116,7 @@ export function PreviewCapaModal({
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
           <div>
             <h2 className="text-base font-semibold text-zinc-900">
-              Prévia da capa
+              Prévia da case
             </h2>
             <p className="text-xs text-zinc-500">{modeloRotulo}</p>
           </div>
@@ -129,22 +142,34 @@ export function PreviewCapaModal({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={arteUrl}
-                alt="Sua arte na capa"
+                alt="Sua arte na case"
                 className="absolute inset-0 h-full w-full object-cover"
               />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <div
+                className="pointer-events-none absolute z-[2]"
+                style={logoStyle}
+                aria-hidden
+              >
+                <img
+                  src={ZENPRO_LOGO_SRC}
+                  alt=""
+                  className="h-full w-full object-contain drop-shadow-md"
+                />
+              </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={cameraUrl}
                 alt=""
                 aria-hidden
-                className="pointer-events-none absolute inset-0 h-full w-full"
+                className="pointer-events-none absolute inset-0 z-[3] h-full w-full"
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={borderUrl}
                 alt=""
                 aria-hidden
-                className="pointer-events-none absolute inset-0 h-full w-full"
+                className="pointer-events-none absolute inset-0 z-[4] h-full w-full"
               />
             </div>
           ) : (
@@ -156,8 +181,7 @@ export function PreviewCapaModal({
 
         <p className="px-4 py-3 text-center text-xs text-zinc-500">
           Visual ilustrativo — {fotosValidas.length} foto
-          {fotosValidas.length !== 1 ? "s" : ""} empilhada
-          {fotosValidas.length !== 1 ? "s" : ""} na capa.
+          {fotosValidas.length !== 1 ? "s" : ""} na case.
         </p>
       </div>
     </div>

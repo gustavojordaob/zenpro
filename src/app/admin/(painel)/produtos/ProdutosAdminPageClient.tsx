@@ -54,6 +54,18 @@ export function ProdutosAdminPageClient() {
       titulo="Produtos"
       subtitulo="Catálogo central da marca — todos os revendedores vendem estes itens"
     >
+      <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+        <p className="font-semibold">Aparelho novo?</p>
+        <p className="mt-1 text-amber-900">
+          Para cadastrar um modelo de celular com case personalizável, use{" "}
+          <Link href="/admin/capinha-nova" className="font-semibold underline">
+            + Nova case
+          </Link>
+          . Aqui em Produtos você só cria variantes (material, preço) de itens
+          já existentes no catálogo.
+        </p>
+      </div>
+
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-zinc-600">
           {produtos.length} produto{produtos.length !== 1 ? "s" : ""} no
@@ -64,6 +76,12 @@ export function ProdutosAdminPageClient() {
           className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
         >
           Novo produto
+        </Link>
+        <Link
+          href="/admin/estoque"
+          className="rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+        >
+          Gerenciar estoque
         </Link>
       </div>
 
@@ -94,6 +112,7 @@ export function ProdutosAdminPageClient() {
                 <tr>
                   <th className="px-4 py-3">Produto</th>
                   <th className="px-4 py-3">Preço</th>
+                  <th className="px-4 py-3">Estoque</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Ações</th>
                 </tr>
@@ -128,6 +147,19 @@ export function ProdutosAdminPageClient() {
                     </td>
                     <td className="px-4 py-3 font-medium text-zinc-900">
                       {formatarPreco(produto.precoBaseCentavos)}
+                    </td>
+                    <td className="px-4 py-3 text-zinc-700">
+                      {produto.personalizavel || !produto.controlaEstoque ? (
+                        <span className="text-zinc-400">—</span>
+                      ) : (
+                        <Link
+                          href="/admin/estoque"
+                          className="font-medium tabular-nums underline decoration-zinc-300 hover:decoration-zinc-600"
+                          title="Alterar em Estoque"
+                        >
+                          {produto.estoqueCentral}
+                        </Link>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -186,6 +218,14 @@ export function ProdutosAdminPageClient() {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-zinc-900">{produto.nome}</p>
                   <p className="text-sm text-zinc-700">{formatarPreco(produto.precoBaseCentavos)}</p>
+                  {!produto.personalizavel && produto.controlaEstoque && (
+                    <p className="text-xs text-zinc-500">
+                      Estoque:{" "}
+                      <Link href="/admin/estoque" className="font-medium underline">
+                        {produto.estoqueCentral} un.
+                      </Link>
+                    </p>
+                  )}
                 </div>
                 <span
                   className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${

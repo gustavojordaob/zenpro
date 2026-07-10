@@ -34,6 +34,16 @@ const PROMPT_PADRAO =
   "como se estivessem juntos no mesmo lugar tirando uma foto. Mantenha rostos reconhecíveis, " +
   "iluminação natural e coerente. Sem colagem visível, sem bordas brancas, sem grade.";
 
+/** Regras de enquadramento — só no servidor; o usuário não vê isto. */
+const INSTRUCOES_ENQUADRAMENTO =
+  "Instruções técnicas obrigatórias (não mencione ao usuário): " +
+  "Gere APENAS uma fotografia fotorrealista — NÃO desenhe celular, case, moldura, " +
+  "tela de aparelho, visor de câmera, UI de Stories/Reels, bordas de tela nem mockup. " +
+  "Proporção EXATA 9:16 vertical (1080×1920, formato Instagram Stories). " +
+  "Todas as pessoas com rosto, cabeça, ombros e corpo visíveis — ninguém cortado nas bordas. " +
+  "Margem de segurança de ~8% em todos os lados; sujeitos centralizados e bem proporcionados. " +
+  "Conteúdo = foto pura para impressão na traseira de uma case — sem objetos eletrônicos na cena.";
+
 function extrairImagemResposta(
   response: GeminiResponse,
 ): { base64: string; mimeType: string } | null {
@@ -99,10 +109,7 @@ export const gerarFotoCriativaIA = onCall(
           data: img.base64,
         },
       })),
-      {
-        text:
-          "Gere UMA imagem final vertical 9:16 (formato Stories de celular), pronta para capinha personalizada.",
-      },
+      { text: INSTRUCOES_ENQUADRAMENTO },
     ];
 
     try {

@@ -447,7 +447,10 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
                   className="w-full rounded-lg border border-zinc-300 px-3 py-2.5"
                 />
                 <p className="text-xs text-zinc-500">
-                  Revendedores recebem parte deste estoque na tela Admin → Estoque.
+                  Para ajustar no dia a dia, use{" "}
+                  <strong>Admin → Estoque</strong> (loja oficial Zen Pro). Aqui
+                  só se estiver criando o produto ou alterando junto com preço e
+                  fotos.
                 </p>
               </label>
             )}

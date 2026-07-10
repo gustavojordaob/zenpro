@@ -34,6 +34,7 @@
     "rewrites": [
       { "source": "/*/personalizar", "destination": "/loja/personalizar.html" },
       { "source": "/*/carrinho", "destination": "/loja/carrinho.html" },
+      { "source": "/*/checkout/retorno", "destination": "/loja/checkout/retorno.html" },
       { "source": "/*/checkout", "destination": "/loja/checkout.html" },
       { "source": "/*", "destination": "/loja.html" }
     ],

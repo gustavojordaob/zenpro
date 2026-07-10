@@ -28,7 +28,7 @@ export function PersonalizacaoFields({
     <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
       <div>
         <h2 className="text-sm font-semibold text-zinc-900">
-          Deixe sua capinha única
+          Deixe sua case única
         </h2>
         <p className="mt-1 text-xs text-zinc-500">
           Conte o que você imagina — usamos isso na produção e no acabamento.
@@ -37,7 +37,7 @@ export function PersonalizacaoFields({
 
       <label className="block space-y-1.5">
         <span className="text-sm font-medium text-zinc-700">
-          Nome da capinha{" "}
+          Nome da case{" "}
           <span className="font-normal text-zinc-400">(opcional)</span>
         </span>
         <input

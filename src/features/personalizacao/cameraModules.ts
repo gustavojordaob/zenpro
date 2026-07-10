@@ -8,6 +8,11 @@
  * Consultar rag_buscar("capinhas editor foto") antes de mexer no editor.
  */
 
+import {
+  DISPOSITIVOS_PRESETS,
+  getDispositivoPreset,
+} from "@/features/admin/catalogo/dispositivosPresets";
+
 export type Lente = {
   /** centro X (fração de W) */
   cx: number;
@@ -435,21 +440,42 @@ export const CAMERA_PRESET_OPCOES: {
   { id: "sem-camera", rotulo: "Sem câmera (capa lisa)", grupo: "Genéricos" },
 ];
 
+/** IDs legados (mock) → preset canônico do catálogo. */
+const MODELO_ID_ALIASES: Record<string, string> = {
+  "samsung-s24": "galaxy-s24",
+  "samsung-s23": "galaxy-s23",
+  "samsung-s22": "galaxy-s22",
+  "samsung-s21": "galaxy-s21",
+};
+
 const PRESET_PADRAO: CameraPresetId = "iphone-pro";
 
-/** Cor padrão do corpo do aparelho por modelo (plateau = cor do corpo). */
-const COR_APARELHO_PADRAO: Record<string, string> = {
-  "iphone-17-pro-max": "#d1732a", // Cosmic Orange
-  "iphone-15": "#e7e0d3", // Starlight
-  "samsung-s24": "#3a3f44", // Onyx
-};
+const PRESET_POR_DISPOSITIVO = Object.fromEntries(
+  DISPOSITIVOS_PRESETS.map((d) => [d.id, d.cameraPresetId]),
+) as Record<string, CameraPresetId>;
 
-/** Preset padrão por modelo conhecido (mock/seed). Admin pode sobrescrever. */
-const PRESET_POR_MODELO: Record<string, CameraPresetId> = {
-  "iphone-17-pro-max": "iphone-pro",
-  "iphone-15": "iphone-padrao",
-  "samsung-s24": "android-triplo",
-};
+const COR_POR_DISPOSITIVO = Object.fromEntries(
+  DISPOSITIVOS_PRESETS.map((d) => [d.id, d.corAparelho]),
+) as Record<string, string>;
+
+function resolverModeloCanonico(modeloId: string): string {
+  return MODELO_ID_ALIASES[modeloId] ?? modeloId;
+}
+
+export function resolveCameraPresetId(modeloId: string): CameraPresetId {
+  const canon = resolverModeloCanonico(modeloId);
+  const fromPreset = getDispositivoPreset(canon);
+  if (fromPreset?.cameraPresetId) {
+    return fromPreset.cameraPresetId;
+  }
+  if (canon in PRESET_POR_DISPOSITIVO) {
+    return PRESET_POR_DISPOSITIVO[canon];
+  }
+  if (canon in CAMERA_PRESETS) {
+    return canon as CameraPresetId;
+  }
+  return PRESET_PADRAO;
+}
 
 export function getCameraPresetSpec(
   presetId?: string | null,
@@ -459,16 +485,25 @@ export function getCameraPresetSpec(
 }
 
 export function getCorAparelho(modeloId: string): string {
-  return COR_APARELHO_PADRAO[modeloId] ?? "#8a8d93";
+  const canon = resolverModeloCanonico(modeloId);
+  const fromPreset = getDispositivoPreset(canon);
+  if (fromPreset?.corAparelho) return fromPreset.corAparelho;
+  if (COR_POR_DISPOSITIVO[canon]) return COR_POR_DISPOSITIVO[canon];
+  return "#8a8d93";
 }
 
 export function getCameraSpec(modeloId: string): CameraModuleSpec {
-  const preset = PRESET_POR_MODELO[modeloId];
-  return CAMERA_PRESETS[preset ?? PRESET_PADRAO];
+  const presetId = resolveCameraPresetId(modeloId);
+  return CAMERA_PRESETS[presetId];
 }
 
 export function modeloTemCameraDedicada(modeloId: string): boolean {
-  return modeloId in PRESET_POR_MODELO;
+  const canon = resolverModeloCanonico(modeloId);
+  return (
+    Boolean(getDispositivoPreset(canon)) ||
+    canon in PRESET_POR_DISPOSITIVO ||
+    canon in CAMERA_PRESETS
+  );
 }
 
 function n(value: number): string {

@@ -7,7 +7,11 @@ import {
   extrairCpfAnterior,
   reservarIndicesPerfil,
 } from "./perfilIndices";
-import { apenasDigitos } from "./perfilUtils";
+import { apenasDigitos, buscarEnderecoPorCep } from "./perfilUtils";
+import {
+  municipiosConferem,
+  normalizarNomeMunicipio,
+} from "./enderecoUtils";
 
 function docRef(uid: string) {
   return doc(getFirebaseDb(), "usuarios", uid);
@@ -40,7 +44,7 @@ export async function carregarPerfilUsuario(
     numero: data.numero ?? "",
     complemento: data.complemento ?? "",
     bairro: data.bairro ?? "",
-    cidade: data.cidade ?? "",
+    cidade: normalizarNomeMunicipio(data.cidade ?? "", data.estado ?? ""),
     estado: data.estado ?? "",
   };
 }
@@ -63,18 +67,38 @@ export async function salvarPerfilUsuario(
     ? extrairCpfAnterior(existente.data())
     : "";
 
+  const cepDigitos = apenasDigitos(dados.cep);
+  const viaCep = await buscarEnderecoPorCep(cepDigitos);
+  if (!viaCep) {
+    throw new Error("CEP não encontrado. Verifique e tente novamente.");
+  }
+
+  const cidadeInformada = normalizarNomeMunicipio(dados.cidade.trim(), dados.estado);
+  if (
+    !municipiosConferem(
+      cidadeInformada,
+      dados.estado,
+      viaCep.cidade,
+      viaCep.estado,
+    )
+  ) {
+    throw new Error(
+      `Cidade/UF não conferem com o CEP. Use: ${viaCep.cidade} — ${viaCep.estado}.`,
+    );
+  }
+
   const payload: PerfilUsuarioFirestore = {
     email: user.email ?? "",
     nomeCompleto: dados.nomeCompleto.trim(),
     cpf: cpfNovo,
     telefone: apenasDigitos(dados.telefone),
-    cep: apenasDigitos(dados.cep),
+    cep: cepDigitos,
     logradouro: dados.logradouro.trim(),
     numero: dados.numero.trim(),
     complemento: dados.complemento.trim(),
     bairro: dados.bairro.trim(),
-    cidade: dados.cidade.trim(),
-    estado: dados.estado.trim().toUpperCase(),
+    cidade: viaCep.cidade,
+    estado: viaCep.estado.toUpperCase(),
     atualizadoEm: serverTimestamp(),
   };
 

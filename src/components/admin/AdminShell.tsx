@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { sair } from "@/features/auth/authService";
 import { useAuthAdmin } from "@/features/admin/AdminAuthProvider";
+import { linkWhatsAppAtendimento } from "@/features/revendedor/revendedorComercialConstants";
 
 type Props = {
   titulo: string;
@@ -38,7 +39,7 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
             label: "Candidaturas",
             destaque: true,
           },
-          { href: "/admin/capinha-nova", label: "+ Nova capinha", destaque: true },
+          { href: "/admin/capinha-nova", label: "+ Nova case", destaque: true },
           { href: "/admin/tipos", label: "Tipos" },
           { href: "/admin/marcas", label: "Marcas" },
           { href: "/admin/modelos", label: "Modelos" },
@@ -102,6 +103,18 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
             >
               Sair
             </button>
+            {sessao?.papel === "revendedor" && (
+              <a
+                href={linkWhatsAppAtendimento(
+                  "Olá! Sou revendedor Zen Pro e preciso de atendimento.",
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500"
+              >
+                Fale conosco
+              </a>
+            )}
           </nav>
 
           {/* Botão menu mobile */}
@@ -162,6 +175,18 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
               >
                 Sair
               </button>
+              {sessao?.papel === "revendedor" && (
+                <a
+                  href={linkWhatsAppAtendimento(
+                    "Olá! Sou revendedor Zen Pro e preciso de atendimento.",
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-center text-sm font-medium text-white"
+                >
+                  Fale conosco
+                </a>
+              )}
             </div>
           </nav>
         )}

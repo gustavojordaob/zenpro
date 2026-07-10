@@ -1,6 +1,7 @@
 import { httpsCallable } from "firebase/functions";
 import type { FirebaseError } from "firebase/app";
 import { getFirebaseFunctions } from "@/lib/firebase";
+import { normalizarArteCase916 } from "@/features/personalizacao/expandirFotoPara916";
 
 const MAX_EDGE = 1024;
 
@@ -98,7 +99,10 @@ export async function gerarFotoCriativaComIA(
 
     const mime = data.mimeType || "image/png";
     const ext = mime.includes("jpeg") || mime.includes("jpg") ? "jpg" : "png";
-    return new File([bytes], `criativa-ia-${Date.now()}.${ext}`, { type: mime });
+    const bruto = new File([bytes], `criativa-ia-${Date.now()}.${ext}`, {
+      type: mime,
+    });
+    return normalizarArteCase916(bruto);
   } catch (error) {
     throw new Error(mensagemErroCallable(error));
   }

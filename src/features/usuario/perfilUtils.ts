@@ -1,4 +1,5 @@
 import type { PerfilUsuario } from "./perfilTypes";
+import { normalizarNomeMunicipio } from "./enderecoUtils";
 
 export function apenasDigitos(valor: string): string {
   return valor.replace(/\D/g, "");
@@ -88,6 +89,7 @@ export type EnderecoViaCep = {
   bairro: string;
   cidade: string;
   estado: string;
+  ibge?: string;
 };
 
 export async function buscarEnderecoPorCep(
@@ -105,13 +107,16 @@ export async function buscarEnderecoPorCep(
       bairro?: string;
       localidade?: string;
       uf?: string;
+      ibge?: string;
     };
     if (data.erro || !data.localidade || !data.uf) return null;
+    const uf = data.uf;
     return {
       logradouro: data.logradouro ?? "",
       bairro: data.bairro ?? "",
-      cidade: data.localidade,
-      estado: data.uf,
+      cidade: normalizarNomeMunicipio(data.localidade, uf),
+      estado: uf,
+      ibge: data.ibge ? String(data.ibge) : undefined,
     };
   } catch {
     return null;

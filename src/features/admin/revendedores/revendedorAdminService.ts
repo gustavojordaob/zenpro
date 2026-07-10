@@ -240,6 +240,7 @@ export async function criarRevendedorAdmin(
     logo: null,
     cor: "#18181b",
     whatsapp: null,
+    pedidoMinimoCentavos: 80_000,
   };
 
   const lojaPayload: LojaFirestore & {
@@ -301,6 +302,12 @@ export async function atualizarRevendedorAdmin(
       logo: input.config.logo ?? null,
       cor: input.config.cor ?? null,
       whatsapp: input.config.whatsapp ?? null,
+      limiteCreditoCentavos: input.config.limiteCreditoCentavos ?? null,
+      pedidoMinimoCentavos: input.config.pedidoMinimoCentavos ?? null,
+      comissaoPercentual: input.config.comissaoPercentual ?? null,
+      prazoEntregaDiasLocal: input.config.prazoEntregaDiasLocal ?? null,
+      prazoEntregaDiasZenPro: input.config.prazoEntregaDiasZenPro ?? null,
+      expedicao: input.config.expedicao ?? null,
     },
     atualizadoEm: serverTimestamp(),
   };

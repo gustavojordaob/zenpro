@@ -44,7 +44,7 @@ export function ProductCard({ produto }: Props) {
 
       <div className="flex min-h-[132px] flex-1 flex-col gap-1 p-4">
         <p className="truncate text-xs font-medium text-zinc-500">
-          {produto.marca || "Capinha personalizável"}
+          {produto.marca || "Case personalizável"}
         </p>
         <h3 className="line-clamp-2 min-h-[2.5rem] font-semibold leading-tight text-zinc-900 group-hover:text-zinc-700">
           {produto.nome}

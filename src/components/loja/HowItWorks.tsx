@@ -2,7 +2,7 @@ const PASSOS = [
   {
     numero: "1",
     titulo: "Escolha o modelo",
-    descricao: "Selecione a capinha compatível com o seu celular na vitrine.",
+    descricao: "Selecione a case compatível com o seu celular na vitrine.",
   },
   {
     numero: "2",
@@ -12,7 +12,7 @@ const PASSOS = [
   {
     numero: "3",
     titulo: "Receba em casa",
-    descricao: "Finalizamos a produção e enviamos a capinha personalizada até você.",
+    descricao: "Finalizamos a produção e enviamos a case personalizada até você.",
   },
 ] as const;
 

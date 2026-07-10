@@ -12,7 +12,7 @@ export const TIPOS_PERSONALIZACAO = [
 export type TipoPersonalizacao = (typeof TIPOS_PERSONALIZACAO)[number];
 
 export const ROTULOS_TIPO_PERSONALIZACAO: Record<TipoPersonalizacao, string> = {
-  mascara_modelo: "Máscara por modelo (capinha)",
+  mascara_modelo: "Máscara por modelo (case)",
   wrap_cilindrico: "Wrap cilíndrico (em breve)",
   recorte_tela: "Recorte de tela (em breve)",
 };

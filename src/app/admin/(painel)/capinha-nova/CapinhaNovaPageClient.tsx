@@ -102,7 +102,7 @@ export function CapinhaNovaPageClient() {
 
   // Sugestão automática do nome do produto.
   const nomeProdutoSugerido = useMemo(() => {
-    const base = modeloNome.trim() ? `Capinha ${modeloNome.trim()}` : "";
+    const base = modeloNome.trim() ? `Case ${modeloNome.trim()}` : "";
     return materialRotulo && base ? `${base} — ${materialRotulo}` : base;
   }, [modeloNome, materialRotulo]);
 
@@ -165,7 +165,7 @@ export function CapinhaNovaPageClient() {
       });
 
       // 3) Produto personalizável vinculado ao modelo
-      setEtapa("Publicando a capinha...");
+      setEtapa("Publicando a case...");
       const produtoPayload = {
         nome: nomeProdutoFinal.trim(),
         descricao: "",
@@ -196,7 +196,7 @@ export function CapinhaNovaPageClient() {
       router.push("/admin/produtos");
     } catch (e) {
       setErro(
-        e instanceof Error ? e.message : "Não foi possível publicar a capinha.",
+        e instanceof Error ? e.message : "Não foi possível publicar a case.",
       );
     } finally {
       setSalvando(false);
@@ -208,7 +208,7 @@ export function CapinhaNovaPageClient() {
 
   return (
     <AdminShell
-      titulo="Nova capinha personalizável"
+      titulo="Nova case personalizável"
       subtitulo="Publique um aparelho novo para o cliente personalizar com a foto — em um passo só"
     >
       <div className="mx-auto max-w-xl space-y-5">
@@ -439,7 +439,7 @@ export function CapinhaNovaPageClient() {
                 setNomeProdutoEditado(true);
                 setNomeProduto(e.target.value);
               }}
-              placeholder="Capinha Samsung Galaxy S23 — Silicone"
+              placeholder="Case Samsung Galaxy S23 — Silicone"
               className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
             />
           </label>
@@ -482,7 +482,7 @@ export function CapinhaNovaPageClient() {
             onClick={() => void publicar()}
             className="btn-gold rounded-xl px-6 py-3 text-sm font-semibold disabled:opacity-50"
           >
-            {salvando ? etapa ?? "Publicando..." : "Publicar capinha personalizável"}
+            {salvando ? etapa ?? "Publicando..." : "Publicar case personalizável"}
           </button>
           <Link
             href="/admin/produtos"

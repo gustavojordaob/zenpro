@@ -3,18 +3,22 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   updateDoc,
   serverTimestamp,
   type DocumentData,
 } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
 import {
   COLECOES,
   type ItemPedidoLojaFirestore,
   type LojaFirestore,
+  type NotaFiscalFirestore,
+  type PedidoEnvioFirestore,
   type PedidoLojaFirestore,
   type PedidoLojaStatus,
 } from "@/features/multitenant/types";
-import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
+import { getFirebaseDb, getFirebaseFunctions, isFirebaseConfigured } from "@/lib/firebase";
 import { firestoreTimestampToMillis } from "@/lib/firestoreTimestamp";
 
 export type PedidoAdmin = {
@@ -85,7 +89,14 @@ function mapPedido(
       id: (data.pagamento as DocumentData | undefined)?.id ?? null,
       status: (data.pagamento as DocumentData | undefined)?.status ?? null,
       forma: (data.pagamento as DocumentData | undefined)?.forma ?? null,
+      formaOnline: (data.pagamento as DocumentData | undefined)?.formaOnline ?? null,
+      checkoutUrl: (data.pagamento as DocumentData | undefined)?.checkoutUrl ?? null,
+      parcelas: (data.pagamento as DocumentData | undefined)?.parcelas ?? null,
+      metodoMp: (data.pagamento as DocumentData | undefined)?.metodoMp ?? null,
     },
+    pagamentoLiberadoEnvio: Boolean(data.pagamentoLiberadoEnvio),
+    envio: (data.envio as PedidoEnvioFirestore | undefined) ?? null,
+    notaFiscal: (data.notaFiscal as NotaFiscalFirestore | undefined) ?? null,
     origem: (data.origem as PedidoAdmin["origem"]) ?? "online",
     registradoPorUid: (data.registradoPorUid as string | null | undefined) ?? null,
     observacao: (data.observacao as string | null | undefined) ?? null,
@@ -157,11 +168,44 @@ export async function obterPedidoAdmin(
   return mapPedido(lojaId, snap.id, snap.data());
 }
 
+export function observarPedidoAdmin(
+  lojaId: string,
+  pedidoId: string,
+  onChange: (pedido: PedidoAdmin | null) => void,
+): () => void {
+  const db = requireDb();
+  return onSnapshot(
+    doc(db, COLECOES.LOJAS, lojaId, COLECOES.PEDIDOS, pedidoId),
+    (snap) => {
+      if (!snap.exists()) {
+        onChange(null);
+        return;
+      }
+      onChange(mapPedido(lojaId, snap.id, snap.data()));
+    },
+  );
+}
+
 export async function atualizarStatusPedidoAdmin(
   lojaId: string,
   pedidoId: string,
   status: PedidoLojaStatus,
+  atual?: Pick<PedidoAdmin, "pagamentoLiberadoEnvio" | "status" | "origem">,
 ): Promise<void> {
+  if (status === "enviado" || status === "producao") {
+    const presencial = atual?.origem === "presencial";
+    const liberado =
+      presencial ||
+      atual?.pagamentoLiberadoEnvio === true ||
+      atual?.status === "pago" ||
+      atual?.status === "producao";
+    if (!liberado) {
+      throw new Error(
+        "Produção/envio só liberados após pagamento confirmado (PIX, boleto compensado ou cartão aprovado).",
+      );
+    }
+  }
+
   const db = requireDb();
   await updateDoc(
     doc(db, COLECOES.LOJAS, lojaId, COLECOES.PEDIDOS, pedidoId),
@@ -170,6 +214,65 @@ export async function atualizarStatusPedidoAdmin(
       atualizadoEm: serverTimestamp(),
     },
   );
+}
+
+export async function atualizarEnvioPedidoAdmin(
+  lojaId: string,
+  pedidoId: string,
+  envio: PedidoEnvioFirestore,
+): Promise<void> {
+  const db = requireDb();
+  await updateDoc(
+    doc(db, COLECOES.LOJAS, lojaId, COLECOES.PEDIDOS, pedidoId),
+    {
+      envio: {
+        ...envio,
+        enviadoEm: envio.enviadoEm ?? serverTimestamp(),
+      },
+      atualizadoEm: serverTimestamp(),
+    },
+  );
+}
+
+export async function atualizarNotaFiscalPedidoAdmin(
+  lojaId: string,
+  pedidoId: string,
+  notaFiscal: NotaFiscalFirestore,
+): Promise<void> {
+  const db = requireDb();
+  await updateDoc(
+    doc(db, COLECOES.LOJAS, lojaId, COLECOES.PEDIDOS, pedidoId),
+    {
+      notaFiscal,
+      atualizadoEm: serverTimestamp(),
+    },
+  );
+}
+
+export async function reemitirNotaFiscalPedidoAdmin(
+  lojaId: string,
+  pedidoId: string,
+): Promise<{ enfileirado: boolean; outboxId?: string }> {
+  const callable = httpsCallable<
+    { lojaId: string; pedidoId: string },
+    { enfileirado: boolean; outboxId?: string }
+  >(getFirebaseFunctions(), "reemitirNotaFiscalPedido");
+
+  const { data } = await callable({ lojaId, pedidoId });
+  return data ?? { enfileirado: false };
+}
+
+export async function sincronizarNotaFiscalPedidoAdmin(
+  lojaId: string,
+  pedidoId: string,
+): Promise<{ status: string; erro?: string }> {
+  const callable = httpsCallable<
+    { lojaId: string; pedidoId: string },
+    { status: string; erro?: string }
+  >(getFirebaseFunctions(), "sincronizarNotaFiscalPedido");
+
+  const { data } = await callable({ lojaId, pedidoId });
+  return data ?? { status: "erro" };
 }
 
 function formatTimestampSort(criadoEm: unknown): number {

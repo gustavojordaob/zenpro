@@ -45,7 +45,7 @@ export function TextoCapinhaPanel({
     <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-900">Texto na capinha</h2>
+          <h2 className="text-sm font-semibold text-zinc-900">Texto na case</h2>
           <p className="text-xs text-zinc-500">
             Arraste o texto no preview. Toque para selecionar.
           </p>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image as KonvaImage, Layer, Rect, Stage } from "react-konva";
 import type Konva from "konva";
 import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./cameraModules";
+import { ZenProLogoOverlay } from "./ZenProLogoOverlay";
 import { CaseTextNode } from "./CaseTextNode";
 import { getCaseFrameSpec } from "./caseFrame";
 import { getCaseLayout } from "./caseGeometry";
@@ -302,6 +303,7 @@ export function CaseEditor({
     const svg = buildCameraModuleSvgFromSpec(cameraSpec, molduraW, molduraH, cor);
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }, [visualCtx, modelo.id, molduraW, molduraH]);
+  const cameraSpec = visualCtx?.camera ?? getCameraSpec(modelo.id);
   const { image: cameraImage } = useHtmlImage(cameraUrl);
 
   /** Área generosa para arraste — foto pode ultrapassar a moldura no editor. */
@@ -458,6 +460,14 @@ export function CaseEditor({
               />
             ))}
 
+            <ZenProLogoOverlay
+              cameraSpec={cameraSpec}
+              molduraX={molduraX}
+              molduraY={molduraY}
+              molduraW={molduraW}
+              molduraH={molduraH}
+            />
+
             {cameraImage && (
               <KonvaImage
                 image={cameraImage}
@@ -489,7 +499,7 @@ export function CaseEditor({
             ? "Layout automático — selecione a aba para ajustar cada foto. "
             : ""}
           Pinça com dois dedos, barra de tamanho ou scroll para zoom. A foto pode
-          ultrapassar a moldura — use &quot;Ver na capa&quot; para o resultado final.
+          ultrapassar a moldura — use &quot;Ver na case&quot; para o resultado final.
         </p>
       )}
     </div>

@@ -41,7 +41,7 @@ export function RevisarPersonalizacaoModal({
       <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl">
         <div className="border-b border-zinc-200 px-5 py-4">
           <h2 id="revisar-titulo" className="text-lg font-bold text-zinc-900">
-            Como ficou sua capinha?
+            Como ficou sua case?
           </h2>
           <p className="mt-1 text-sm text-zinc-600">
             Confira o preview antes de finalizar. {modeloRotulo}

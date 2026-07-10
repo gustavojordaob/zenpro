@@ -7,6 +7,7 @@ import { PageBackLink } from "@/components/loja/PageBackLink";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { PERFIL_VAZIO, UFS_BR } from "@/features/usuario/perfilTypes";
+import { normalizarNomeMunicipio } from "@/features/usuario/enderecoUtils";
 import {
   buscarEnderecoPorCep,
   cpfValido,
@@ -14,6 +15,7 @@ import {
   formatarCpf,
   formatarTelefone,
   perfilCompleto,
+  type EnderecoViaCep,
 } from "@/features/usuario/perfilUtils";
 import { usePerfilUsuario } from "@/features/usuario/usePerfilUsuario";
 import { PerfilIndiceOcupadoError } from "@/features/usuario/perfilIndices";
@@ -29,6 +31,8 @@ function ContaForm() {
   const [form, setForm] = useState(PERFIL_VAZIO);
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [enderecoCep, setEnderecoCep] = useState<EnderecoViaCep | null>(null);
+  const [erroCep, setErroCep] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
@@ -50,16 +54,27 @@ function ContaForm() {
       numero: perfil.numero,
       complemento: perfil.complemento,
       bairro: perfil.bairro,
-      cidade: perfil.cidade,
+      cidade: normalizarNomeMunicipio(perfil.cidade, perfil.estado),
       estado: perfil.estado,
     });
+    if (perfil.cep.replace(/\D/g, "").length === 8) {
+      void buscarEnderecoPorCep(perfil.cep).then((endereco) => {
+        if (endereco) setEnderecoCep(endereco);
+      });
+    }
   }, [perfil]);
 
-  async function handleCepBlur() {
+  async function preencherEnderecoPorCep(cep: string) {
+    setErroCep(null);
     setBuscandoCep(true);
     try {
-      const endereco = await buscarEnderecoPorCep(form.cep);
-      if (!endereco) return;
+      const endereco = await buscarEnderecoPorCep(cep);
+      if (!endereco) {
+        setEnderecoCep(null);
+        setErroCep("CEP não encontrado.");
+        return;
+      }
+      setEnderecoCep(endereco);
       setForm((prev) => ({
         ...prev,
         logradouro: endereco.logradouro || prev.logradouro,
@@ -70,6 +85,10 @@ function ContaForm() {
     } finally {
       setBuscandoCep(false);
     }
+  }
+
+  async function handleCepBlur() {
+    await preencherEnderecoPorCep(form.cep);
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -84,6 +103,11 @@ function ContaForm() {
 
     if (!perfilCompleto(form)) {
       setErro("Preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    if (!enderecoCep) {
+      setErro("Informe um CEP válido para preencher cidade e UF automaticamente.");
       return;
     }
 
@@ -223,14 +247,25 @@ function ContaForm() {
                 inputMode="numeric"
                 placeholder="00000-000"
                 value={form.cep}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, cep: formatarCep(e.target.value) }))
-                }
+                onChange={(e) => {
+                  const cep = formatarCep(e.target.value);
+                  setForm((p) => ({ ...p, cep }));
+                  setEnderecoCep(null);
+                  setErroCep(null);
+                }}
                 onBlur={() => void handleCepBlur()}
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900"
               />
               {buscandoCep && (
                 <span className="text-xs text-zinc-500">Buscando CEP...</span>
+              )}
+              {erroCep && (
+                <span className="text-xs text-red-600">{erroCep}</span>
+              )}
+              {enderecoCep && (
+                <span className="text-xs text-emerald-700">
+                  Cidade e UF preenchidos pelo CEP — não edite manualmente.
+                </span>
               )}
             </label>
 
@@ -302,11 +337,14 @@ function ContaForm() {
                 <input
                   type="text"
                   required
+                  readOnly={Boolean(enderecoCep)}
                   value={form.cidade}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, cidade: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900"
+                  className={`w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900 ${
+                    enderecoCep ? "cursor-not-allowed bg-zinc-50" : ""
+                  }`}
                 />
               </label>
 
@@ -314,11 +352,14 @@ function ContaForm() {
                 <span className="text-sm font-medium text-zinc-700">UF *</span>
                 <select
                   required
+                  disabled={Boolean(enderecoCep)}
                   value={form.estado}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, estado: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900"
+                  className={`w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900 ${
+                    enderecoCep ? "cursor-not-allowed bg-zinc-50" : ""
+                  }`}
                 >
                   <option value="">—</option>
                   {UFS_BR.map((uf) => (

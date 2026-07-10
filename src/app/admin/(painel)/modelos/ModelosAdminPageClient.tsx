@@ -30,14 +30,14 @@ export function ModelosAdminPageClient() {
   }, [carregar]);
 
   return (
-    <AdminShell titulo="Modelos" subtitulo="Máscaras e overlays por aparelho (capinha)">
-      {/* Guia rápido: como colocar um celular novo com capinha */}
+    <AdminShell titulo="Modelos" subtitulo="Máscaras e overlays por aparelho (case)">
+      {/* Guia rápido: como colocar um celular novo com case */}
       <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
         <p className="font-semibold">Quer o jeito mais fácil?</p>
         <p className="mt-1">
           Use o assistente{" "}
           <Link href="/admin/capinha-nova" className="font-semibold underline">
-            + Nova capinha personalizável
+            + Nova case personalizável
           </Link>{" "}
           — ele cria o aparelho e o produto de uma vez, sem enviar máscara/moldura.
         </p>
@@ -48,12 +48,15 @@ export function ModelosAdminPageClient() {
             (marca, nome, dimensões, molde da máscara e câmera).
           </li>
           <li>
-            Depois em{" "}
+            : para variantes (material/preço), use{" "}
             <Link href="/admin/produtos/novo" className="font-semibold underline">
               Produtos → Novo produto
             </Link>
-            : crie a capinha, marque <em>“personalizável”</em>, escolha o
-            material e selecione este modelo como compatível.
+            . Aparelho novo sempre via{" "}
+            <Link href="/admin/capinha-nova" className="font-semibold underline">
+              + Nova case
+            </Link>
+            .
           </li>
         </ol>
         <p className="mt-2 text-xs text-amber-800">

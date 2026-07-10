@@ -66,8 +66,16 @@ service cloud.firestore {
         && request.resource.data.totalCentavos is int
         && request.resource.data.cliente is map
         && (
-          request.resource.data.status == 'aguardando_pagamento'
-          || request.resource.data.status == 'pago'
+          (
+            request.resource.data.status == 'aguardando_pagamento'
+            && request.resource.data.pagamentoLiberadoEnvio != true
+          )
+          || (
+            request.resource.data.status == 'pago'
+            && request.resource.data.pagamento is map
+            && request.resource.data.pagamento.provider == 'mock'
+            && request.resource.data.pagamentoLiberadoEnvio == true
+          )
         );
     }
 
@@ -173,7 +181,8 @@ service cloud.firestore {
       allow create: if isRevendedor()
         && request.resource.data.revendedorUid == request.auth.uid
         && request.resource.data.lojaId == minhaLoja()
-        && request.resource.data.status == 'solicitado'
+        && request.resource.data.status == 'aguardando_pagamento'
+        && request.resource.data.pagamentoLiberadoEnvio != true
         && request.resource.data.keys().hasAll([
           'lojaId', 'revendedorUid', 'itens', 'totalCentavos', 'status', 'criadoEm'
         ])
@@ -327,6 +336,16 @@ service cloud.firestore {
         && request.resource.data.status == 'pendente';
       allow read: if isMarca();
       allow update, delete: if false;
+    }
+
+    match /notas_fiscais_outbox/{docId} {
+      allow read: if isMarca();
+      allow create, update, delete: if false;
+    }
+
+    match /pagamentos_webhook_log/{docId} {
+      allow read: if isMarca();
+      allow create, update, delete: if false;
     }
 
     match /{document=**} {

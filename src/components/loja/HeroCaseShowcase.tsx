@@ -46,7 +46,7 @@ export function HeroCaseShowcase() {
         </span>
       </div>
       <p className="max-w-[220px] text-center text-xs text-zinc-500 transition group-hover:text-zinc-800">
-        Preview real do editor — foto, texto e emojis na capinha
+        Preview real do editor — foto, texto e emojis na case
       </p>
     </Link>
   );
