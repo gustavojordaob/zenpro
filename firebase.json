@@ -32,6 +32,11 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "cleanUrls": true,
     "rewrites": [
+      { "source": "/revendedor/personalizar", "destination": "/revendedor/personalizar.html" },
+      { "source": "/revendedor/carrinho", "destination": "/revendedor/carrinho.html" },
+      { "source": "/revendedor/checkout/retorno", "destination": "/revendedor/checkout/retorno.html" },
+      { "source": "/revendedor/checkout", "destination": "/revendedor/checkout.html" },
+      { "source": "/revendedor", "destination": "/revendedor.html" },
       { "source": "/*/personalizar", "destination": "/loja/personalizar.html" },
       { "source": "/*/carrinho", "destination": "/loja/carrinho.html" },
       { "source": "/*/checkout/retorno", "destination": "/loja/checkout/retorno.html" },

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image as KonvaImage, Layer, Rect, Stage } from "react-konva";
-import type Konva from "konva";
+import { Group, Image as KonvaImage, Layer, Rect, Stage } from "react-konva";
+import Konva from "konva";
 import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./cameraModules";
 import { ZenProLogoOverlay } from "./ZenProLogoOverlay";
 import { CaseTextNode } from "./CaseTextNode";
@@ -16,6 +16,7 @@ import {
   DEFAULT_COR_FUNDO_CAPINHA,
   ZOOM_MAX,
   ZOOM_MIN,
+  CASE_BORDER,
 } from "./caseVisualConstants";
 import {
   fitImageToArea,
@@ -24,7 +25,6 @@ import {
 
 const STUDIO_BG = "#ececec";
 const PLACEHOLDER_FILL = "#e4e4e7";
-const BORDER_STROKE = "#cbe6fb";
 
 export type FotoCamada = {
   id: string;
@@ -106,6 +106,32 @@ function useHtmlImage(src: string | null) {
   }, [src]);
 
   return { image, loadError };
+}
+
+function useCanBlur(img: HTMLImageElement | null) {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    if (!img) {
+      setOk(false);
+      return;
+    }
+    try {
+      const c = document.createElement("canvas");
+      c.width = 1;
+      c.height = 1;
+      const ctx = c.getContext("2d");
+      if (!ctx) {
+        setOk(false);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, 1, 1);
+      ctx.getImageData(0, 0, 1, 1);
+      setOk(true);
+    } catch {
+      setOk(false);
+    }
+  }, [img]);
+  return ok;
 }
 
 function isTransformPadrao(t: Transform): boolean {
@@ -295,7 +321,7 @@ export function CaseEditor({
 
   const frame = visualCtx?.caseFrame ?? getCaseFrameSpec(modelo.id);
   const radius = frame.radius * molduraW;
-  const borderWidth = Math.max(2, molduraW * 0.02);
+  const borderWidth = Math.max(2.5, molduraW * CASE_BORDER.widthRatio);
 
   const cameraUrl = useMemo(() => {
     const cameraSpec = visualCtx?.camera ?? getCameraSpec(modelo.id);
@@ -328,6 +354,43 @@ export function CaseEditor({
     const ativaFoto = fotos.find((f) => f.id === ativa);
     return ativaFoto ? [...inativas, ativaFoto] : fotos;
   }, [fotos, fotoAtivaId]);
+
+  /** Foto de base para o borrão de fundo (evita espaço em branco ao afastar/diminuir). */
+  const fotoFundoUrl = fotos[0]?.url ?? null;
+  const { image: fotoFundoImage } = useHtmlImage(fotoFundoUrl);
+  const canBlurFundo = useCanBlur(fotoFundoImage);
+  const bgBlurRef = useRef<Konva.Image>(null);
+
+  const fundoBlur = useMemo(() => {
+    if (!fotoFundoImage || !canBlurFundo) return null;
+    const boost = 1.18;
+    const s =
+      Math.max(
+        areaUtil.w / fotoFundoImage.width,
+        areaUtil.h / fotoFundoImage.height,
+      ) * boost;
+    const w = fotoFundoImage.width * s;
+    const h = fotoFundoImage.height * s;
+    return {
+      x: areaUtil.x + (areaUtil.w - w) / 2,
+      y: areaUtil.y + (areaUtil.h - h) / 2,
+      scale: s,
+    };
+  }, [fotoFundoImage, canBlurFundo, areaUtil]);
+
+  const blurRadius = Math.round(molduraW * 0.16);
+
+  useEffect(() => {
+    const node = bgBlurRef.current;
+    if (!node || !fotoFundoImage || !fundoBlur) return;
+    node.cache();
+    node.filters([Konva.Filters.Blur]);
+    node.blurRadius(blurRadius);
+    node.getLayer()?.batchDraw();
+    return () => {
+      node.clearCache();
+    };
+  }, [fotoFundoImage, fundoBlur, blurRadius]);
 
   function atualizarTexto(next: TextoCapinha) {
     onTextosChange(textos.map((t) => (t.id === next.id ? next : t)));
@@ -407,14 +470,33 @@ export function CaseEditor({
 
           <Layer>
             {fotos.length > 0 && (
-              <Rect
-                x={areaUtil.x}
-                y={areaUtil.y}
-                width={areaUtil.w}
-                height={areaUtil.h}
-                fill={corFundo}
-                listening={false}
-              />
+              <Group
+                clipFunc={(ctx) => {
+                  ctx.beginPath();
+                  ctx.rect(areaUtil.x, areaUtil.y, areaUtil.w, areaUtil.h);
+                  ctx.closePath();
+                }}
+              >
+                <Rect
+                  x={areaUtil.x}
+                  y={areaUtil.y}
+                  width={areaUtil.w}
+                  height={areaUtil.h}
+                  fill={corFundo}
+                  listening={false}
+                />
+                {fundoBlur && fotoFundoImage && (
+                  <KonvaImage
+                    ref={bgBlurRef}
+                    image={fotoFundoImage}
+                    x={fundoBlur.x}
+                    y={fundoBlur.y}
+                    scaleX={fundoBlur.scale}
+                    scaleY={fundoBlur.scale}
+                    listening={false}
+                  />
+                )}
+              </Group>
             )}
 
             {fotos.length === 0 && (
@@ -485,8 +567,18 @@ export function CaseEditor({
               width={molduraW - borderWidth}
               height={molduraH - borderWidth}
               cornerRadius={radius}
-              stroke={BORDER_STROKE}
+              stroke={CASE_BORDER.outer}
               strokeWidth={borderWidth}
+              listening={false}
+            />
+            <Rect
+              x={molduraX + borderWidth * 0.78}
+              y={molduraY + borderWidth * 0.78}
+              width={molduraW - borderWidth * 1.56}
+              height={molduraH - borderWidth * 1.56}
+              cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
+              stroke={CASE_BORDER.inner}
+              strokeWidth={Math.max(2, borderWidth * 0.58)}
               listening={false}
             />
           </Layer>

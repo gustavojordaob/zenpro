@@ -9,7 +9,19 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import { SEED_CATALOGO } from "@/features/catalogo/types";
-import { COLECOES, type ProdutoCentralFirestore } from "@/features/multitenant/types";
+import {
+  COLECOES,
+  type FaixaPrecoRevendedor,
+  type ProdutoCentralFirestore,
+} from "@/features/multitenant/types";
+import {
+  normalizarFaixasPrecoRevendedor,
+  precoRevendedorPorQuantidade,
+} from "@/features/revendedor/precoRevendedorFaixas";
+import {
+  normalizarPagamentoProduto,
+  type PagamentoProdutoConfig,
+} from "@/features/pagamentos/pagamentoProduto";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 
 export type ProdutoCentral = {
@@ -20,6 +32,10 @@ export type ProdutoFormInput = {
   nome: string;
   descricao: string;
   precoBaseCentavos: number;
+  /** Preço B2B obrigatório. */
+  precoRevendedorCentavos: number;
+  pedidoMinimoRevendedorCentavos: number;
+  faixasPrecoRevendedor: FaixaPrecoRevendedor[];
   imagens: string[];
   ativo: boolean;
   tipoId: string;
@@ -30,7 +46,21 @@ export type ProdutoFormInput = {
   estoqueCentral: number;
   marcaId: string | null;
   modelosCompativeis: string[];
+  pesoGramas: number;
+  alturaCm: number;
+  larguraCm: number;
+  comprimentoCm: number;
+  pagamento: PagamentoProdutoConfig;
 };
+
+/** Preço cobrado na reposição — 1 un. (faixa) ou fallback. */
+export function precoReposicaoCentavos(produto: {
+  precoBaseCentavos: number;
+  precoRevendedorCentavos?: number | null;
+  faixasPrecoRevendedor?: FaixaPrecoRevendedor[] | null;
+}): number {
+  return precoRevendedorPorQuantidade(produto, 1) || produto.precoBaseCentavos;
+}
 
 const DEFAULTS_NOVO_PRODUTO = {
   tipoId: SEED_CATALOGO.TIPO_CAPINHA,
@@ -66,6 +96,23 @@ function mapProduto(id: string, data: DocumentData): ProdutoCentral {
     nome: String(data.nome ?? ""),
     descricao: String(data.descricao ?? ""),
     precoBaseCentavos: Number(data.precoBaseCentavos ?? 0),
+    precoRevendedorCentavos:
+      data.precoRevendedorCentavos == null || data.precoRevendedorCentavos === ""
+        ? null
+        : Math.max(0, Number(data.precoRevendedorCentavos)),
+    pedidoMinimoRevendedorCentavos:
+      data.pedidoMinimoRevendedorCentavos == null ||
+      data.pedidoMinimoRevendedorCentavos === ""
+        ? null
+        : Math.max(0, Number(data.pedidoMinimoRevendedorCentavos)),
+    faixasPrecoRevendedor: normalizarFaixasPrecoRevendedor(
+      Array.isArray(data.faixasPrecoRevendedor)
+        ? (data.faixasPrecoRevendedor as FaixaPrecoRevendedor[])
+        : null,
+      data.precoRevendedorCentavos == null || data.precoRevendedorCentavos === ""
+        ? null
+        : Number(data.precoRevendedorCentavos),
+    ),
     imagens: Array.isArray(data.imagens)
       ? data.imagens.filter((u): u is string => typeof u === "string")
       : [],
@@ -86,6 +133,23 @@ function mapProduto(id: string, data: DocumentData): ProdutoCentral {
       : data.modeloId
         ? [String(data.modeloId)]
         : [],
+    pesoGramas:
+      data.pesoGramas == null || data.pesoGramas === ""
+        ? null
+        : Math.max(1, Number(data.pesoGramas)),
+    alturaCm:
+      data.alturaCm == null || data.alturaCm === ""
+        ? null
+        : Math.max(1, Number(data.alturaCm)),
+    larguraCm:
+      data.larguraCm == null || data.larguraCm === ""
+        ? null
+        : Math.max(1, Number(data.larguraCm)),
+    comprimentoCm:
+      data.comprimentoCm == null || data.comprimentoCm === ""
+        ? null
+        : Math.max(1, Number(data.comprimentoCm)),
+    pagamento: normalizarPagamentoProduto(data.pagamento),
     modeloId: data.modeloId ? String(data.modeloId) : undefined,
     marca: data.marca ? String(data.marca) : undefined,
     tipo: modoVenda,
@@ -101,6 +165,15 @@ function payloadFromInput(input: ProdutoFormInput) {
     nome: input.nome.trim(),
     descricao: input.descricao.trim(),
     precoBaseCentavos: input.precoBaseCentavos,
+    precoRevendedorCentavos: Math.max(0, input.precoRevendedorCentavos),
+    pedidoMinimoRevendedorCentavos: Math.max(
+      0,
+      input.pedidoMinimoRevendedorCentavos || 0,
+    ),
+    faixasPrecoRevendedor: normalizarFaixasPrecoRevendedor(
+      input.faixasPrecoRevendedor,
+      input.precoRevendedorCentavos,
+    ),
     imagens: input.imagens,
     ativo: input.ativo,
     tipoId: input.tipoId,
@@ -116,6 +189,11 @@ function payloadFromInput(input: ProdutoFormInput) {
     modeloId: modeloLegacy,
     marca: input.marcaId ?? "",
     destaque: DEFAULTS_NOVO_PRODUTO.destaque,
+    pesoGramas: Math.max(1, Math.round(input.pesoGramas)),
+    alturaCm: Math.max(1, Math.round(input.alturaCm)),
+    larguraCm: Math.max(1, Math.round(input.larguraCm)),
+    comprimentoCm: Math.max(1, Math.round(input.comprimentoCm)),
+    pagamento: normalizarPagamentoProduto(input.pagamento),
   };
 }
 

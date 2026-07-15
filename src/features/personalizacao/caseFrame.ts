@@ -1,3 +1,5 @@
+import { CASE_BORDER } from "./caseVisualConstants";
+
 /**
  * Moldura da capa (estilo template Canva): borda arredondada + janela branca
  * da câmera no topo. Miolo transparente — a foto entra por baixo.
@@ -32,7 +34,8 @@ export function buildCaseFrameSvgFromSpec(
   H: number,
 ): string {
   const r = spec.radius * W;
-  const border = W * 0.012;
+  const border = Math.max(2.5, W * CASE_BORDER.widthRatio);
+  const borderInner = Math.max(2, border * 0.58);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${n(W)}" height="${n(
     H,
@@ -41,7 +44,16 @@ export function buildCaseFrameSvgFromSpec(
     W - border,
   )}" height="${n(H - border)}" rx="${n(r)}" ry="${n(
     r,
-  )}" fill="none" stroke="#cbe6fb" stroke-width="${n(border)}"/>
+  )}" fill="none" stroke="${CASE_BORDER.outer}" stroke-width="${n(border)}"/>
+  <rect x="${n(border * 0.78)}" y="${n(border * 0.78)}" width="${n(
+    W - border * 1.56,
+  )}" height="${n(H - border * 1.56)}" rx="${n(
+    Math.max(0, r - border * 0.32),
+  )}" ry="${n(
+    Math.max(0, r - border * 0.32),
+  )}" fill="none" stroke="${CASE_BORDER.inner}" stroke-width="${n(
+    borderInner,
+  )}"/>
 </svg>`;
 }
 

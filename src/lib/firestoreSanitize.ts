@@ -14,27 +14,35 @@ function isFirestoreSentinel(value: unknown): boolean {
   );
 }
 
-/** Remove chaves com valor undefined (recursivo em objetos plain). */
+function sanitizarValor(value: unknown): unknown {
+  if (value === undefined) return undefined;
+  if (isFirestoreSentinel(value)) return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => {
+      if (item === undefined) return null;
+      return sanitizarValor(item);
+    });
+  }
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    !(value instanceof Date)
+  ) {
+    return sanitizarParaFirestore(value as Record<string, unknown>);
+  }
+  return value;
+}
+
+/** Remove chaves com valor undefined (recursivo em objetos e arrays). */
 export function sanitizarParaFirestore<T extends Record<string, unknown>>(
   obj: T,
 ): T {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) continue;
-    if (isFirestoreSentinel(value)) {
-      out[key] = value;
-      continue;
-    }
-    if (
-      value !== null &&
-      typeof value === "object" &&
-      !Array.isArray(value) &&
-      !(value instanceof Date)
-    ) {
-      out[key] = sanitizarParaFirestore(value as Record<string, unknown>);
-    } else {
-      out[key] = value;
-    }
+    const next = sanitizarValor(value);
+    if (next === undefined) continue;
+    out[key] = next;
   }
   return out as T;
 }

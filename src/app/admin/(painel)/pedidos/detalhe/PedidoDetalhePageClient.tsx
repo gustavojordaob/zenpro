@@ -21,6 +21,7 @@ import {
   obterPedidoAdmin,
   observarPedidoAdmin,
   reemitirNotaFiscalPedidoAdmin,
+  reprocessarEnvioMelhorEnvioAdmin,
   sincronizarNotaFiscalPedidoAdmin,
   type PedidoAdmin,
 } from "@/features/admin/pedidos/pedidoAdminService";
@@ -53,6 +54,7 @@ export function PedidoDetalhePageClient({ lojaId, pedidoId }: Props) {
   const [salvandoNf, setSalvandoNf] = useState(false);
   const [reemitindoNf, setReemitindoNf] = useState(false);
   const [consultandoNf, setConsultandoNf] = useState(false);
+  const [gerandoEtiqueta, setGerandoEtiqueta] = useState(false);
 
   const nfAguardandoSefaz =
     pedido?.notaFiscal?.status === "processando" ||
@@ -73,31 +75,42 @@ export function PedidoDetalhePageClient({ lojaId, pedidoId }: Props) {
   }, [isMarca, lojaRevendedor, lojaId, router]);
 
   useEffect(() => {
-    void (async () => {
-      setCarregando(true);
-      setErro(null);
-      try {
-        const data = await obterPedidoAdmin(lojaId, pedidoId);
-        if (!data) {
-          setErro("Pedido não encontrado.");
-          return;
-        }
-        setPedido(data);
-        setTransportadora(data.envio?.transportadora ?? "");
-        setCodigoRastreio(data.envio?.codigoRastreio ?? "");
-        setUrlRastreio(data.envio?.urlRastreio ?? "");
-        setNfNumero(data.notaFiscal?.numero ?? "");
-        setNfChave(data.notaFiscal?.chaveAcesso ?? "");
-        setNfPdfUrl(data.notaFiscal?.pdfUrl ?? "");
-      } catch (error) {
-        setErro(
-          error instanceof Error ? error.message : "Erro ao carregar pedido.",
-        );
-      } finally {
-        setCarregando(false);
+    setCarregando(true);
+    setErro(null);
+    const unsub = observarPedidoAdmin(lojaId, pedidoId, (data) => {
+      setCarregando(false);
+      if (!data) {
+        setErro("Pedido não encontrado.");
+        setPedido(null);
+        return;
       }
-    })();
+      setPedido(data);
+      setTransportadora(data.envio?.transportadora ?? "");
+      setCodigoRastreio(data.envio?.codigoRastreio ?? "");
+      setUrlRastreio(data.envio?.urlRastreio ?? "");
+      setNfNumero(data.notaFiscal?.numero ?? "");
+      setNfChave(data.notaFiscal?.chaveAcesso ?? "");
+      setNfPdfUrl(data.notaFiscal?.pdfUrl ?? "");
+    });
+    return unsub;
   }, [lojaId, pedidoId]);
+
+  async function handleGerarEtiquetaMelhorEnvio() {
+    if (!pedido) return;
+    setGerandoEtiqueta(true);
+    setErro(null);
+    try {
+      await reprocessarEnvioMelhorEnvioAdmin(lojaId, pedidoId);
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível gerar a etiqueta Melhor Envio.",
+      );
+    } finally {
+      setGerandoEtiqueta(false);
+    }
+  }
 
   async function handleStatusChange(novoStatus: PedidoLojaStatus) {
     if (!pedido) return;
@@ -370,6 +383,55 @@ export function PedidoDetalhePageClient({ lojaId, pedidoId }: Props) {
 
           <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
             <h2 className="font-semibold text-zinc-900">Rastreio</h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Postagem em agência (você leva o pacote). Melhor Envio não solicita
+              coleta.
+            </p>
+            {pedido.envio?.erroMelhorEnvio &&
+            !pedido.envio?.meOrderId &&
+            !pedido.envio?.codigoRastreio ? (
+              <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                {pedido.envio.erroMelhorEnvio}
+              </p>
+            ) : null}
+            {pedido.envio?.meOrderId || pedido.envio?.codigoRastreio ? (
+              <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                Etiqueta gerada. O cliente vê o rastreio em Meus pedidos
+                {pedido.envio.codigoRastreio
+                  ? ` (${pedido.envio.codigoRastreio})`
+                  : ""}
+                .
+              </p>
+            ) : null}
+            {pedido.envio?.meAgencyName ? (
+              <p className="mt-2 text-xs text-zinc-600">
+                Agência sugerida: <strong>{pedido.envio.meAgencyName}</strong>
+              </p>
+            ) : null}
+            {pedido.envio?.etiquetaUrl ? (
+              <a
+                href={pedido.envio.etiquetaUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block text-sm font-medium text-sky-700 underline"
+              >
+                Abrir etiqueta PDF
+              </a>
+            ) : null}
+            {pedido.pagamentoLiberadoEnvio &&
+            pedido.frete?.servicoId &&
+            !pedido.envio?.meOrderId ? (
+              <button
+                type="button"
+                disabled={gerandoEtiqueta}
+                onClick={() => void handleGerarEtiquetaMelhorEnvio()}
+                className="mt-3 w-full rounded-lg bg-zinc-900 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {gerandoEtiqueta
+                  ? "Gerando etiqueta…"
+                  : "Gerar etiqueta Melhor Envio"}
+              </button>
+            ) : null}
             <div className="mt-3 space-y-2">
               <input
                 value={transportadora}
@@ -395,7 +457,7 @@ export function PedidoDetalhePageClient({ lojaId, pedidoId }: Props) {
                 onClick={() => void salvarEnvio()}
                 className="w-full rounded-lg border border-zinc-300 py-2 text-sm font-medium hover:bg-zinc-50 disabled:opacity-50"
               >
-                {salvandoEnvio ? "Salvando..." : "Salvar rastreio"}
+                {salvandoEnvio ? "Salvando..." : "Salvar rastreio manual"}
               </button>
             </div>
           </div>

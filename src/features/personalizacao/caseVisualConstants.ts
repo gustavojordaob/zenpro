@@ -37,6 +37,19 @@ export const EXPORT_ART_WIDTH = ART_CANVAS.width;
 /** Cor de fundo padrão quando há espaço vazio na capa */
 export const DEFAULT_COR_FUNDO_CAPINHA = "#ffffff";
 
+/**
+ * Borda do mockup — duas camadas para ficar legível em foto clara ou escura.
+ * Anel escuro mais marcado: o branco sozinho some em fotos claras / fundo branco.
+ */
+export const CASE_BORDER = {
+  /** Anel externo (claro) */
+  outer: "rgba(250, 250, 250, 0.98)",
+  /** Anel interno (escuro) — contraste principal */
+  inner: "rgba(9, 9, 11, 0.9)",
+  /** Fração da largura da moldura (anel externo) */
+  widthRatio: 0.034,
+} as const;
+
 export const ZOOM_MIN = 0.08;
 export const ZOOM_MAX = 5;
 export const ZOOM_STEP = 0.12;

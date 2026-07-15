@@ -12,11 +12,13 @@ import {
   type TipoPersonalizacao,
 } from "@/features/catalogo/types";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
+import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
 import { PersonalizacaoVisualProvider } from "@/features/personalizacao/PersonalizacaoVisualContext";
 import { PersonalizarEditor } from "./PersonalizarEditor";
 
 export function PersonalizarPageClient() {
   const paths = useLojaPaths();
+  const loja = useLojaEfetiva();
   const searchParams = useSearchParams();
   const modeloId = searchParams.get("modelo") ?? "";
   const produtoId = searchParams.get("produto");
@@ -42,7 +44,11 @@ export function PersonalizarPageClient() {
       }
 
       try {
-        const contexto = await carregarContextoPersonalizacao(modeloId, produtoId);
+        const contexto = await carregarContextoPersonalizacao(
+          modeloId,
+          produtoId,
+          { modoB2b: Boolean(loja?.isB2b) },
+        );
         if (!contexto) {
           setNaoEncontrado(true);
           return;
@@ -62,7 +68,7 @@ export function PersonalizarPageClient() {
         setCarregando(false);
       }
     })();
-  }, [modeloId, produtoId, tipoParam]);
+  }, [modeloId, produtoId, tipoParam, loja?.isB2b]);
 
   if (carregando) {
     return (

@@ -13,15 +13,15 @@ export type LojaEfetiva = {
   basePath: string;
   /** true quando é a loja oficial do dono (raiz do site), não um revendedor. */
   isMarca?: boolean;
+  /** Portal B2B /revendedor */
+  isB2b?: boolean;
 };
 
 /**
- * Loja efetiva = SOMENTE o contexto da rota /[slug] (revendedor).
+ * Loja efetiva = contexto da rota /[slug] OU portal /revendedor (B2B).
  *
- * Na raiz do site ("/") não há revendedor: retorna `null` e os consumidores
- * usam a loja oficial do dono (MARCA_LOJA_EFETIVA / branding Zen Pro).
- * Não usamos a "última loja visitada" para não fazer a raiz herdar a loja de
- * um revendedor visitado antes.
+ * Na raiz do site ("/") não há contexto: retorna `null` e os consumidores
+ * usam MARCA_LOJA_EFETIVA.
  */
 export function useLojaEfetiva(): LojaEfetiva | null {
   const lojaCtx = useLojaOptional();
@@ -36,6 +36,7 @@ export function useLojaEfetiva(): LojaEfetiva | null {
       ativo: lojaCtx.ativo,
       config: lojaCtx.config ?? {},
       basePath: lojaCtx.basePath,
+      isB2b: Boolean(lojaCtx.isB2b),
     };
   }, [lojaCtx]);
 }

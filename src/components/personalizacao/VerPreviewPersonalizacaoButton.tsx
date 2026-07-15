@@ -31,6 +31,7 @@ export function VerPreviewPersonalizacaoButton({ item }: Props) {
         aberto={aberto}
         personalizacao={p}
         modeloRotulo={item.rotuloModelo}
+        modeloId={item.modeloId}
         somenteLeitura
         onFechar={() => setAberto(false)}
         onConfirmar={() => setAberto(false)}

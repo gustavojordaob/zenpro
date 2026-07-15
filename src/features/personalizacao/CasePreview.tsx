@@ -8,14 +8,13 @@ import { ZenProLogoOverlay } from "./ZenProLogoOverlay";
 import { getCaseFrameSpec } from "./caseFrame";
 import { CaseTextNode } from "./CaseTextNode";
 import { getCaseLayout } from "./caseGeometry";
-import { ART_CANVAS } from "./caseVisualConstants";
+import { ART_CANVAS, CASE_BORDER } from "./caseVisualConstants";
 import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { TextoCapinha, Transform } from "./types";
 import { useCapinhaFontsReady } from "./useCapinhaFontsReady";
 import { useCorPredominante } from "./useCorPredominante";
 
 const STUDIO_BG = "#ececec";
-const BORDER_STROKE = "#cbe6fb";
 const EDITOR_PREVIEW_WIDTH = ART_CANVAS.previewWidth;
 
 type Props = {
@@ -137,7 +136,7 @@ export function CasePreview({
 
   const frame = visualCtx?.caseFrame ?? getCaseFrameSpec(modeloId);
   const radius = frame.radius * molduraW;
-  const borderWidth = Math.max(2, molduraW * 0.02);
+  const borderWidth = Math.max(2.5, molduraW * CASE_BORDER.widthRatio);
 
   const cameraSpec = visualCtx?.camera ?? getCameraSpec(modeloId);
 
@@ -232,11 +231,7 @@ export function CasePreview({
         <Layer listening={false}>
               {fotoImage && (
                 <Group>
-                  <Group clipFunc={(ctx) => {
-                    ctx.beginPath();
-                    ctx.rect(areaUtil.x, areaUtil.y, areaUtil.w, areaUtil.h);
-                    ctx.closePath();
-                  }}>
+                  <Group clipFunc={clipRoundRect}>
                     <Rect
                       x={areaUtil.x}
                       y={areaUtil.y}
@@ -300,8 +295,18 @@ export function CasePreview({
                     width={molduraW - borderWidth}
                     height={molduraH - borderWidth}
                     cornerRadius={radius}
-                    stroke={BORDER_STROKE}
+                    stroke={CASE_BORDER.outer}
                     strokeWidth={borderWidth}
+                    listening={false}
+                  />
+                  <Rect
+                    x={molduraX + borderWidth * 0.78}
+                    y={molduraY + borderWidth * 0.78}
+                    width={molduraW - borderWidth * 1.56}
+                    height={molduraH - borderWidth * 1.56}
+                    cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
+                    stroke={CASE_BORDER.inner}
+                    strokeWidth={Math.max(2, borderWidth * 0.58)}
                     listening={false}
                   />
                 </Group>

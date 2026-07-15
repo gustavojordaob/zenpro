@@ -9,6 +9,10 @@ import { StoreHeader } from "@/components/loja/StoreHeader";
 import { PedidoStatusBadge } from "@/components/admin/PedidoStatusBadge";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
+import {
+  avisoPrazoFreteCheckout,
+  textoPrazoFreteOpcao,
+} from "@/features/envios/prazoFreteCopy";
 import { listarMeusPedidos, type MeuPedido } from "@/features/loja/meusPedidosService";
 import { formatarPreco } from "@/features/loja/produtosMock";
 import {
@@ -137,6 +141,18 @@ export function MeusPedidosPageClient() {
                 </div>
 
                 <Stepper status={p.status} />
+
+                {p.frete?.prazoDias != null &&
+                  p.status !== "entregue" &&
+                  p.status !== "cancelado" && (
+                    <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+                      {textoPrazoFreteOpcao(
+                        p.frete.prazoDias,
+                        Boolean(p.temPersonalizada),
+                      )}
+                      . {avisoPrazoFreteCheckout(Boolean(p.temPersonalizada))}
+                    </p>
+                  )}
 
                 <ContinuarPagamentoPedido
                   pedido={p}

@@ -1,13 +1,13 @@
-import { getModeloById } from "@/features/personalizacao/modelos";
 import type { Personalizacao } from "@/features/personalizacao/types";
 import type { ProdutoDestaque } from "./produtosMock";
 import { getPrecoPorModelo, getRotuloModelo } from "./carrinhoCatalogo";
+import type { ItemCarrinho } from "./carrinhoTypes";
 
 export function criarItemPersonalizado(
   personalizacao: Personalizacao,
   personalizacaoId: string,
   produtoId?: string,
-) {
+): ItemCarrinho {
   const id =
     produtoId ??
     personalizacao.produtoId ??
@@ -15,7 +15,7 @@ export function criarItemPersonalizado(
 
   return {
     id: crypto.randomUUID(),
-    tipo: "personalizada" as const,
+    tipo: "personalizada",
     produtoId: id,
     nomeProduto:
       personalizacao.produtoNome ??
@@ -27,23 +27,29 @@ export function criarItemPersonalizado(
     personalizacao,
     precoCentavos:
       personalizacao.precoCentavos ?? getPrecoPorModelo(personalizacao.modeloId),
+    quantidade: 1,
     rotuloModelo: getRotuloModelo(personalizacao.modeloId),
   };
 }
 
-export function criarItemPronto(produto: ProdutoDestaque) {
+export function criarItemPronto(produto: ProdutoDestaque): ItemCarrinho {
   return {
     id: crypto.randomUUID(),
-    tipo: "pronta" as const,
+    tipo: "pronta",
     produtoId: produto.produtoBaseId ?? produto.id,
     nomeProduto: produto.nome,
     modeloId: produto.modeloId,
     personalizacaoId: null,
     personalizacao: null,
     precoCentavos: produto.precoCentavos,
+    quantidade: Math.max(1, produto.quantidadeInicial ?? 1),
     rotuloModelo: produto.marca,
     imagemUrl: produto.imagemUrl,
     gradienteCapa: produto.gradienteCapa,
+    faixasPrecoRevendedor: produto.faixasPrecoRevendedor,
+    pedidoMinimoRevendedorCentavos: produto.pedidoMinimoRevendedorCentavos,
+    precoBaseCentavos: produto.precoBaseCentavos,
+    precoRevendedorCentavos: produto.precoRevendedorCentavos,
   };
 }
 

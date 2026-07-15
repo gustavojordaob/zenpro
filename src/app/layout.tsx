@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { CarrinhoProvider } from "@/features/loja/CarrinhoProvider";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { PapelUsuarioProvider } from "@/features/auth/PapelUsuarioProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,7 +35,9 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-zinc-50 text-zinc-900 flex flex-col">
         <AuthProvider>
-          <CarrinhoProvider>{children}</CarrinhoProvider>
+          <PapelUsuarioProvider>
+            <CarrinhoProvider>{children}</CarrinhoProvider>
+          </PapelUsuarioProvider>
         </AuthProvider>
       </body>
     </html>

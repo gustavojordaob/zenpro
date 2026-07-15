@@ -11,7 +11,11 @@ export function siteUrlBase(): string {
 }
 
 export const PARCELAMENTO_MAXIMO = 12;
-/** Até 2x sem juros para o comprador (configurar também no painel MP). */
+/**
+ * Até quantas parcelas o site anuncia como “sem juros”.
+ * A regra real de “sem acréscimo” fica no painel Mercado Pago
+ * (Oferecer parcelamento sem juros) — o Checkout Pro lê dali.
+ */
 export const PARCELAMENTO_SEM_JUROS = 2;
 
 /** Rótulo da opção de parcelas no checkout (valor por parcela). */

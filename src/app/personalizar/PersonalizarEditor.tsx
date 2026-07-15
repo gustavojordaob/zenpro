@@ -142,6 +142,8 @@ export function PersonalizarEditor({
   const [corFundo, setCorFundo] = useState(DEFAULT_COR_FUNDO_CAPINHA);
   const [modelosOpcoes, setModelosOpcoes] = useState<ModeloOpcao[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** Modo do input de arquivo: trocar (apaga a ativa) ou adicionar. */
+  const fileInputModeRef = useRef<"trocar" | "adicionar">("trocar");
   const fotosRef = useRef(fotos);
   const coverScalePorFoto = useRef<Record<string, number>>({});
   const layoutCountRef = useRef(0);
@@ -251,7 +253,11 @@ export function PersonalizarEditor({
 
   async function inserirFotoNoEditor(
     file: File,
-    opts: { expandir916?: boolean; substituir?: boolean } = {},
+    opts: {
+      expandir916?: boolean;
+      /** false = adiciona; true = substitui todas; "ativa" = só a foto selecionada */
+      substituir?: boolean | "ativa";
+    } = {},
   ) {
     const { expandir916 = true, substituir = false } = opts;
 
@@ -282,40 +288,73 @@ export function PersonalizarEditor({
         fileToDataUrl(processada),
       ]);
       const id = novaFotoId();
-      try {
-        const url = await subirFoto(processada);
-        if (substituir) {
-          for (const f of fotosRef.current) {
-            if (f.localUrl) URL.revokeObjectURL(f.localUrl);
-          }
-          coverScalePorFoto.current = {};
-          layoutCountRef.current = 0;
-          setFotos([
-            {
-              id,
-              fotoUrl: url,
-              localUrl,
-              dataUrl,
-              transform: DEFAULT_TRANSFORM,
-            },
-          ]);
+      const novaLocal: FotoSlot = {
+        id,
+        fotoUrl: "",
+        localUrl,
+        dataUrl,
+        transform: DEFAULT_TRANSFORM,
+      };
+
+      const alvoId =
+        substituir === "ativa"
+          ? (fotoAtivaId ?? fotosRef.current[0]?.id ?? null)
+          : null;
+      const previaAtiva =
+        alvoId != null
+          ? (fotosRef.current.find((f) => f.id === alvoId) ?? null)
+          : null;
+      const snapshotTodas =
+        substituir === true ? [...fotosRef.current] : null;
+
+      // Mostra a nova foto na hora (some a anterior) — upload em seguida.
+      if (substituir === "ativa") {
+        if (!alvoId || fotosRef.current.length === 0) {
+          setFotos([novaLocal]);
         } else {
-          setFotos((prev) => [
-            ...prev,
-            {
-              id,
-              fotoUrl: url,
-              localUrl,
-              dataUrl,
-              transform: DEFAULT_TRANSFORM,
-            },
-          ]);
+          delete coverScalePorFoto.current[alvoId];
+          setFotos((prev) =>
+            prev.map((f) => (f.id === alvoId ? novaLocal : f)),
+          );
         }
         setFotoAtivaId(id);
-        setModalColagem(false);
-        setModalIA(false);
+      } else if (substituir === true) {
+        coverScalePorFoto.current = {};
+        layoutCountRef.current = 0;
+        setFotos([novaLocal]);
+        setFotoAtivaId(id);
+      } else {
+        setFotos((prev) => [...prev, novaLocal]);
+        setFotoAtivaId(id);
+      }
+      setModalColagem(false);
+      setModalIA(false);
+
+      try {
+        const url = await subirFoto(processada);
+        setFotos((prev) =>
+          prev.map((f) => (f.id === id ? { ...f, fotoUrl: url } : f)),
+        );
+        if (previaAtiva?.localUrl) URL.revokeObjectURL(previaAtiva.localUrl);
+        if (snapshotTodas) {
+          for (const f of snapshotTodas) {
+            if (f.localUrl) URL.revokeObjectURL(f.localUrl);
+          }
+        }
       } catch (uploadErr) {
         URL.revokeObjectURL(localUrl);
+        if (substituir === "ativa" && previaAtiva) {
+          setFotos((prev) =>
+            prev.map((f) => (f.id === id ? previaAtiva : f)),
+          );
+          setFotoAtivaId(previaAtiva.id);
+        } else if (substituir === true && snapshotTodas) {
+          setFotos(snapshotTodas);
+          setFotoAtivaId(snapshotTodas[0]?.id ?? null);
+        } else {
+          setFotos((prev) => prev.filter((f) => f.id !== id));
+          setFotoAtivaId((atual) => (atual === id ? null : atual));
+        }
         throw uploadErr;
       }
     } catch (error) {
@@ -327,7 +366,13 @@ export function PersonalizarEditor({
   }
 
   async function handleEscolherFoto(file: File) {
-    await inserirFotoNoEditor(file, { expandir916: true, substituir: false });
+    const deveTrocar =
+      fileInputModeRef.current === "trocar" && fotosRef.current.length > 0;
+    await inserirFotoNoEditor(file, {
+      expandir916: true,
+      substituir: deveTrocar ? "ativa" : false,
+    });
+    fileInputModeRef.current = "trocar";
   }
 
   async function handleColagemConfirmada(file: File) {
@@ -565,11 +610,32 @@ export function PersonalizarEditor({
           <button
             type="button"
             disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              fileInputModeRef.current = "trocar";
+              fileInputRef.current?.click();
+            }}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {uploading ? "Enviando..." : fotos.length > 0 ? "Trocar foto" : "Escolher foto"}
+            {uploading
+              ? "Enviando..."
+              : fotos.length > 0
+                ? "Trocar foto"
+                : "Escolher foto"}
           </button>
+
+          {fotos.length > 0 && fotos.length < MAX_FOTOS_PERSONALIZACAO && (
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => {
+                fileInputModeRef.current = "adicionar";
+                fileInputRef.current?.click();
+              }}
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 disabled:opacity-50"
+            >
+              Adicionar foto
+            </button>
+          )}
 
           <button
             type="button"

@@ -115,6 +115,54 @@ export async function enfileirarNotaFiscal(opts: {
   });
 }
 
+/**
+ * Enfileira compra de etiqueta Melhor Envio (postagem em agência, sem coleta).
+ * Só cria se o pedido tiver frete.servicoId e ainda não tiver meOrderId/rastreio.
+ */
+export async function enfileirarEnvioMelhorEnvio(opts: {
+  tipo: "loja" | "reposicao";
+  lojaId?: string | null;
+  pedidoId: string;
+  forcar?: boolean;
+}): Promise<FirebaseFirestore.DocumentReference> {
+  const db = admin.firestore();
+  const pedidoRef =
+    opts.tipo === "reposicao"
+      ? db.doc(`pedidos_reposicao/${opts.pedidoId}`)
+      : db.doc(`lojas/${opts.lojaId}/pedidos/${opts.pedidoId}`);
+
+  const pedSnap = await pedidoRef.get();
+  if (!pedSnap.exists) {
+    throw new Error("Pedido não encontrado para envio.");
+  }
+  const ped = pedSnap.data() ?? {};
+  const frete = (ped.frete as Record<string, unknown> | undefined) ?? {};
+  if (!Number(frete.servicoId ?? 0)) {
+    throw new Error("Pedido sem cotação Melhor Envio (frete.servicoId).");
+  }
+
+  const envio = (ped.envio as Record<string, unknown> | undefined) ?? {};
+  if (envio.meOrderId) {
+    throw new Error("Pedido já possui etiqueta Melhor Envio.");
+  }
+  if (!opts.forcar && envio.codigoRastreio) {
+    throw new Error("Pedido já possui código de rastreio.");
+  }
+
+  if (ped.pagamentoLiberadoEnvio !== true) {
+    throw new Error("Pagamento ainda não liberou o envio.");
+  }
+
+  return db.collection("envios_outbox").add({
+    tipo: opts.tipo,
+    lojaId: opts.lojaId ?? null,
+    pedidoId: opts.pedidoId,
+    status: "pendente",
+    modoPostagem: "agencia",
+    criadoEm: admin.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
 async function atualizarIndiceCliente(
   clienteUid: string,
   pedidoId: string,
@@ -210,6 +258,23 @@ export async function aplicarPagamentoAprovadoLoja(
     totalCentavos: Number(data.totalCentavos ?? 0),
     clienteUid: clienteUid || null,
   });
+
+  const frete = (data.frete as Record<string, unknown> | undefined) ?? {};
+  if (Number(frete.servicoId ?? 0) > 0) {
+    try {
+      await enfileirarEnvioMelhorEnvio({
+        tipo: "loja",
+        lojaId,
+        pedidoId,
+      });
+    } catch (error) {
+      console.warn(
+        "enfileirarEnvioMelhorEnvio loja",
+        pedidoId,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
 }
 
 export async function aplicarPagamentoPendenteLoja(
@@ -259,6 +324,22 @@ export async function aplicarPagamentoAprovadoReposicao(
     totalCentavos: Number(data.totalCentavos ?? 0),
     clienteUid: String(data.revendedorUid ?? "") || null,
   });
+
+  const freteRep = (data.frete as Record<string, unknown> | undefined) ?? {};
+  if (Number(freteRep.servicoId ?? 0) > 0) {
+    try {
+      await enfileirarEnvioMelhorEnvio({
+        tipo: "reposicao",
+        pedidoId,
+      });
+    } catch (error) {
+      console.warn(
+        "enfileirarEnvioMelhorEnvio reposicao",
+        pedidoId,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
 }
 
 export async function aplicarPagamentoPendenteReposicao(

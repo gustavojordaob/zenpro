@@ -7,8 +7,14 @@ import { useState } from "react";
 import { AuthLink } from "@/components/loja/AuthLink";
 import { CartLink } from "@/components/loja/CartLink";
 import { ZenProLogo } from "@/components/loja/ZenProLogo";
+import { EntrarComoRevendedorLink } from "@/components/revendedor/EntrarComoRevendedorLink";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
+
+const btnTeal =
+  "rounded-lg bg-teal-800 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white hover:bg-teal-700";
+const btnTealOutline =
+  "rounded-lg border border-teal-700 px-3 py-1.5 text-xs font-semibold text-teal-800 hover:bg-teal-50";
 
 export function StoreHeader() {
   const loja = useLojaEfetiva();
@@ -30,18 +36,33 @@ export function StoreHeader() {
         : "text-zinc-600 hover:text-gold-dark"
     }`;
 
-  const links = [
+  type NavLink = {
+    href: string;
+    label: string;
+    destaque?: boolean;
+    component?: "entrar-revendedor";
+  };
+
+  const links: NavLink[] = [
     { href: paths.produtosHash, label: "Produtos" },
     { href: paths.personalizarHash, label: "Personalizar" },
     { href: "/meus-pedidos", label: "Meus pedidos" },
     { href: "/conta", label: "Minha conta" },
     ...(loja
-      ? []
-      : [
+      ? loja.isB2b
+        ? ([{ href: "/", label: "Site comum" }] as NavLink[])
+        : ([] as NavLink[])
+      : ([
           { href: "/seja-revendedor", label: "Seja um revendedor", destaque: true },
+          {
+            href: "/revendedor",
+            label: "Entrar como revendedor",
+            destaque: true,
+            component: "entrar-revendedor",
+          },
           { href: paths.contato, label: "Contato" },
           { href: "/#como-funciona", label: "Como funciona" },
-        ]),
+        ] as NavLink[])),
   ];
 
   return (
@@ -99,6 +120,7 @@ export function StoreHeader() {
               <Link href="/seja-revendedor" className={classeLink("/seja-revendedor")}>
                 Seja um revendedor
               </Link>
+              <EntrarComoRevendedorLink className={btnTeal} />
               <Link href={paths.contato} className={classeLink(paths.contato)}>
                 Contato
               </Link>
@@ -106,6 +128,11 @@ export function StoreHeader() {
                 Como funciona
               </Link>
             </>
+          )}
+          {loja?.isB2b && (
+            <Link href="/" className={btnTealOutline}>
+              Site comum
+            </Link>
           )}
         </nav>
 
@@ -157,20 +184,32 @@ export function StoreHeader() {
           aria-label="Principal mobile"
         >
           <div className="mx-auto flex max-w-6xl flex-col">
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setMenuAberto(false)}
-                className={`rounded-lg px-2 py-2.5 text-sm font-medium ${
-                  "destaque" in l && l.destaque
-                    ? "text-gold-dark hover:bg-gold-soft/30"
-                    : "text-zinc-700 hover:bg-zinc-50 hover:text-gold-dark"
-                }`}
-              >
-                {l.label}
-              </Link>
-            ))}
+            {links.map((l) => {
+              const className = `rounded-lg px-2 py-2.5 text-sm font-medium ${
+                l.destaque
+                  ? "text-gold-dark hover:bg-gold-soft/30"
+                  : "text-zinc-700 hover:bg-zinc-50 hover:text-gold-dark"
+              }`;
+              if (l.component === "entrar-revendedor") {
+                return (
+                  <EntrarComoRevendedorLink
+                    key={l.href}
+                    className={className}
+                    onClick={() => setMenuAberto(false)}
+                  />
+                );
+              }
+              return (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setMenuAberto(false)}
+                  className={className}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
           </div>
         </nav>
       )}

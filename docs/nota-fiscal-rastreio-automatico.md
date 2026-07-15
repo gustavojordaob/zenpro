@@ -31,7 +31,8 @@ sequenceDiagram
 |-------|-------------|-------------|
 | Disparar NF após pagamento | Sim | — |
 | Emitir NF na Sefaz | Sim **se** Focus NFe configurado | Conta Focus + certificado A1 |
-| Rastreio no pedido | **Não** (hoje manual no admin) | Melhor Envio ou ERP |
+| Rastreio / etiqueta | Sim **se** Melhor Envio configurado | Saldo ME + telefone remetente |
+| Coleta ME | **Não** — postagem em agência | Dono leva o pacote |
 | Cliente ver NF/rastreio | Sim | Dados no pedido |
 
 ---
@@ -103,45 +104,53 @@ firebase deploy --only functions:processarNotaFiscalOutbox,functions:webhookMerc
 
 ## Parte 2 — Rastreio automático (Melhor Envio)
 
-Hoje o rastreio é **manual** no admin (`/admin/pedidos/detalhe`). Para ficar 100% automático, integre um gateway de frete.
+### Modo operacional Zen Pro: postagem (sem coleta)
 
-### Opção recomendada: Melhor Envio
+O sistema **compra e gera a etiqueta** no Melhor Envio e escolhe uma **agência próxima** do CEP de expedição.  
+**Não** chama a API de coleta — o dono da Zen Pro leva o pacote até o galpão/agência.
 
-1. Conta em [melhorenvio.com.br](https://melhorenvio.com.br)
-2. Cadastre endereço de origem no admin:
-   - **Zen Pro (galpão):** Admin → Estoque → loja oficial → *Endereço de expedição*
-   - **Revendedor:** Admin → Revendedores → Editar loja → *Endereço de expedição* (copiado da solicitação na aprovação)
-3. API → gerar token
-4. Configurar env vars:
+### O que já roda no código
+
+1. Pagamento aprovado (webhook MP) → `envios_outbox`
+2. `processarEnvioOutbox` → cart → checkout (saldo ME) → generate → print
+3. Grava em `pedido.envio`: `codigoRastreio`, `etiquetaUrl`, `meAgencyName`, `modoPostagem: "agencia"`
+4. `webhookMelhorEnvio` atualiza tracking se o ME enviar depois
+5. Admin → botão **Gerar etiqueta Melhor Envio** (reprocessa pedidos antigos)
+
+### Setup
+
+1. Conta em [melhorenvio.com.br](https://melhorenvio.com.br) com **saldo** para comprar fretes
+2. Endereço de expedição no admin (CEP completo)
+3. Secrets / params:
 
 ```
-MELHOR_ENVIO_TOKEN=...
-MELHOR_ENVIO_WEBHOOK_SECRET=...
+# Secret
+firebase functions:secrets:set MELHOR_ENVIO_TOKEN --project zenpro-capinhas
+
+# functions/.env
+MELHOR_ENVIO_USER_AGENT=Zen Pro (email@dominio.com)
+MELHOR_ENVIO_SANDBOX=false
+MELHOR_ENVIO_TELEFONE_REMETENTE=5511999999999
+MELHOR_ENVIO_EMAIL_REMETENTE=contato@zenpro-capinhas.web.app
+MELHOR_ENVIO_WEBHOOK_SECRET=...   # opcional
+FOCUS_NFE_CNPJ_EMITENTE=...       # remetente PJ no carrinho ME
+FOCUS_NFE_NOME_EMITENTE=...
+FOCUS_NFE_IE_EMITENTE=ISENTO
 ```
 
-> **Não use** `MELHOR_ENVIO_CEP_ORIGEM` fixo. O CEP de origem é resolvido **por pedido** (ver regra abaixo).
+> **Não use** `MELHOR_ENVIO_CEP_ORIGEM` fixo. O CEP vem de `lojas/{id}.config.expedicao`.
 
-5. Webhook no painel ME:
+4. Webhook no painel ME:
 
 ```
 https://us-central1-zenpro-capinhas.cloudfunctions.net/webhookMelhorEnvio
 ```
 
-6. Deploy (quando function estiver ativa):
+5. Deploy:
 
 ```powershell
-firebase deploy --only functions:processarEnvioOutbox,functions:webhookMelhorEnvio
+firebase deploy --only functions:processarEnvioOutbox,functions:webhookMelhorEnvio,functions:reprocessarEnvioMelhorEnvio,functions:webhookMercadoPago
 ```
-
-**Fluxo automático desejado:**
-
-1. Pagamento aprovado → pedido `pago` / `producao`
-2. (Cases personalizadas) Após produção → function gera etiqueta ME
-3. ME retorna código de rastreio via webhook
-4. Pedido → `enviado` + `envio.codigoRastreio` + URL Correios/Jadlog
-5. Cliente acompanha em Meus pedidos
-
-> **Cases personalizadas:** etiqueta só depois da produção (status `producao` → pronto). Produtos prontos podem gerar etiqueta logo após `pago`.
 
 ### Regra de CEP / origem (por pedido)
 
@@ -181,12 +190,14 @@ Pedido misto (pronta + personalizada) → expede da **Zen Pro**.
 
 ### Rastreio automático
 
-- [ ] Conta Melhor Envio (ou ERP)
-- [ ] Token ME nas Functions
-- [ ] Endereço de expedição cadastrado (Zen Pro + cada revendedor que expede pronta)
-- [ ] Webhook ME cadastrado
-- [ ] Deploy functions de envio (quando implementadas)
-- [ ] Peso/dimensões padrão da case no catálogo (para cotação)
+- [ ] Conta Melhor Envio com saldo
+- [ ] `MELHOR_ENVIO_TOKEN` + `MELHOR_ENVIO_TELEFONE_REMETENTE`
+- [ ] CNPJ remetente (`FOCUS_NFE_CNPJ_EMITENTE`)
+- [ ] Endereço de expedição cadastrado
+- [ ] Webhook ME → `webhookMelhorEnvio`
+- [ ] Deploy `processarEnvioOutbox` + `reprocessarEnvioMelhorEnvio`
+- [ ] Peso/dimensões dos produtos
+- [ ] Confirmar que **coleta** permanece desligada (só postagem)
 
 ### Operação
 
@@ -206,11 +217,13 @@ notaFiscal: {
   numero, chaveAcesso, pdfUrl, xmlUrl, provedor
 }
 envio: {
-  transportadora, codigoRastreio, urlRastreio, enviadoEm
+  transportadora, codigoRastreio, urlRastreio, etiquetaUrl,
+  meOrderId, meAgencyName, modoPostagem: "agencia",
+  statusMelhorEnvio, erroMelhorEnvio, enviadoEm
 }
 pagamentoLiberadoEnvio: true  // obrigatório antes de enviar
 ```
 
 **Fila NF:** `notas_fiscais_outbox/{id}`
 
-**Fila envio (futuro):** `envios_outbox/{id}`
+**Fila envio:** `envios_outbox/{id}` · índice `melhor_envio_orders/{orderId}`

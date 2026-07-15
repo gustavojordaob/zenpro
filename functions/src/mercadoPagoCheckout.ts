@@ -17,6 +17,7 @@ type CheckoutPayload = {
   pedidoId?: string;
   formaPagamento?: "pix" | "boleto" | "cartao";
   parcelas?: number;
+  maxParcelas?: number;
   returnBasePath?: string;
 };
 
@@ -98,27 +99,90 @@ async function carregarPedidoReposicao(pedidoId: string) {
   return { ref: snap.ref, data: snap.data() as Record<string, unknown> };
 }
 
+function precoReais(centavos: number): number {
+  return Math.round(Math.max(0, Number(centavos) || 0)) / 100;
+}
+
+function descricaoItemMp(titulo: string, detalhe?: string): string {
+  const base = detalhe?.trim() || titulo.trim() || "Produto Zen Pro";
+  return base.slice(0, 256);
+}
+
 function itensParaMp(itens: ItemPedido[], tituloFallback: string) {
-  const mapped = itens.map((item, index) => ({
-    id: String(index + 1),
-    title: String(item.nomeProduto ?? item.nome ?? tituloFallback).slice(0, 120),
-    quantity: Math.max(1, Number(item.quantidade ?? 1)),
-    unit_price: Number(item.precoCentavos ?? 0) / 100,
-    currency_id: "BRL",
-  }));
+  const mapped = itens.map((item, index) => {
+    const title = String(item.nomeProduto ?? item.nome ?? tituloFallback).slice(
+      0,
+      120,
+    );
+    return {
+      id: String(index + 1),
+      title,
+      description: descricaoItemMp(
+        title,
+        `Capinha / acessório Zen Pro — ${title}`,
+      ),
+      quantity: Math.max(1, Number(item.quantidade ?? 1)),
+      unit_price: precoReais(Number(item.precoCentavos ?? 0)),
+      currency_id: "BRL",
+      category_id: "others",
+    };
+  });
 
   if (mapped.length === 0) {
     return [
       {
         id: "1",
         title: tituloFallback,
+        description: descricaoItemMp(tituloFallback),
         quantity: 1,
         unit_price: 0,
         currency_id: "BRL",
+        category_id: "others",
       },
     ];
   }
   return mapped;
+}
+
+/** Garante que a soma dos itens bate com o total do pedido (evita trava no Checkout). */
+function alinharItensAoTotal(
+  items: MpPreferenceBody["items"],
+  totalCentavos: number,
+  titulo: string,
+): MpPreferenceBody["items"] {
+  const total = precoReais(totalCentavos);
+  if (total <= 0) return garantirDescricoesItens(items);
+  const soma = items.reduce(
+    (acc, i) => acc + Number(i.unit_price) * Number(i.quantity),
+    0,
+  );
+  if (Math.abs(soma - total) <= 0.02) return garantirDescricoesItens(items);
+  return garantirDescricoesItens([
+    {
+      id: "pedido",
+      title: titulo.slice(0, 120),
+      description: descricaoItemMp(
+        titulo,
+        `Pedido Zen Pro — ${titulo}`,
+      ),
+      quantity: 1,
+      unit_price: total,
+      currency_id: "BRL",
+      category_id: "others",
+    },
+  ]);
+}
+
+function garantirDescricoesItens(
+  items: MpPreferenceBody["items"],
+): MpPreferenceBody["items"] {
+  return items.map((item) => ({
+    ...item,
+    description:
+      item.description?.trim() ||
+      descricaoItemMp(item.title, `Item Zen Pro — ${item.title}`),
+    category_id: item.category_id ?? "others",
+  }));
 }
 
 export const criarCheckoutMercadoPago = onCall(
@@ -138,6 +202,7 @@ export const criarCheckoutMercadoPago = onCall(
       pedidoId,
       formaPagamento,
       parcelas,
+      maxParcelas,
       returnBasePath,
     } = (request.data ?? {}) as CheckoutPayload;
 
@@ -166,6 +231,7 @@ export const criarCheckoutMercadoPago = onCall(
     let items: MpPreferenceBody["items"];
     let payerEmail: string | undefined;
     let titulo = "Pedido Zen Pro";
+    let totalPedidoCentavos = 0;
 
     if (tipo === "loja") {
       if (!lojaId) {
@@ -184,10 +250,37 @@ export const criarCheckoutMercadoPago = onCall(
       }
       const itens = Array.isArray(data.itens) ? (data.itens as ItemPedido[]) : [];
       items = itensParaMp(itens, "Case Zen Pro");
+      const frete = (data.frete as Record<string, unknown> | undefined) ?? {};
+      const freteCentavos = Math.max(0, Number(frete.precoCentavos ?? 0));
+      if (freteCentavos > 0) {
+        const freteTitulo = String(frete.nome ?? "Frete").slice(0, 120);
+        const freteEmpresa = String(frete.empresa ?? "").trim();
+        items = [
+          ...items,
+          {
+            id: "frete",
+            title: freteTitulo,
+            description: descricaoItemMp(
+              freteTitulo,
+              freteEmpresa
+                ? `Frete ${freteEmpresa} — ${freteTitulo}`
+                : `Frete de entrega — ${freteTitulo}`,
+            ),
+            quantity: 1,
+            unit_price: precoReais(freteCentavos),
+            currency_id: "BRL",
+            category_id: "others",
+          },
+        ];
+      }
+      totalPedidoCentavos = Math.max(0, Number(data.totalCentavos ?? 0));
       const cliente = (data.cliente as Record<string, unknown> | undefined) ?? {};
-      payerEmail = String(cliente.contato ?? "").includes("@")
-        ? String(cliente.contato)
-        : request.auth.token.email ?? undefined;
+      // Contato do pedido pode ser telefone — e-mail do Auth é preferível no payer.
+      payerEmail =
+        request.auth.token.email ??
+        (String(cliente.contato ?? "").includes("@")
+          ? String(cliente.contato)
+          : undefined);
       externalRef = montarExternalReference({ tipo: "loja", lojaId, pedidoId });
       titulo = `Pedido ${pedidoId.slice(-8).toUpperCase()}`;
     } else {
@@ -205,17 +298,21 @@ export const criarCheckoutMercadoPago = onCall(
       }
       const itens = Array.isArray(data.itens) ? (data.itens as ItemPedido[]) : [];
       items = itensParaMp(itens, "Reposição Zen Pro");
+      totalPedidoCentavos = Math.max(0, Number(data.totalCentavos ?? 0));
       payerEmail = request.auth.token.email ?? String(data.revendedorEmail ?? "");
       externalRef = montarExternalReference({ tipo: "reposicao", pedidoId });
       titulo = `Reposição ${pedidoId.slice(-8).toUpperCase()}`;
     }
 
+    items = alinharItensAoTotal(items, totalPedidoCentavos, titulo);
+
+    const tetoParcelas = Math.min(
+      PARCELAMENTO_MAXIMO,
+      Math.max(1, Number(maxParcelas ?? PARCELAMENTO_MAXIMO) || PARCELAMENTO_MAXIMO),
+    );
     const parcelasValidas =
       formaPagamento === "cartao"
-        ? Math.min(
-            PARCELAMENTO_MAXIMO,
-            Math.max(1, Number(parcelas ?? 1)),
-          )
+        ? Math.min(tetoParcelas, Math.max(1, Number(parcelas ?? 1)))
         : 1;
 
     const payer = await montarPayerMercadoPago(request.auth.uid, payerEmail);
@@ -223,7 +320,7 @@ export const criarCheckoutMercadoPago = onCall(
     const paymentMethodsBase =
       formaPagamento === "cartao" || !formaPagamento
         ? {
-            installments: PARCELAMENTO_MAXIMO,
+            installments: tetoParcelas,
             default_installments: parcelasValidas,
           }
         : {};
@@ -235,10 +332,14 @@ export const criarCheckoutMercadoPago = onCall(
       auto_return: "approved",
       external_reference: externalRef,
       notification_url: webhookUrl(projectId),
-      statement_descriptor: "ZEN PRO",
+      // Só letras/números (espaço quebra em algumas contas).
+      statement_descriptor: "ZENPRO",
       binary_mode: false,
       payment_methods: {
-        ...paymentMethodsBase,
+        installments: tetoParcelas,
+        ...(formaPagamento === "cartao"
+          ? { default_installments: parcelasValidas }
+          : paymentMethodsBase),
         ...mapFormaParaMp(formaPagamento),
       },
       metadata: {

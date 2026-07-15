@@ -10,23 +10,30 @@ import type { LojaPublica } from "@/features/multitenant/lojaPublicaService";
 
 type LojaContextValue = LojaPublica & {
   basePath: string;
+  /** Portal atacado único em /revendedor */
+  isB2b?: boolean;
 };
 
 const LojaContext = createContext<LojaContextValue | null>(null);
 
 export function LojaProvider({
   loja,
+  basePath,
+  isB2b = false,
   children,
 }: {
   loja: LojaPublica;
+  basePath?: string;
+  isB2b?: boolean;
   children: ReactNode;
 }) {
   const value = useMemo<LojaContextValue>(
     () => ({
       ...loja,
-      basePath: `/${loja.slug}`,
+      basePath: basePath ?? `/${loja.slug}`,
+      isB2b,
     }),
-    [loja],
+    [loja, basePath, isB2b],
   );
 
   return (

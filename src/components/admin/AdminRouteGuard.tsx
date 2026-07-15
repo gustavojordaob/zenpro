@@ -19,15 +19,11 @@ function rotaDashboardAdmin(pathname: string): boolean {
 
 function revendedorRotaPermitida(
   pathname: string,
-  lojaId: string | null,
+  _lojaId: string | null,
 ): boolean {
   if (rotaDashboardAdmin(pathname)) return true;
   if (rotaPedidosAdmin(pathname)) return true;
-  if (pathname === "/admin/estoque") return true;
-  if (pathname === "/admin/reposicao" || pathname.startsWith("/admin/reposicao/")) {
-    return true;
-  }
-  if (lojaId && pathname === `/admin/lojas/${lojaId}`) return true;
+  // Pedidos de catálogo: site /revendedor. Estoque só da marca.
   return false;
 }
 

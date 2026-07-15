@@ -66,6 +66,12 @@ function LoginForm() {
         <p className="mt-1 text-sm text-zinc-600">
           Use e-mail e senha para acessar sua conta Zenpro.
         </p>
+        {redirect.startsWith("/revendedor") && (
+          <p className="mt-3 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-900">
+            Área do revendedor — após entrar, só contas aprovadas acessam o
+            portal atacado.
+          </p>
+        )}
 
         <div className="mt-6 flex rounded-xl bg-zinc-100 p-1">
           <button
@@ -159,6 +165,15 @@ function LoginForm() {
           Ao finalizar a compra você precisa estar logado.{" "}
           <Link href="/carrinho" className="font-medium text-zinc-800 underline">
             Ver carrinho
+          </Link>
+        </p>
+        <p className="mt-3 text-center text-sm text-zinc-500">
+          É revendedor aprovado?{" "}
+          <Link
+            href="/revendedor"
+            className="font-semibold text-teal-800 underline"
+          >
+            Entrar no site do revendedor
           </Link>
         </p>
       </main>

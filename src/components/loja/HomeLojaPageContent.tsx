@@ -1,15 +1,37 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { HomePartnersSection, HomeVideoHero } from "@/components/loja/HomeVideoSections";
 import { HowItWorks } from "@/components/loja/HowItWorks";
 import { PersonalizarSection } from "@/components/loja/PersonalizarSection";
 import { ProdutosSection } from "@/components/loja/ProdutosSection";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { ZenProLogo } from "@/components/loja/ZenProLogo";
+import { EntrarComoRevendedorLink } from "@/components/revendedor/EntrarComoRevendedorLink";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
 
-type HomeLojaVariant = "marca" | "revendedor";
+type HomeLojaVariant = "marca" | "revendedor" | "b2b";
+
+function AvisoSomenteRevendedor() {
+  const sp = useSearchParams();
+  if (sp.get("aviso") !== "somente-revendedor") return null;
+  return (
+    <div className="border-b border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">
+      Esta conta não tem acesso de revendedor. Entre com o e-mail aprovado ou{" "}
+      <Link href="/seja-revendedor" className="font-semibold underline">
+        solicite cadastro
+      </Link>
+      .{" "}
+      <EntrarComoRevendedorLink className="font-semibold underline" />
+      {" · "}
+      <Link href="/admin/login" className="font-semibold underline">
+        Login admin
+      </Link>
+    </div>
+  );
+}
 
 function SejaRevendedorSection() {
   return (
@@ -17,15 +39,18 @@ function SejaRevendedorSection() {
       <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
         <h2 className="text-2xl font-bold text-zinc-900">Quer vender cases Zen Pro?</h2>
         <p className="mx-auto mt-2 max-w-lg text-zinc-600">
-          Abra sua loja online com catálogo oficial, painel de pedidos e URL
-          exclusiva. Envie sua solicitação — aprovação em poucos passos.
+          Cadastre-se como revendedor, compre no portal atacado com preços e
+          faixas exclusivos, e gerencie pedidos no painel.
         </p>
-        <Link
-          href="/seja-revendedor"
-          className="btn-ink mt-6 inline-block rounded-xl px-6 py-3 text-sm"
-        >
-          Seja um revendedor
-        </Link>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/seja-revendedor"
+            className="btn-ink inline-block rounded-xl px-6 py-3 text-sm"
+          >
+            Seja um revendedor
+          </Link>
+          <EntrarComoRevendedorLink className="inline-block rounded-xl border border-teal-700 bg-teal-50 px-6 py-3 text-sm font-semibold text-teal-900" />
+        </div>
       </div>
     </section>
   );
@@ -46,6 +71,9 @@ function HomeLojaFooter({ variant }: { variant: HomeLojaVariant }) {
             </Link>
           </p>
         )}
+        {variant === "b2b" && (
+          <p className="text-sm text-teal-300">Portal do revendedor Zen Pro</p>
+        )}
         <p className="text-sm text-zinc-400">
           © {new Date().getFullYear()} Zen Pro — cases personalizadas
         </p>
@@ -65,6 +93,12 @@ export function HomeLojaPageContent({ variant }: Props) {
       <StoreHeader />
 
       <main className="bg-zinc-50">
+        {variant === "marca" ? (
+          <Suspense fallback={null}>
+            <AvisoSomenteRevendedor />
+          </Suspense>
+        ) : null}
+
         <HomeVideoHero />
 
         <ProdutosSection />
@@ -76,6 +110,20 @@ export function HomeLojaPageContent({ variant }: Props) {
         <HomePartnersSection />
 
         {variant === "marca" ? <SejaRevendedorSection /> : null}
+        {variant === "b2b" ? (
+          <section className="border-t border-teal-100 bg-teal-50/50 py-8">
+            <div className="mx-auto max-w-6xl px-4 text-center text-sm text-teal-900 sm:px-6">
+              Você está no site do revendedor.{" "}
+              <Link href="/" className="font-semibold underline">
+                Voltar ao site comum
+              </Link>
+              {" · "}
+              <Link href="/admin" className="font-semibold underline">
+                Painel administrativo
+              </Link>
+            </div>
+          </section>
+        ) : null}
       </main>
 
       <HomeLojaFooter variant={variant} />

@@ -25,6 +25,28 @@ type CriarPedidoLojaInput = {
   perfil: PerfilUsuario;
   /** Mock: simula pagamento aprovado (status pago) sem Mercado Pago */
   simularPagamentoMock?: boolean;
+  /** Pedido feito no portal /revendedor */
+  canal?: "revendedor_b2b" | "loja";
+  /** Benefício de nível aplicado no checkout B2B */
+  beneficioNivel?: {
+    nivel: string;
+    descontoPercentual: number;
+    descontoCentavos: number;
+    subtotalCentavos: number;
+    freteGratis: boolean;
+  };
+  frete?: {
+    servicoId: number;
+    nome: string;
+    empresa: string;
+    companyId?: number | null;
+    precoCentavos: number;
+    prazoDias?: number | null;
+    cepOrigem: string;
+    cepDestino: string;
+    origemLojaId?: string | null;
+  } | null;
+  totalProdutosCentavos?: number;
 };
 
 function itemCarrinhoParaPedidoLoja(item: ItemCarrinho) {
@@ -34,12 +56,14 @@ function itemCarrinhoParaPedidoLoja(item: ItemCarrinho) {
 
   return {
     produtoId: item.produtoId,
-    modeloId: item.modeloId,
-    personalizacaoId: item.personalizacaoId,
+    modeloId: item.modeloId ?? null,
+    personalizacaoId: item.personalizacaoId ?? null,
     precoCentavos: item.precoCentavos,
-    quantidade: 1,
+    quantidade: item.quantidade ?? 1,
     nomeProduto: item.nomeProduto,
-    tipoPersonalizacao: item.personalizacao ? ("mascara_modelo" as const) : undefined,
+    tipoPersonalizacao: item.personalizacao
+      ? ("mascara_modelo" as const)
+      : null,
     config,
     fotoUrl: item.personalizacao?.fotoUrl ?? null,
     transform: item.personalizacao?.transform ?? null,
@@ -61,6 +85,10 @@ export async function criarPedidoLoja({
   user,
   perfil,
   simularPagamentoMock = pagamentoMockAtivo(),
+  canal = "loja",
+  beneficioNivel,
+  frete,
+  totalProdutosCentavos,
 }: CriarPedidoLojaInput): Promise<string> {
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase não configurado.");
@@ -83,6 +111,7 @@ export async function criarPedidoLoja({
   const payload = sanitizarParaFirestore({
     itens: itens.map(itemCarrinhoParaPedidoLoja),
     totalCentavos,
+    totalProdutosCentavos: totalProdutosCentavos ?? totalCentavos,
     status,
     cliente: {
       nome: perfil.nomeCompleto,
@@ -97,6 +126,9 @@ export async function criarPedidoLoja({
     pagamentoLiberadoEnvio: simularPagamentoMock,
     clienteUid: user.uid,
     origem: "online" as const,
+    canal,
+    ...(beneficioNivel ? { beneficioNivel } : {}),
+    ...(frete ? { frete } : {}),
     criadoEm: serverTimestamp(),
     atualizadoEm: serverTimestamp(),
   });
@@ -118,7 +150,10 @@ export async function criarPedidoLoja({
         lojaNome: lojaNome ?? null,
         pedidoId: ref.id,
         totalCentavos,
-        qtdItens: itens.length,
+        qtdItens: itens.reduce(
+          (acc, i) => acc + Math.max(1, i.quantidade || 1),
+          0,
+        ),
         resumo: itens[0]?.nomeProduto ?? "Pedido",
         statusInicial: status,
         criadoEm: serverTimestamp(),

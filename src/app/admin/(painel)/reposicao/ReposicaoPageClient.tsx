@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { useAuthAdmin } from "@/features/admin/AdminAuthProvider";
 import {
   listarProdutosCentral,
+  precoReposicaoCentavos,
   type ProdutoCentral,
 } from "@/features/admin/produtos/produtoCentralService";
 import {
@@ -88,7 +89,7 @@ export function ReposicaoPageClient() {
 
   const totalPedidoCentavos = produtos.reduce((soma, p) => {
     const q = Number(qtd[p.id] ?? 0);
-    return soma + (q > 0 ? p.precoBaseCentavos * q : 0);
+    return soma + (q > 0 ? precoReposicaoCentavos(p) * q : 0);
   }, 0);
 
   const carregar = useCallback(async () => {
@@ -132,7 +133,7 @@ export function ReposicaoPageClient() {
         produtoId: p.id,
         nome: p.nome,
         quantidade: Number(qtd[p.id] ?? 0),
-        precoCentavos: p.precoBaseCentavos,
+        precoCentavos: precoReposicaoCentavos(p),
       }))
       .filter((i) => i.quantidade > 0);
 
@@ -290,7 +291,7 @@ export function ReposicaoPageClient() {
                       {p.nome}
                     </p>
                     <p className="text-xs text-zinc-500">
-                      {formatarPreco(p.precoBaseCentavos)} / un.
+                      {formatarPreco(precoReposicaoCentavos(p))} / un.
                     </p>
                   </div>
                   <input

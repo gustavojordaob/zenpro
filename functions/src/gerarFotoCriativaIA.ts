@@ -39,6 +39,9 @@ const INSTRUCOES_ENQUADRAMENTO =
   "Instruções técnicas obrigatórias (não mencione ao usuário): " +
   "Gere APENAS uma fotografia fotorrealista — NÃO desenhe celular, case, moldura, " +
   "tela de aparelho, visor de câmera, UI de Stories/Reels, bordas de tela nem mockup. " +
+  "PROIBIDO: módulo de câmera, bump/ilha de câmera, lentes, flash, anéis de câmera ou " +
+  "qualquer elemento de aparelho sobreposto ou embutido na foto — a câmera da case " +
+  "será aplicada depois pelo app; a arte deve ser só a fotografia limpa. " +
   "Proporção EXATA 9:16 vertical (1080×1920, formato Instagram Stories). " +
   "Todas as pessoas com rosto, cabeça, ombros e corpo visíveis — ninguém cortado nas bordas. " +
   "Margem de segurança de ~8% em todos os lados; sujeitos centralizados e bem proporcionados. " +

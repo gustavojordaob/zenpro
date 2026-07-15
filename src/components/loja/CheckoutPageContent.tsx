@@ -19,7 +19,6 @@ import {
 import { SeletorFormaPagamentoOnline } from "@/components/loja/SeletorFormaPagamentoOnline";
 import {
   pagamentoMockAtivo,
-  PARCELAMENTO_MAXIMO,
   siteUrlBase,
 } from "@/features/pagamentos/pagamentoConfig";
 import type { PedidoLojaFormaPagamentoOnline } from "@/features/multitenant/types";
@@ -35,6 +34,23 @@ import {
 } from "@/features/usuario/perfilUtils";
 import { usePerfilUsuario } from "@/features/usuario/usePerfilUsuario";
 import { isFirebaseConfigured } from "@/lib/firebase";
+import { useBeneficiosCheckoutB2b } from "@/features/revendedor/useBeneficiosCheckoutB2b";
+import { rotuloNivelRevendedor } from "@/features/admin/revendedores/niveisRevendedorService";
+import { FreteCheckoutSection } from "@/components/loja/FreteCheckoutSection";
+import type { OpcaoFreteMelhorEnvio } from "@/features/envios/melhorEnvioClient";
+import {
+  avisoPrazoFreteCheckout,
+  textoPrazoFreteOpcao,
+} from "@/features/envios/prazoFreteCopy";
+import { obterProdutoCentral } from "@/features/admin/produtos/produtoCentralService";
+import {
+  formaPadraoPermitida,
+  formasPermitidasDoPagamento,
+  intersecaoPagamentoProdutos,
+  normalizarPagamentoProduto,
+  PAGAMENTO_PRODUTO_DEFAULT,
+  type PagamentoProdutoConfig,
+} from "@/features/pagamentos/pagamentoProduto";
 
 export function CheckoutPageContent() {
   const router = useRouter();
@@ -45,6 +61,19 @@ export function CheckoutPageContent() {
   const { user, carregando: authCarregando } = useAuth();
   const { perfil, carregando: perfilCarregando, completo } = usePerfilUsuario(user);
   const { itens, totalCentavos, limpar } = useCarrinho();
+  const beneficios = useBeneficiosCheckoutB2b(totalCentavos);
+  const totalProdutos = beneficios?.totalComDesconto ?? totalCentavos;
+  const [freteOpcao, setFreteOpcao] = useState<OpcaoFreteMelhorEnvio | null>(
+    null,
+  );
+  const [freteMeta, setFreteMeta] = useState({
+    cepOrigem: "",
+    cepDestino: "",
+    origemLojaId: "",
+  });
+  const freteCentavos =
+    beneficios?.freteGratis ? 0 : freteOpcao?.precoCentavos ?? 0;
+  const totalPago = totalProdutos + freteCentavos;
   const [pagando, setPagando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
@@ -52,9 +81,16 @@ export function CheckoutPageContent() {
   const [formaPagamento, setFormaPagamento] =
     useState<PedidoLojaFormaPagamentoOnline>("pix");
   const [parcelas, setParcelas] = useState(1);
+  const [pagamentoCfg, setPagamentoCfg] = useState<PagamentoProdutoConfig>({
+    ...PAGAMENTO_PRODUTO_DEFAULT,
+  });
   const mockPagamento = pagamentoMockAtivo();
+  const formasPagamento = formasPermitidasDoPagamento(pagamentoCfg);
 
   const temPersonalizada = itens.some((i) => i.tipo === "personalizada");
+  const prazoFreteResumo = freteOpcao
+    ? textoPrazoFreteOpcao(freteOpcao.prazoDias, temPersonalizada)
+    : null;
   const checkoutPath = loja.basePath ? `${loja.basePath}/checkout` : "/checkout";
 
   useEffect(() => {
@@ -69,6 +105,39 @@ export function CheckoutPageContent() {
       router.replace(paths.loginRedirect(checkoutPath));
     }
   }, [authCarregando, user, router, pedidoId, paths, checkoutPath]);
+
+  const produtoIdsKey = itens
+    .map((i) => i.produtoId)
+    .filter(Boolean)
+    .sort()
+    .join(",");
+
+  useEffect(() => {
+    const ids = [...new Set(produtoIdsKey.split(",").filter(Boolean))];
+    if (ids.length === 0) {
+      setPagamentoCfg({ ...PAGAMENTO_PRODUTO_DEFAULT });
+      return;
+    }
+    let cancelled = false;
+    void Promise.all(ids.map((id) => obterProdutoCentral(id)))
+      .then((produtos) => {
+        if (cancelled) return;
+        const configs = produtos.map((p) =>
+          normalizarPagamentoProduto(p?.pagamento),
+        );
+        const cfg = intersecaoPagamentoProdutos(configs);
+        setPagamentoCfg(cfg);
+        const formas = formasPermitidasDoPagamento(cfg);
+        setFormaPagamento((prev) =>
+          formas.includes(prev) ? prev : formaPadraoPermitida(formas),
+        );
+        setParcelas((p) => Math.min(p, cfg.maxParcelasCartao));
+      })
+      .catch((e) => console.error(e));
+    return () => {
+      cancelled = true;
+    };
+  }, [produtoIdsKey]);
 
   if (authCarregando || perfilCarregando) {
     return (
@@ -105,13 +174,27 @@ export function CheckoutPageContent() {
       return;
     }
 
+    if (!freteOpcao) {
+      setErro("Calcule e selecione o frete antes de pagar.");
+      return;
+    }
+
+    if (!formasPagamento.includes(formaPagamento)) {
+      setErro("Selecione uma forma de pagamento válida para os itens do carrinho.");
+      return;
+    }
+
     setErro(null);
     setPagando(true);
 
     try {
       for (const item of itens) {
         if (item.tipo === "pronta") {
-          await validarEstoqueVenda(loja.lojaId, item.produtoId, 1);
+          await validarEstoqueVenda(
+            loja.lojaId,
+            item.produtoId,
+            Math.max(1, item.quantidade || 1),
+          );
         }
       }
 
@@ -119,10 +202,32 @@ export function CheckoutPageContent() {
         lojaId: loja.lojaId,
         lojaNome: loja.nome,
         itens,
-        totalCentavos,
+        totalCentavos: totalPago,
+        totalProdutosCentavos: totalProdutos,
         user,
         perfil,
         simularPagamentoMock: mockPagamento,
+        canal: loja.isB2b ? "revendedor_b2b" : "loja",
+        beneficioNivel: beneficios
+          ? {
+              nivel: beneficios.metricas.nivel,
+              descontoPercentual: beneficios.descontoPercentual,
+              descontoCentavos: beneficios.descontoCentavos,
+              subtotalCentavos: totalCentavos,
+              freteGratis: beneficios.freteGratis,
+            }
+          : undefined,
+        frete: {
+          servicoId: freteOpcao.servicoId,
+          nome: freteOpcao.nome,
+          empresa: freteOpcao.empresa ?? "",
+          companyId: freteOpcao.companyId ?? null,
+          precoCentavos: freteCentavos,
+          prazoDias: freteOpcao.prazoDias ?? null,
+          cepOrigem: freteMeta.cepOrigem || "",
+          cepDestino: freteMeta.cepDestino || "",
+          origemLojaId: freteMeta.origemLojaId || null,
+        },
       });
 
       if (mockPagamento) {
@@ -141,6 +246,7 @@ export function CheckoutPageContent() {
         pedidoId: id,
         formaPagamento,
         parcelas: formaPagamento === "cartao" ? parcelas : 1,
+        maxParcelas: pagamentoCfg.maxParcelasCartao,
         returnBasePath: returnBase,
       });
 
@@ -244,10 +350,58 @@ export function CheckoutPageContent() {
             ))}
           </ul>
           <p className="text-right text-lg font-semibold text-zinc-900">
+            {beneficios && beneficios.descontoCentavos > 0 && (
+              <span className="mb-1 block text-sm font-normal text-emerald-700">
+                Desconto {rotuloNivelRevendedor(beneficios.metricas.nivel)} (
+                {beneficios.descontoPercentual}%): −
+                {formatarPreco(beneficios.descontoCentavos)}
+              </span>
+            )}
+            {freteOpcao && (
+              <>
+                <span className="mb-1 block text-sm font-normal text-zinc-600">
+                  Frete ({freteOpcao.empresa || freteOpcao.nome}):{" "}
+                  {freteCentavos === 0
+                    ? "Grátis"
+                    : formatarPreco(freteCentavos)}
+                  {prazoFreteResumo ? ` · ${prazoFreteResumo}` : ""}
+                </span>
+                <span className="mb-1 block text-xs font-normal text-zinc-500">
+                  {avisoPrazoFreteCheckout(temPersonalizada)}
+                </span>
+              </>
+            )}
+            {beneficios?.freteGratis && (
+              <span className="mb-1 block text-sm font-normal text-emerald-700">
+                Frete grátis (benefício do nível)
+              </span>
+            )}
             Total:{" "}
-            <span className="tabular-nums">{formatarPreco(totalCentavos)}</span>
+            <span className="tabular-nums">{formatarPreco(totalPago)}</span>
+            {beneficios && beneficios.descontoCentavos > 0 && (
+              <span className="ml-2 text-sm font-normal text-zinc-400 line-through">
+                {formatarPreco(totalCentavos + (freteOpcao?.precoCentavos ?? 0))}
+              </span>
+            )}
           </p>
         </section>
+
+        <FreteCheckoutSection
+          lojaId={loja.lojaId}
+          cepPadrao={perfil?.cep ?? ""}
+          freteGratis={Boolean(beneficios?.freteGratis)}
+          itens={itens.map((i) => ({
+            produtoId: i.produtoId,
+            quantidade: i.quantidade || 1,
+            personalizacaoId: i.personalizacaoId,
+            precoCentavos: i.precoCentavos,
+          }))}
+          selecionada={freteOpcao}
+          onSelecionar={(opcao, meta) => {
+            setFreteOpcao(opcao);
+            setFreteMeta(meta);
+          }}
+        />
 
         <section className="mt-8 space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
@@ -263,7 +417,9 @@ export function CheckoutPageContent() {
               onFormaChange={setFormaPagamento}
               parcelas={parcelas}
               onParcelasChange={setParcelas}
-              totalCentavos={totalCentavos}
+              totalCentavos={totalPago}
+              formasPermitidas={formasPagamento}
+              maxParcelas={pagamentoCfg.maxParcelasCartao}
             />
           )}
         </section>
@@ -327,15 +483,24 @@ export function CheckoutPageContent() {
 
         <button
           type="button"
-          disabled={pagando || !completo}
+          disabled={pagando || !completo || !freteOpcao}
           onClick={handlePagar}
           className="btn-gold mt-8 w-full rounded-xl py-3.5 text-base disabled:opacity-50"
         >
           {pagando ? "Processando..." : mockPagamento ? "Pagar (mock)" : "Ir para pagamento"}
         </button>
+        {!freteOpcao && (
+          <p className="mt-2 text-center text-xs text-amber-700">
+            Selecione uma opção de frete para continuar.
+          </p>
+        )}
         {!mockPagamento && (
           <p className="mt-2 text-center text-xs text-zinc-500">
-            PIX, boleto e cartão em até {PARCELAMENTO_MAXIMO}x via Mercado Pago.
+            Pagamento via Mercado Pago
+            {pagamentoCfg.aceitaCartao
+              ? ` — cartão em até ${pagamentoCfg.maxParcelasCartao}x`
+              : ""}
+            .
           </p>
         )}
         {mockPagamento && (

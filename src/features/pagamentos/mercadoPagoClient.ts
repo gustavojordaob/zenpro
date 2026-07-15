@@ -10,6 +10,8 @@ export type CriarCheckoutMercadoPagoInput = {
   pedidoId: string;
   formaPagamento?: PedidoLojaFormaPagamentoOnline;
   parcelas?: number;
+  /** Limite de parcelas do produto/carrinho (1–12). */
+  maxParcelas?: number;
   returnBasePath?: string;
 };
 

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ProdutoImagem } from "@/components/loja/ProdutoImagem";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
+import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
 import {
   formatarPreco,
@@ -16,13 +17,20 @@ type Props = {
 
 export function CatalogProductCard({ produto }: Props) {
   const { adicionarPronta } = useCarrinho();
+  const loja = useLojaEfetiva();
   const router = useRouter();
   const paths = useLojaPaths();
   const [adicionado, setAdicionado] = useState(false);
+  const [qty, setQty] = useState(1);
+  const isB2b = Boolean(loja?.isB2b);
 
   function handleComprar() {
     if (produto.esgotado) return;
-    adicionarPronta(produto);
+    adicionarPronta({
+      ...produto,
+      quantidadeInicial: isB2b ? Math.max(1, qty) : 1,
+      precoCentavos: produto.precoCentavos,
+    });
     setAdicionado(true);
     setTimeout(() => router.push(paths.carrinho), 400);
   }
@@ -57,12 +65,30 @@ export function CatalogProductCard({ produto }: Props) {
           {produto.nome}
         </h3>
         <p className="mt-auto pt-2 text-base font-semibold text-zinc-900">
+          {isB2b ? "A partir de " : ""}
           {formatarPreco(produto.precoCentavos)}
         </p>
+        {isB2b && produto.faixasPrecoRevendedor && produto.faixasPrecoRevendedor.length > 1 && (
+          <p className="text-[11px] text-teal-800">
+            {produto.faixasPrecoRevendedor.length} faixas de quantidade
+          </p>
+        )}
         {produto.controlaEstoque && !produto.esgotado && (
           <p className="text-xs text-zinc-500">
             {produto.disponivelVenda ?? 0} em estoque
           </p>
+        )}
+        {isB2b && (
+          <label className="mt-1 flex items-center gap-2 text-xs text-zinc-600">
+            Qtd
+            <input
+              type="number"
+              min={1}
+              value={qty}
+              onChange={(e) => setQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              className="w-16 rounded border border-zinc-300 px-2 py-1 text-sm"
+            />
+          </label>
         )}
         <button
           type="button"

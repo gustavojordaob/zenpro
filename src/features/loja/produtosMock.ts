@@ -24,6 +24,12 @@ export type ProdutoDestaque = {
   controlaEstoque?: boolean;
   disponivelVenda?: number;
   esgotado?: boolean;
+  /** B2B */
+  quantidadeInicial?: number;
+  faixasPrecoRevendedor?: import("@/features/multitenant/types").FaixaPrecoRevendedor[];
+  pedidoMinimoRevendedorCentavos?: number;
+  precoBaseCentavos?: number;
+  precoRevendedorCentavos?: number;
 };
 
 export const CATEGORIAS_PRODUTO: {

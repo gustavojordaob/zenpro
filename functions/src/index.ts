@@ -9,6 +9,11 @@ import { sincronizarPagamentoMercadoPago } from "./sincronizarPagamentoMercadoPa
 import { processarNotaFiscalOutbox } from "./processarNotaFiscalOutbox";
 import { reemitirNotaFiscalPedido } from "./reemitirNotaFiscalPedido";
 import { sincronizarNotaFiscalPedido } from "./sincronizarNotaFiscalPedido";
+import { calcularFreteMelhorEnvio } from "./calcularFreteMelhorEnvio";
+import { processarEnvioOutbox } from "./processarEnvioOutbox";
+import { webhookMelhorEnvio } from "./webhookMelhorEnvio";
+import { reprocessarEnvioMelhorEnvio } from "./reprocessarEnvioMelhorEnvio";
+import { notificarClientePedidoAtualizado } from "./pedidoClienteEmail";
 
 admin.initializeApp();
 
@@ -20,6 +25,11 @@ export {
   processarNotaFiscalOutbox,
   reemitirNotaFiscalPedido,
   sincronizarNotaFiscalPedido,
+  calcularFreteMelhorEnvio,
+  processarEnvioOutbox,
+  webhookMelhorEnvio,
+  reprocessarEnvioMelhorEnvio,
+  notificarClientePedidoAtualizado,
 };
 
 const resendApiKey = defineString("RESEND_API_KEY", { default: "" });

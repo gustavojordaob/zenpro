@@ -1,14 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./cameraModules";
-import { buildCaseFrameSvgFromSpec, getCaseFrameSpec } from "./caseFrame";
-import { getCaseLayout } from "./caseGeometry";
-import { ART_CANVAS } from "./caseVisualConstants";
-import { exportCaseArtDataUrl, type FotoExportInput } from "./exportCaseArt";
-import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
-import type { TextoCapinha, Transform } from "./types";
-import { getZenProLogoCssStyle, ZENPRO_LOGO_SRC } from "./zenProBrandOverlay";
+import { useMemo } from "react";
+import { CasePreview } from "@/features/personalizacao/CasePreviewLazy";
+import type { FotoExportInput } from "./exportCaseArt";
+import type { TextoCapinha } from "./types";
 
 type Props = {
   aberto: boolean;
@@ -20,95 +15,25 @@ type Props = {
   onFechar: () => void;
 };
 
+/**
+ * Prévia ilustrativa no editor — reutiliza CasePreview (mesmo render do
+ * carrinho/checkout) para evitar desalinhamento arte×borda×câmera.
+ */
 export function PreviewCapaModal({
   aberto,
   fotos,
-  corFundo,
   textos,
   modeloId,
   modeloRotulo,
   onFechar,
 }: Props) {
-  const visualCtx = usePersonalizacaoVisual();
-  const [arteUrl, setArteUrl] = useState<string | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
-
-  const frameSpec = visualCtx?.caseFrame ?? getCaseFrameSpec(modeloId);
-  const cameraSpec = visualCtx?.camera ?? getCameraSpec(modeloId);
-  const corAparelho = visualCtx?.corAparelho ?? getCorAparelho(modeloId);
-
-  const previewLayout = getCaseLayout(ART_CANVAS.previewWidth);
-  const { molduraX, molduraY, molduraW, molduraH } = previewLayout;
-
-  const borderUrl = useMemo(() => {
-    const svg = buildCaseFrameSvgFromSpec(frameSpec, molduraW, molduraH);
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [frameSpec, molduraW, molduraH]);
-
-  const cameraUrl = useMemo(() => {
-    const svg = buildCameraModuleSvgFromSpec(
-      cameraSpec,
-      molduraW,
-      molduraH,
-      corAparelho,
-    );
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [cameraSpec, corAparelho, molduraW, molduraH]);
-
-  const logoStyle = useMemo(
-    () =>
-      getZenProLogoCssStyle(
-        cameraSpec,
-        molduraW,
-        molduraH,
-        molduraX,
-        molduraY,
-      ),
-    [cameraSpec, molduraX, molduraY, molduraW, molduraH],
-  );
-
   const fotosValidas = useMemo(
     () => fotos.filter((f) => f.url.trim()),
     [fotos],
   );
-
-  useEffect(() => {
-    if (!aberto) {
-      setArteUrl(null);
-      setErro(null);
-      return;
-    }
-    if (fotosValidas.length === 0) {
-      setErro("Adicione pelo menos uma foto para ver a prévia.");
-      return;
-    }
-
-    let ativo = true;
-    setArteUrl(null);
-    setErro(null);
-
-    exportCaseArtDataUrl(fotosValidas, fotosValidas[0].transform, textos, {
-      clip: "retangulo",
-      exportWidth: ART_CANVAS.previewWidth * 2,
-      maskUrl: visualCtx?.maskUrl,
-      corFundo,
-    })
-      .then((url) => {
-        if (ativo) setArteUrl(url);
-      })
-      .catch((e) => {
-        console.error(e);
-        if (ativo) setErro("Não foi possível gerar a prévia.");
-      });
-
-    return () => {
-      ativo = false;
-    };
-  }, [aberto, fotosValidas, textos, visualCtx?.maskUrl, corFundo]);
+  const principal = fotosValidas[0];
 
   if (!aberto) return null;
-
-  const aspectRatio = `${molduraW} / ${molduraH}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -130,52 +55,18 @@ export function PreviewCapaModal({
         </div>
 
         <div className="flex items-center justify-center bg-[#ececec] p-6">
-          {erro ? (
-            <div className="flex h-[460px] items-center justify-center px-6 text-center text-sm text-red-600">
-              {erro}
-            </div>
-          ) : arteUrl ? (
-            <div
-              className="relative overflow-hidden rounded-[12%] shadow-lg ring-1 ring-black/10"
-              style={{ width: 260, aspectRatio }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={arteUrl}
-                alt="Sua arte na case"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <div
-                className="pointer-events-none absolute z-[2]"
-                style={logoStyle}
-                aria-hidden
-              >
-                <img
-                  src={ZENPRO_LOGO_SRC}
-                  alt=""
-                  className="h-full w-full object-contain drop-shadow-md"
-                />
-              </div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={cameraUrl}
-                alt=""
-                aria-hidden
-                className="pointer-events-none absolute inset-0 z-[3] h-full w-full"
-              />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={borderUrl}
-                alt=""
-                aria-hidden
-                className="pointer-events-none absolute inset-0 z-[4] h-full w-full"
-              />
+          {!principal ? (
+            <div className="flex h-[420px] items-center justify-center px-6 text-center text-sm text-red-600">
+              Adicione pelo menos uma foto para ver a prévia.
             </div>
           ) : (
-            <div className="flex h-[460px] items-center justify-center text-sm text-zinc-500">
-              Montando a prévia...
-            </div>
+            <CasePreview
+              fotoUrl={principal.url}
+              transform={principal.transform}
+              textos={textos}
+              modeloId={modeloId}
+              previewWidth={280}
+            />
           )}
         </div>
 

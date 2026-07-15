@@ -4,11 +4,17 @@ import {
   listarEstoqueLojaMap,
   produtoControlaEstoque,
 } from "@/features/admin/estoque/estoqueAdminService";
+import {
+  listarMarcasAtivas,
+  listarModelosAtivos,
+} from "@/features/catalogo/catalogoRuntimeService";
 import { SEED_CATALOGO } from "@/features/catalogo/types";
 import {
   COLECOES,
   type ProdutoCentralFirestore,
 } from "@/features/multitenant/types";
+import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
+import { precoRevendedorAPartirDe } from "@/features/revendedor/precoRevendedorFaixas";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import type { CategoriaProduto, ProdutoDestaque } from "./produtosMock";
 
@@ -18,6 +24,10 @@ export function produtoCentralParaDestaque(
   opts?: {
     modeloIdOverride?: string;
     disponivelVenda?: number;
+    marcaNome?: string;
+    modeloNome?: string;
+    /** Usa preços/faixas de revendedor */
+    modoB2b?: boolean;
   },
 ): ProdutoDestaque {
   const modoVenda =
@@ -33,14 +43,25 @@ export function produtoCentralParaDestaque(
     opts?.disponivelVenda ??
     (controla ? calcularDisponivelVenda(data, null) : 9999);
 
+  const marca =
+    opts?.marcaNome?.trim() ||
+    data.marca?.trim() ||
+    "";
+
+  const precoCentavos = opts?.modoB2b
+    ? precoRevendedorAPartirDe(data)
+    : data.precoBaseCentavos;
+
   return {
     id: opts?.modeloIdOverride ? `${id}__${modeloId}` : id,
     produtoBaseId: id,
-    nome: data.nome,
+    nome: opts?.modeloNome
+      ? `${data.nome} — ${opts.modeloNome}`
+      : data.nome,
     descricao: data.descricao,
     modeloId,
-    marca: data.marca ?? "",
-    precoCentavos: data.precoBaseCentavos,
+    marca,
+    precoCentavos,
     tipo: modoVenda,
     categoria: (data.categoria ?? "capinhas") as CategoriaProduto,
     material: data.material ?? undefined,
@@ -49,46 +70,69 @@ export function produtoCentralParaDestaque(
     controlaEstoque: controla,
     disponivelVenda: disponivel,
     esgotado: controla && disponivel <= 0,
+    ...(opts?.modoB2b
+      ? {
+          faixasPrecoRevendedor: data.faixasPrecoRevendedor,
+          pedidoMinimoRevendedorCentavos:
+            data.pedidoMinimoRevendedorCentavos ?? undefined,
+          precoBaseCentavos: data.precoBaseCentavos,
+          precoRevendedorCentavos: data.precoRevendedorCentavos ?? undefined,
+        }
+      : {}),
   };
 }
 
 export async function listarProdutosLojaAtivos(
   lojaId?: string | null,
+  opts?: { modoB2b?: boolean },
 ): Promise<ProdutoDestaque[]> {
   if (!isFirebaseConfigured()) return [];
+
+  // Site B2C (/) não tem LojaContext — usa estoque da loja oficial Zen Pro.
+  const lojaEstoqueId = lojaId?.trim() || MARCA_LOJA_ID;
 
   const db = getFirebaseDb();
   const snap = await getDocs(
     query(collection(db, COLECOES.PRODUTOS), where("ativo", "==", true)),
   );
 
-  const estoqueMap = lojaId ? await listarEstoqueLojaMap(lojaId) : {};
+  const estoqueMap = await listarEstoqueLojaMap(lojaEstoqueId);
 
   return snap.docs
     .filter((d) => !Boolean((d.data() as ProdutoCentralFirestore).personalizavel))
     .map((d) => {
       const data = d.data() as ProdutoCentralFirestore;
-      const estoqueLoja = lojaId ? (estoqueMap[d.id] ?? 0) : null;
+      const estoqueLoja = estoqueMap[d.id] ?? 0;
       return produtoCentralParaDestaque(d.id, data, {
         disponivelVenda: calcularDisponivelVenda(data, estoqueLoja),
+        modoB2b: opts?.modoB2b,
       });
     })
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
 /** Produtos marcados como personalizáveis — por enquanto só capinha de celular */
-export async function listarProdutosPersonalizaveisAtivos(): Promise<
-  ProdutoDestaque[]
-> {
+export async function listarProdutosPersonalizaveisAtivos(opts?: {
+  modoB2b?: boolean;
+}): Promise<ProdutoDestaque[]> {
   if (!isFirebaseConfigured()) return [];
 
   const db = getFirebaseDb();
-  const snap = await getDocs(
-    query(
-      collection(db, COLECOES.PRODUTOS),
-      where("ativo", "==", true),
-      where("personalizavel", "==", true),
+  const [snap, marcas, modelos] = await Promise.all([
+    getDocs(
+      query(
+        collection(db, COLECOES.PRODUTOS),
+        where("ativo", "==", true),
+        where("personalizavel", "==", true),
+      ),
     ),
+    listarMarcasAtivas(),
+    listarModelosAtivos(),
+  ]);
+
+  const marcasMap = Object.fromEntries(marcas.map((m) => [m.id, m.nome]));
+  const modelosMap = Object.fromEntries(
+    modelos.map((m) => [m.id, { nome: m.nome, marcaId: m.marcaId }]),
   );
 
   const itens: ProdutoDestaque[] = [];
@@ -97,17 +141,27 @@ export async function listarProdutosPersonalizaveisAtivos(): Promise<
     const data = docSnap.data() as ProdutoCentralFirestore;
     if (data.tipoId !== SEED_CATALOGO.TIPO_CAPINHA) continue;
 
-    const modelos = data.modelosCompativeis?.length
+    const listaModelos = data.modelosCompativeis?.length
       ? data.modelosCompativeis
       : data.modeloId
         ? [data.modeloId]
         : [];
 
-    if (modelos.length === 0) continue;
+    if (listaModelos.length === 0) continue;
 
-    for (const modeloId of modelos) {
+    for (const modeloId of listaModelos) {
+      const modeloInfo = modelosMap[modeloId];
+      const marcaId = data.marcaId ?? modeloInfo?.marcaId ?? null;
+      const marcaNome =
+        (marcaId ? marcasMap[marcaId] : undefined) || data.marca || "";
+
       itens.push(
-        produtoCentralParaDestaque(docSnap.id, data, { modeloIdOverride: modeloId }),
+        produtoCentralParaDestaque(docSnap.id, data, {
+          modeloIdOverride: modeloId,
+          marcaNome,
+          modeloNome: modeloInfo?.nome,
+          modoB2b: opts?.modoB2b,
+        }),
       );
     }
   }

@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import {
+  FaixasPrecoRevendedorFields,
+  faixasDraftFromDocs,
+  faixasDraftParaDocs,
+} from "@/components/admin/FaixasPrecoRevendedorFields";
 import { MATERIAIS_CAPINHA } from "@/features/catalogo/materiaisCapinha";
 import { SEED_CATALOGO } from "@/features/catalogo/types";
 import {
@@ -24,6 +29,7 @@ import {
 } from "@/features/admin/catalogo/dispositivosPresets";
 import { CAMERA_PRESET_OPCOES } from "@/features/personalizacao/cameraModules";
 import { reaisInputParaCentavos } from "@/features/admin/produtos/produtoFormUtils";
+import { validarFaixasPrecoRevendedor } from "@/features/revendedor/precoRevendedorFaixas";
 
 export function CapinhaNovaPageClient() {
   const router = useRouter();
@@ -45,6 +51,12 @@ export function CapinhaNovaPageClient() {
 
   // Passo 2 — produto
   const [precoReais, setPrecoReais] = useState("");
+  const [precoRevendedorReais, setPrecoRevendedorReais] = useState("");
+  const [pedidoMinimoRevendedorReais, setPedidoMinimoRevendedorReais] =
+    useState("");
+  const [faixasDraft, setFaixasDraft] = useState(() =>
+    faixasDraftFromDocs(null),
+  );
   const [material, setMaterial] = useState("");
   const [arquivoImagem, setArquivoImagem] = useState<File | null>(null);
   const [previewImagem, setPreviewImagem] = useState<string | null>(null);
@@ -128,6 +140,32 @@ export function CapinhaNovaPageClient() {
       setErro("Informe um preço válido (ex.: 79,90).");
       return;
     }
+    const precoRevendedorCentavos = reaisInputParaCentavos(precoRevendedorReais);
+    if (precoRevendedorCentavos === null || precoRevendedorCentavos <= 0) {
+      setErro("Informe o preço de revendedor (obrigatório, ex.: 45,00).");
+      return;
+    }
+    const faixasPrecoRevendedor = faixasDraftParaDocs(faixasDraft);
+    if (faixasPrecoRevendedor === null) {
+      setErro(
+        "Preencha as faixas de preço do revendedor (quantidade e preço).",
+      );
+      return;
+    }
+    const erroFaixas = validarFaixasPrecoRevendedor(faixasPrecoRevendedor);
+    if (erroFaixas) {
+      setErro(erroFaixas);
+      return;
+    }
+    let pedidoMinimoRevendedorCentavos = 0;
+    if (pedidoMinimoRevendedorReais.trim() !== "") {
+      const min = reaisInputParaCentavos(pedidoMinimoRevendedorReais);
+      if (min === null) {
+        setErro("Pedido mínimo do revendedor inválido (ex.: 100,00).");
+        return;
+      }
+      pedidoMinimoRevendedorCentavos = min;
+    }
     if (marcaMode === "existente" && !marcaId) {
       setErro("Escolha a marca ou cadastre uma nova.");
       return;
@@ -170,6 +208,9 @@ export function CapinhaNovaPageClient() {
         nome: nomeProdutoFinal.trim(),
         descricao: "",
         precoBaseCentavos: centavos,
+        precoRevendedorCentavos,
+        pedidoMinimoRevendedorCentavos,
+        faixasPrecoRevendedor,
         imagens: [] as string[],
         ativo: true,
         tipoId: SEED_CATALOGO.TIPO_CAPINHA,
@@ -180,6 +221,16 @@ export function CapinhaNovaPageClient() {
         estoqueCentral: 0,
         marcaId: marcaFinalId,
         modelosCompativeis: [modeloId],
+        pesoGramas: 150,
+        alturaCm: 18,
+        larguraCm: 12,
+        comprimentoCm: 4,
+        pagamento: {
+          aceitaPix: true,
+          aceitaBoleto: true,
+          aceitaCartao: true,
+          maxParcelasCartao: 12,
+        },
       };
       const produtoId = await criarProdutoCentral(produtoPayload);
 
@@ -399,7 +450,9 @@ export function CapinhaNovaPageClient() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-zinc-700">Preço (R$)</span>
+              <span className="text-sm font-medium text-zinc-700">
+                Preço loja / cliente (R$)
+              </span>
               <input
                 type="text"
                 inputMode="decimal"
@@ -411,22 +464,75 @@ export function CapinhaNovaPageClient() {
             </label>
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-zinc-700">
-                Material / acabamento
+                Preço revendedor (R$) *
               </span>
-              <select
-                value={material}
-                onChange={(e) => setMaterial(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm"
-              >
-                <option value="">— Não informado —</option>
-                {MATERIAIS_CAPINHA.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.rotulo}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                inputMode="decimal"
+                required
+                value={precoRevendedorReais}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFaixasDraft((prev) => {
+                    if (
+                      prev.length === 1 &&
+                      (prev[0].precoReais.trim() === "" ||
+                        prev[0].precoReais === precoRevendedorReais)
+                    ) {
+                      return [{ ...prev[0], precoReais: value }];
+                    }
+                    return prev;
+                  });
+                  setPrecoRevendedorReais(value);
+                }}
+                placeholder="45,00"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
+              />
+              <p className="text-xs text-zinc-500">
+                Usado na reposição (obrigatório).
+              </p>
             </label>
           </div>
+
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-zinc-700">
+              Pedido mínimo revendedor (R$)
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
+              value={pedidoMinimoRevendedorReais}
+              onChange={(e) => setPedidoMinimoRevendedorReais(e.target.value)}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-zinc-900"
+            />
+            <p className="text-xs text-zinc-500">
+              Valor mínimo da linha no pedido B2B. Vazio = sem mínimo.
+            </p>
+          </label>
+
+          <FaixasPrecoRevendedorFields
+            faixas={faixasDraft}
+            onChange={setFaixasDraft}
+          />
+
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-zinc-700">
+              Material / acabamento
+            </span>
+            <select
+              value={material}
+              onChange={(e) => setMaterial(e.target.value)}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm"
+            >
+              <option value="">— Não informado —</option>
+              {MATERIAIS_CAPINHA.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.rotulo}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-zinc-700">

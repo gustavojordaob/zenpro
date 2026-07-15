@@ -47,15 +47,21 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
         ]
       : []),
     { href: "/admin/pedidos", label: "Pedidos" },
-    { href: "/admin/estoque", label: "Estoque" },
-    {
-      href: "/admin/reposicao",
-      label: sessao?.papel === "marca" ? "Reposição" : "Pedir reposição",
-      destaque: sessao?.papel === "revendedor",
-    },
-    { href: "/admin/pedidos/nova", label: "Venda presencial", destaque: true },
-    ...(sessao?.papel === "revendedor" && sessao.lojaId
-      ? [{ href: `/admin/lojas/${sessao.lojaId}`, label: "Minha loja" }]
+    // Estoque só da marca (loja oficial). Revendedor compra em /revendedor.
+    ...(sessao?.papel === "marca"
+      ? [
+          { href: "/admin/estoque", label: "Estoque" },
+          { href: "/admin/reposicao", label: "Reposição" },
+        ]
+      : [
+          {
+            href: "/revendedor",
+            label: "Site revendedor",
+            destaque: true,
+          },
+        ]),
+    ...(sessao?.papel === "marca"
+      ? [{ href: "/admin/pedidos/nova", label: "Venda presencial", destaque: true }]
       : []),
   ];
 

@@ -8,6 +8,7 @@ import {
   COLECOES,
   type NotaFiscalFirestore,
   type PedidoEnvioFirestore,
+  type PedidoFreteCotacao,
   type PedidoLojaFormaPagamentoOnline,
   type PedidoLojaStatus,
 } from "@/features/multitenant/types";
@@ -24,6 +25,8 @@ export type MeuPedido = {
   status: PedidoLojaStatus;
   criadoEm: unknown;
   atualizadoEm?: unknown;
+  temPersonalizada?: boolean;
+  frete?: PedidoFreteCotacao | null;
   envio?: PedidoEnvioFirestore | null;
   notaFiscal?: NotaFiscalFirestore | null;
   pagamentoLiberadoEnvio?: boolean;
@@ -76,12 +79,23 @@ export async function listarMeusPedidos(uid: string): Promise<MeuPedido[]> {
         if (pedidoSnap.exists()) {
           const data = pedidoSnap.data();
           const pagamento = data.pagamento as Record<string, unknown> | undefined;
+          const itens = Array.isArray(data.itens) ? data.itens : [];
+          const temPersonalizada = itens.some(
+            (item) =>
+              item &&
+              typeof item === "object" &&
+              Boolean(
+                (item as { personalizacaoId?: string | null }).personalizacaoId,
+              ),
+          );
           return {
             ...base,
             status: (data.status as PedidoLojaStatus) ?? base.status,
             totalCentavos: Number(data.totalCentavos ?? base.totalCentavos),
             criadoEm: data.criadoEm ?? base.criadoEm,
             atualizadoEm: data.atualizadoEm,
+            temPersonalizada,
+            frete: (data.frete as PedidoFreteCotacao | undefined) ?? null,
             envio: (data.envio as PedidoEnvioFirestore | undefined) ?? null,
             notaFiscal: (data.notaFiscal as NotaFiscalFirestore | undefined) ?? null,
             pagamentoLiberadoEnvio: Boolean(data.pagamentoLiberadoEnvio),

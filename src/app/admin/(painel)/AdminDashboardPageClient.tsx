@@ -12,6 +12,7 @@ import {
   type PeriodoDashboard,
 } from "@/features/admin/dashboard/dashboardAdminService";
 import { useAuthAdmin } from "@/features/admin/AdminAuthProvider";
+import { NivelRevendedorAdminPanel } from "@/components/revendedor/NivelRevendedorAdminPanel";
 
 const PERIODOS: { value: PeriodoDashboard; label: string }[] = [
   { value: "hoje", label: "Hoje" },
@@ -119,6 +120,7 @@ export function AdminDashboardPageClient() {
 
   return (
     <AdminShell titulo="Dashboard" subtitulo={subtitulo}>
+      <NivelRevendedorAdminPanel />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-zinc-600">
           Olá{sessao?.nomeCompleto ? `, ${sessao.nomeCompleto}` : ""}.{" "}

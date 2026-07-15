@@ -29,7 +29,7 @@ export function ProdutosSection() {
       setCarregando(true);
       setErroLista(null);
       try {
-        setProdutos(await listarProdutosLojaAtivos(loja?.lojaId));
+        setProdutos(await listarProdutosLojaAtivos(loja?.lojaId, { modoB2b: Boolean(loja?.isB2b) }));
       } catch (e) {
         console.error(e);
         setErroLista(
@@ -40,7 +40,7 @@ export function ProdutosSection() {
         setCarregando(false);
       }
     })();
-  }, [loja?.lojaId]);
+  }, [loja?.lojaId, loja?.isB2b]);
 
   const produtosFiltrados = useMemo(
     () => filtrarProdutos(produtos, categoria, busca),
@@ -55,8 +55,9 @@ export function ProdutosSection() {
             Produtos
           </h2>
           <p className="mt-1 text-zinc-600">
-            Cases, acessórios, películas e carregadores — prontos para
-            comprar.
+            {loja?.isB2b
+              ? "Preços de revendedor — peça em quantidade e aproveite as faixas."
+              : "Cases, acessórios, películas e carregadores — prontos para comprar."}
           </p>
         </div>
 

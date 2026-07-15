@@ -18,7 +18,29 @@
 
 - **PIX** — aprovação rápida
 - **Boleto** — envio só após compensação (`pagamentoLiberadoEnvio`)
-- **Cartão** — até **12x**; **1x e 2x sem juros** (configurar também no painel MP do vendedor)
+- **Cartão** — até **12x** via preference `installments`
+
+### Parcelas sem juros (ex.: 2x)
+
+Isso **não** é só no código Zen Pro. Ative na conta Mercado Pago da loja:
+
+1. [Mercado Pago](https://www.mercadopago.com.br) → Sua conta → **Meios de pagamento** / custos de parcelamento  
+2. Ative **“Oferecer parcelamento sem juros”** até 2x (você assume a taxa)  
+3. Salve e teste de novo o checkout  
+
+O site só limita o máximo de parcelas; o “sem acréscimo” vem do painel MP.
+
+### Qualidade / aprovação de cartão
+
+Na preferência Checkout Pro, cada item envia `description` (e `category_id`) — recomendação do painel MP (“Descrição do item”) para reduzir recusas do antifraude.
+
+### Botão “Pagar” cinza / não paga
+
+Causas comuns:
+
+1. **Comprador = vendedor** — a mesma conta MP do Access Token não pode pagar a própria loja. Teste em aba anônima com **outro** e-mail/CPF.  
+2. Conta MP da loja incompleta (dados / receber pagamentos).  
+3. Credential de teste vs produção trocada.
 
 ## Cloud Functions
 
@@ -43,7 +65,11 @@ Frontend `.env.local`:
 ```
 NEXT_PUBLIC_SITE_URL=https://zenpro-capinhas.web.app
 NEXT_PUBLIC_MOCK_PAGAMENTO=false
+NEXT_PUBLIC_MP_PUBLIC_KEY=APP_USR-...   # public key da aplicação MP
+NEXT_PUBLIC_MP_SANDBOX=false
 ```
+
+> Access Token, Client ID e Client Secret **nunca** vão no frontend nem no Git — só `MP_ACCESS_TOKEN` no Secret Manager.
 
 ## Webhook Mercado Pago
 

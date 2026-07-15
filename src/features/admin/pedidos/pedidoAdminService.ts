@@ -78,6 +78,11 @@ function mapPedido(
     lojaId,
     itens: itensRaw.map((item) => mapItem(item as DocumentData)),
     totalCentavos: Number(data.totalCentavos ?? 0),
+    totalProdutosCentavos:
+      data.totalProdutosCentavos != null
+        ? Number(data.totalProdutosCentavos)
+        : undefined,
+    frete: (data.frete as PedidoAdmin["frete"]) ?? null,
     status: (data.status as PedidoLojaStatus) ?? "aguardando_pagamento",
     cliente: {
       nome: String(clienteRaw.nome ?? ""),
@@ -273,6 +278,22 @@ export async function sincronizarNotaFiscalPedidoAdmin(
 
   const { data } = await callable({ lojaId, pedidoId });
   return data ?? { status: "erro" };
+}
+
+export async function reprocessarEnvioMelhorEnvioAdmin(
+  lojaId: string,
+  pedidoId: string,
+): Promise<{ outboxId: string }> {
+  const callable = httpsCallable<
+    { tipo: "loja"; lojaId: string; pedidoId: string },
+    { outboxId: string }
+  >(getFirebaseFunctions(), "reprocessarEnvioMelhorEnvio");
+
+  const { data } = await callable({ tipo: "loja", lojaId, pedidoId });
+  if (!data?.outboxId) {
+    throw new Error("Não foi possível enfileirar a etiqueta.");
+  }
+  return data;
 }
 
 function formatTimestampSort(criadoEm: unknown): number {

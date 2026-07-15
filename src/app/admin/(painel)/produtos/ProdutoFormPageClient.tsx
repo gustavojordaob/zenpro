@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import {
+  FaixasPrecoRevendedorFields,
+  faixasDraftFromDocs,
+  faixasDraftParaDocs,
+} from "@/components/admin/FaixasPrecoRevendedorFields";
 import { MATERIAIS_CAPINHA } from "@/features/catalogo/materiaisCapinha";
 import {
   centavosParaReaisInput,
@@ -15,11 +20,21 @@ import {
   criarProdutoCentral,
   obterProdutoCentral,
 } from "@/features/admin/produtos/produtoCentralService";
+import { definirEstoqueLojaOficialMarca } from "@/features/admin/estoque/estoqueAdminService";
 import { subirImagemProduto } from "@/features/admin/produtos/uploadImagemProduto";
+import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
 import { listarMarcasAdmin } from "@/features/admin/catalogo/marcaAdminService";
 import { listarModelosAdmin } from "@/features/admin/catalogo/modeloAdminService";
 import { listarTiposAdmin } from "@/features/admin/catalogo/tipoAdminService";
 import { SEED_CATALOGO } from "@/features/catalogo/types";
+import { validarFaixasPrecoRevendedor } from "@/features/revendedor/precoRevendedorFaixas";
+import type { FaixaPrecoRevendedor } from "@/features/multitenant/types";
+import {
+  normalizarPagamentoProduto,
+  PAGAMENTO_PRODUTO_DEFAULT,
+  type PagamentoProdutoConfig,
+} from "@/features/pagamentos/pagamentoProduto";
+import { PARCELAMENTO_MAXIMO } from "@/features/pagamentos/pagamentoConfig";
 
 type Props = {
   produtoId?: string;
@@ -32,6 +47,12 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
   const [precoReais, setPrecoReais] = useState("");
+  const [precoRevendedorReais, setPrecoRevendedorReais] = useState("");
+  const [pedidoMinimoRevendedorReais, setPedidoMinimoRevendedorReais] =
+    useState("");
+  const [faixasDraft, setFaixasDraft] = useState(() =>
+    faixasDraftFromDocs(null),
+  );
   const [imagens, setImagens] = useState<string[]>([]);
   const [ativo, setAtivo] = useState(true);
   const [tipoId, setTipoId] = useState<string>(SEED_CATALOGO.TIPO_CAPINHA);
@@ -42,6 +63,13 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
   const [estoqueCentral, setEstoqueCentral] = useState("0");
   const [marcaId, setMarcaId] = useState<string>("");
   const [modelosCompativeis, setModelosCompativeis] = useState<string[]>([]);
+  const [pesoGramas, setPesoGramas] = useState("150");
+  const [alturaCm, setAlturaCm] = useState("18");
+  const [larguraCm, setLarguraCm] = useState("12");
+  const [comprimentoCm, setComprimentoCm] = useState("4");
+  const [pagamento, setPagamento] = useState<PagamentoProdutoConfig>({
+    ...PAGAMENTO_PRODUTO_DEFAULT,
+  });
   const [tipos, setTipos] = useState<{ id: string; nome: string; tipoPersonalizacao: string }[]>([]);
   const [marcas, setMarcas] = useState<{ id: string; nome: string }[]>([]);
   const [modelos, setModelos] = useState<{ id: string; nome: string; marcaId: string }[]>([]);
@@ -96,6 +124,24 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
         setNome(produto.nome);
         setDescricao(produto.descricao);
         setPrecoReais(centavosParaReaisInput(produto.precoBaseCentavos));
+        setPrecoRevendedorReais(
+          produto.precoRevendedorCentavos != null &&
+            produto.precoRevendedorCentavos > 0
+            ? centavosParaReaisInput(produto.precoRevendedorCentavos)
+            : "",
+        );
+        setPedidoMinimoRevendedorReais(
+          produto.pedidoMinimoRevendedorCentavos != null &&
+            produto.pedidoMinimoRevendedorCentavos > 0
+            ? centavosParaReaisInput(produto.pedidoMinimoRevendedorCentavos)
+            : "",
+        );
+        setFaixasDraft(
+          faixasDraftFromDocs(
+            produto.faixasPrecoRevendedor,
+            produto.precoRevendedorCentavos,
+          ),
+        );
         setImagens(produto.imagens);
         setAtivo(produto.ativo);
         setTipoId(produto.tipoId);
@@ -106,6 +152,11 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
         setEstoqueCentral(String(produto.estoqueCentral ?? 0));
         setMarcaId(produto.marcaId ?? "");
         setModelosCompativeis(produto.modelosCompativeis ?? []);
+        setPesoGramas(String(produto.pesoGramas ?? 150));
+        setAlturaCm(String(produto.alturaCm ?? 18));
+        setLarguraCm(String(produto.larguraCm ?? 12));
+        setComprimentoCm(String(produto.comprimentoCm ?? 4));
+        setPagamento(normalizarPagamentoProduto(produto.pagamento));
         setIdRascunho(produto.id);
       } catch (error) {
         setErro(
@@ -131,6 +182,11 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
       estoqueCentral: personalizavel ? 0 : Math.max(0, parseInt(estoqueCentral, 10) || 0),
       marcaId: marcaId || null,
       modelosCompativeis,
+      pesoGramas: Math.max(1, parseInt(pesoGramas, 10) || 150),
+      alturaCm: Math.max(1, parseInt(alturaCm, 10) || 18),
+      larguraCm: Math.max(1, parseInt(larguraCm, 10) || 12),
+      comprimentoCm: Math.max(1, parseInt(comprimentoCm, 10) || 4),
+      pagamento,
     }),
     [
       nome,
@@ -146,8 +202,67 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
       estoqueCentral,
       marcaId,
       modelosCompativeis,
+      pesoGramas,
+      alturaCm,
+      larguraCm,
+      comprimentoCm,
+      pagamento,
     ],
   );
+
+  function resolverPayloadRevendedor():
+    | {
+        precoRevendedorCentavos: number;
+        pedidoMinimoRevendedorCentavos: number;
+        faixasPrecoRevendedor: FaixaPrecoRevendedor[];
+      }
+    | { erro: string } {
+    const precoRevendedorCentavos = reaisInputParaCentavos(precoRevendedorReais);
+    if (precoRevendedorCentavos === null || precoRevendedorCentavos <= 0) {
+      return {
+        erro: "Informe o preço de revendedor (obrigatório, ex.: 35,00).",
+      };
+    }
+    const faixasPrecoRevendedor = faixasDraftParaDocs(faixasDraft);
+    if (faixasPrecoRevendedor === null) {
+      return {
+        erro: "Preencha as faixas de preço do revendedor (quantidade e preço).",
+      };
+    }
+    const erroFaixas = validarFaixasPrecoRevendedor(faixasPrecoRevendedor);
+    if (erroFaixas) {
+      return { erro: erroFaixas };
+    }
+    let pedidoMinimoRevendedorCentavos = 0;
+    if (pedidoMinimoRevendedorReais.trim() !== "") {
+      const min = reaisInputParaCentavos(pedidoMinimoRevendedorReais);
+      if (min === null) {
+        return {
+          erro: "Pedido mínimo do revendedor inválido (ex.: 100,00).",
+        };
+      }
+      pedidoMinimoRevendedorCentavos = min;
+    }
+    return {
+      precoRevendedorCentavos,
+      pedidoMinimoRevendedorCentavos,
+      faixasPrecoRevendedor,
+    };
+  }
+
+  function onPrecoRevendedorChange(value: string) {
+    setFaixasDraft((prev) => {
+      if (
+        prev.length === 1 &&
+        (prev[0].precoReais.trim() === "" ||
+          prev[0].precoReais === precoRevendedorReais)
+      ) {
+        return [{ ...prev[0], precoReais: value }];
+      }
+      return prev;
+    });
+    setPrecoRevendedorReais(value);
+  }
 
   async function handleUpload(files: FileList | null) {
     if (!files?.length) return;
@@ -163,9 +278,15 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
           setErro("Preencha nome e preço antes de enviar imagens.");
           return;
         }
+        const revendedor = resolverPayloadRevendedor();
+        if ("erro" in revendedor) {
+          setErro(revendedor.erro);
+          return;
+        }
         produtoRef = await criarProdutoCentral({
           ...payloadBase,
           precoBaseCentavos: centavos,
+          ...revendedor,
         });
         setIdRascunho(produtoRef);
       }
@@ -201,6 +322,19 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
       setErro("Informe um preço válido (ex.: 49,90).");
       return;
     }
+    const revendedor = resolverPayloadRevendedor();
+    if ("erro" in revendedor) {
+      setErro(revendedor.erro);
+      return;
+    }
+    if (
+      !pagamento.aceitaPix &&
+      !pagamento.aceitaBoleto &&
+      !pagamento.aceitaCartao
+    ) {
+      setErro("Selecione ao menos uma forma de pagamento (PIX, boleto ou cartão).");
+      return;
+    }
     if (personalizavel && modelosCompativeis.length === 0) {
       setErro(
         "Produto personalizável precisa de pelo menos um modelo de capinha cadastrado em Admin → Modelos.",
@@ -213,12 +347,28 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
       const payload = {
         ...payloadBase,
         precoBaseCentavos,
+        ...revendedor,
       };
 
+      let produtoId = idRascunho;
       if (idRascunho) {
         await atualizarProdutoCentral(idRascunho, payload);
       } else {
-        await criarProdutoCentral(payload);
+        produtoId = await criarProdutoCentral(payload);
+      }
+
+      // Mantém estoque da loja oficial sincronizado com o número do formulário
+      // (o site usa min(central, lojas/zenpro/estoque)).
+      if (
+        produtoId &&
+        !payload.personalizavel &&
+        payload.controlaEstoque
+      ) {
+        await definirEstoqueLojaOficialMarca(
+          produtoId,
+          payload.estoqueCentral,
+          MARCA_LOJA_ID,
+        );
       }
 
       router.push("/admin/produtos");
@@ -409,20 +559,199 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
           </fieldset>
         )}
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-zinc-700">
+              Preço loja / cliente (R$)
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              required
+              placeholder="49,90"
+              value={precoReais}
+              onChange={(e) => setPrecoReais(e.target.value)}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 outline-none focus:ring-2 focus:ring-zinc-900"
+            />
+            <p className="text-xs text-zinc-500">
+              Valor cobrado do consumidor final na loja.
+            </p>
+          </label>
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-zinc-700">
+              Preço revendedor (R$) *
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              required
+              placeholder="35,00"
+              value={precoRevendedorReais}
+              onChange={(e) => onPrecoRevendedorChange(e.target.value)}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 outline-none focus:ring-2 focus:ring-zinc-900"
+            />
+            <p className="text-xs text-zinc-500">
+              Cobrado quando o revendedor pede reposição (obrigatório).
+            </p>
+          </label>
+        </div>
+
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-zinc-700">
-            Preço base (R$)
+            Pedido mínimo revendedor (R$)
           </span>
           <input
             type="text"
             inputMode="decimal"
-            required
-            placeholder="49,90"
-            value={precoReais}
-            onChange={(e) => setPrecoReais(e.target.value)}
+            placeholder="0,00"
+            value={pedidoMinimoRevendedorReais}
+            onChange={(e) => setPedidoMinimoRevendedorReais(e.target.value)}
             className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 outline-none focus:ring-2 focus:ring-zinc-900"
           />
+          <p className="text-xs text-zinc-500">
+            Valor mínimo da linha no pedido B2B (qty × preço). Vazio = sem
+            mínimo.
+          </p>
         </label>
+
+        <FaixasPrecoRevendedorFields
+          faixas={faixasDraft}
+          onChange={setFaixasDraft}
+        />
+
+        <fieldset className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4">
+          <legend className="px-1 text-sm font-semibold text-zinc-900">
+            Pagamento online
+          </legend>
+          <p className="text-xs text-zinc-600">
+            Padrão: PIX, boleto e cartão em até {PARCELAMENTO_MAXIMO}x. Desmarque
+            o que não deve aparecer no checkout deste produto.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-sm text-zinc-800">
+              <input
+                type="checkbox"
+                checked={pagamento.aceitaPix}
+                onChange={(e) =>
+                  setPagamento((p) => ({ ...p, aceitaPix: e.target.checked }))
+                }
+                className="h-4 w-4 rounded border-zinc-300"
+              />
+              PIX
+            </label>
+            <label className="flex items-center gap-2 text-sm text-zinc-800">
+              <input
+                type="checkbox"
+                checked={pagamento.aceitaBoleto}
+                onChange={(e) =>
+                  setPagamento((p) => ({ ...p, aceitaBoleto: e.target.checked }))
+                }
+                className="h-4 w-4 rounded border-zinc-300"
+              />
+              Boleto
+            </label>
+            <label className="flex items-center gap-2 text-sm text-zinc-800">
+              <input
+                type="checkbox"
+                checked={pagamento.aceitaCartao}
+                onChange={(e) =>
+                  setPagamento((p) => ({ ...p, aceitaCartao: e.target.checked }))
+                }
+                className="h-4 w-4 rounded border-zinc-300"
+              />
+              Cartão de crédito
+            </label>
+          </div>
+          {pagamento.aceitaCartao && (
+            <label className="block max-w-xs text-sm text-zinc-700">
+              Parcelas máximas no cartão
+              <select
+                value={pagamento.maxParcelasCartao}
+                onChange={(e) =>
+                  setPagamento((p) => ({
+                    ...p,
+                    maxParcelasCartao: Math.max(
+                      1,
+                      Math.min(PARCELAMENTO_MAXIMO, Number(e.target.value) || 12),
+                    ),
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+              >
+                {Array.from({ length: PARCELAMENTO_MAXIMO }, (_, i) => i + 1).map(
+                  (n) => (
+                    <option key={n} value={n}>
+                      Até {n}x
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+          )}
+          {!pagamento.aceitaPix &&
+            !pagamento.aceitaBoleto &&
+            !pagamento.aceitaCartao && (
+              <p className="text-xs text-amber-800">
+                Selecione ao menos uma forma de pagamento.
+              </p>
+            )}
+        </fieldset>
+
+        <fieldset className="space-y-3 rounded-xl border border-teal-200 bg-teal-50/40 p-4">
+          <legend className="px-1 text-sm font-semibold text-teal-950">
+            Frete (Melhor Envio)
+          </legend>
+          <p className="text-xs text-teal-900/80">
+            Peso e dimensões da embalagem — usados na cotação de frete no
+            checkout.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <label className="block text-xs font-medium text-zinc-700">
+              Peso (g)
+              <input
+                type="number"
+                min={1}
+                required
+                value={pesoGramas}
+                onChange={(e) => setPesoGramas(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-medium text-zinc-700">
+              Altura (cm)
+              <input
+                type="number"
+                min={1}
+                required
+                value={alturaCm}
+                onChange={(e) => setAlturaCm(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-medium text-zinc-700">
+              Largura (cm)
+              <input
+                type="number"
+                min={1}
+                required
+                value={larguraCm}
+                onChange={(e) => setLarguraCm(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-medium text-zinc-700">
+              Comprimento (cm)
+              <input
+                type="number"
+                min={1}
+                required
+                value={comprimentoCm}
+                onChange={(e) => setComprimentoCm(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
+        </fieldset>
 
         {!personalizavel && (
           <fieldset className="space-y-3 rounded-xl border border-zinc-200 p-4">
@@ -438,7 +767,9 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
             </label>
             {controlaEstoque && (
               <label className="block space-y-1.5">
-                <span className="text-sm text-zinc-600">Quantidade no depósito central</span>
+                <span className="text-sm text-zinc-600">
+                  Quantidade disponível no site
+                </span>
                 <input
                   type="number"
                   min={0}
@@ -447,10 +778,8 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
                   className="w-full rounded-lg border border-zinc-300 px-3 py-2.5"
                 />
                 <p className="text-xs text-zinc-500">
-                  Para ajustar no dia a dia, use{" "}
-                  <strong>Admin → Estoque</strong> (loja oficial Zen Pro). Aqui
-                  só se estiver criando o produto ou alterando junto com preço e
-                  fotos.
+                  Ao salvar, sincroniza o estoque da loja oficial. Também dá
+                  para ajustar em <strong>Admin → Estoque</strong>.
                 </p>
               </label>
             )}

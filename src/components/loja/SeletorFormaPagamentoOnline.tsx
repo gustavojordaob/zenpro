@@ -15,6 +15,9 @@ type Props = {
   onParcelasChange: (parcelas: number) => void;
   totalCentavos: number;
   compact?: boolean;
+  /** Se omitido, mostra todas as formas. */
+  formasPermitidas?: PedidoLojaFormaPagamentoOnline[];
+  maxParcelas?: number;
 };
 
 export function SeletorFormaPagamentoOnline({
@@ -24,17 +27,26 @@ export function SeletorFormaPagamentoOnline({
   onParcelasChange,
   totalCentavos,
   compact = false,
+  formasPermitidas,
+  maxParcelas = PARCELAMENTO_MAXIMO,
 }: Props) {
+  const formas = FORMAS_PAGAMENTO_ONLINE.filter(
+    (f) => !formasPermitidas || formasPermitidas.includes(f.id),
+  );
+  const max = Math.min(PARCELAMENTO_MAXIMO, Math.max(1, maxParcelas));
+
   return (
     <div className="space-y-3">
       <div
         className={
           compact
             ? "grid gap-2"
-            : "grid gap-2 sm:grid-cols-3"
+            : formas.length >= 3
+              ? "grid gap-2 sm:grid-cols-3"
+              : "grid gap-2 sm:grid-cols-2"
         }
       >
-        {FORMAS_PAGAMENTO_ONLINE.map((forma) => (
+        {formas.map((forma) => (
           <button
             key={forma.id}
             type="button"
@@ -47,27 +59,33 @@ export function SeletorFormaPagamentoOnline({
           >
             <span className="font-semibold text-zinc-900">{forma.rotulo}</span>
             <span className="mt-1 block text-xs text-zinc-500">
-              {forma.descricao}
+              {forma.id === "cartao"
+                ? `Até ${max}x — ${PARCELAMENTO_SEM_JUROS}x sem juros`
+                : forma.descricao}
             </span>
           </button>
         ))}
       </div>
 
-      {formaPagamento === "cartao" && (
+      {formas.length === 0 && (
+        <p className="text-sm text-amber-800">
+          Nenhum meio de pagamento disponível para os itens do carrinho.
+        </p>
+      )}
+
+      {formaPagamento === "cartao" && formas.some((f) => f.id === "cartao") && (
         <label className="block space-y-1.5">
           <span className="text-sm text-zinc-600">Parcelas</span>
           <select
-            value={parcelas}
+            value={Math.min(parcelas, max)}
             onChange={(e) => onParcelasChange(Number(e.target.value))}
             className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm"
           >
-            {Array.from({ length: PARCELAMENTO_MAXIMO }, (_, i) => i + 1).map(
-              (n) => (
-                <option key={n} value={n}>
-                  {rotuloParcelaCheckout(totalCentavos, n)}
-                </option>
-              ),
-            )}
+            {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {rotuloParcelaCheckout(totalCentavos, n)}
+              </option>
+            ))}
           </select>
           <p className="text-xs text-zinc-500">
             * Acima de {PARCELAMENTO_SEM_JUROS}x: juros calculados no Mercado
@@ -80,14 +98,14 @@ export function SeletorFormaPagamentoOnline({
       )}
 
       {formaPagamento === "boleto" && (
-        <p className="text-xs text-amber-800">
+        <p className="text-xs text-zinc-500">
           O envio só é liberado após a compensação do boleto.
         </p>
       )}
 
       {formaPagamento === "pix" && (
-        <p className="text-xs text-zinc-600">
-          Você verá o QR Code ou código PIX na tela do Mercado Pago.
+        <p className="text-xs text-zinc-500">
+          Após gerar o PIX, o pagamento costuma confirmar em segundos.
         </p>
       )}
     </div>

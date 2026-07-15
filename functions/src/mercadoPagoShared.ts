@@ -69,9 +69,12 @@ export async function mpFetch<T>(
 export type MpPreferenceItem = {
   id?: string;
   title: string;
+  /** Recomendado pelo MP para reduzir recusas do antifraude. */
+  description?: string;
   quantity: number;
   unit_price: number;
   currency_id?: string;
+  category_id?: string;
 };
 
 export type MpPreferenceBody = {
@@ -143,12 +146,11 @@ export function mapFormaParaMp(
     return {};
   }
   if (forma === "pix") {
+    // PIX = bank_transfer. Excluir cartão no Checkout Pro esconde o PIX
+    // em várias contas BR e deixa só "conta MP" / pré-pago.
+    // Mantém cartão + PIX; remove só boleto.
     return {
-      excluded_payment_types: [
-        { id: "credit_card" },
-        { id: "debit_card" },
-        { id: "ticket" },
-      ],
+      excluded_payment_types: [{ id: "ticket" }],
     };
   }
   if (forma === "boleto") {

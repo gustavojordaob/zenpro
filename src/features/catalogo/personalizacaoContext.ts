@@ -9,6 +9,7 @@ import {
   type ResolvedPersonalizacaoVisual,
 } from "./personalizacaoVisual";
 import type { ModeloCelular } from "@/features/personalizacao/types";
+import { precoRevendedorPorQuantidade } from "@/features/revendedor/precoRevendedorFaixas";
 
 /** Variante vendável (SKU) — ex.: "Capinha Couro iPhone 17 Pro Max". */
 export type ProdutoPersonalizacaoContext = {
@@ -33,6 +34,7 @@ export type PersonalizacaoEditorContext = {
 export async function carregarContextoPersonalizacao(
   modeloId: string,
   produtoId?: string | null,
+  opts?: { modoB2b?: boolean },
 ): Promise<PersonalizacaoEditorContext | null> {
   const modeloCatalogo = await obterModeloCatalogo(modeloId);
   if (!modeloCatalogo) return null;
@@ -59,11 +61,17 @@ export async function carregarContextoPersonalizacao(
     },
   });
 
+  const precoCentavos = produto
+    ? opts?.modoB2b
+      ? precoRevendedorPorQuantidade(produto, 1)
+      : produto.precoBaseCentavos
+    : 0;
+
   const produtoCtx: ProdutoPersonalizacaoContext | undefined = produto
     ? {
         produtoId: produto.id,
         nome: produto.nome,
-        precoCentavos: produto.precoBaseCentavos,
+        precoCentavos,
         material: produto.material ?? undefined,
         modelosCompativeis: produto.modelosCompativeis ?? [],
         imagemUrl: produto.imagens[0],

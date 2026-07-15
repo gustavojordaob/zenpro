@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { gerarFotoCriativaComIA } from "@/features/personalizacao/gerarFotoComIA";
 
+const SUGUESTAO_PROMPT =
+  "Ex.: Nós dois juntos na mesma foto, como se estivéssemos tirando uma selfie no mesmo lugar.";
+
 type Props = {
   aberto: boolean;
   substituirExistente: boolean;
@@ -22,9 +25,7 @@ export function CriarFotoIAModal({
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [arquivos, setArquivos] = useState<File[]>([]);
-  const [prompt, setPrompt] = useState(
-    "Nós dois juntos na mesma foto, como se estivéssemos tirando uma selfie no mesmo lugar.",
-  );
+  const [prompt, setPrompt] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [resultado, setResultado] = useState<File | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export function CriarFotoIAModal({
       setResultado(null);
       setErro(null);
       setGerandoIA(false);
+      setPrompt("");
     }
   }, [aberto]);
 
@@ -182,7 +184,7 @@ export function CriarFotoIAModal({
               htmlFor="prompt-ia"
               className="mb-1 block text-sm font-medium text-zinc-900"
             >
-              Descreva a cena
+              Descreva a cena (opcional)
             </label>
             <textarea
               id="prompt-ia"
@@ -190,13 +192,9 @@ export function CriarFotoIAModal({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               disabled={ocupado}
-              placeholder="Ex.: Eu e o Neymar tirando uma selfie juntos no campo, sorrindo..."
-              className="w-full rounded-xl border border-zinc-300 px-3 py-2 text-sm text-zinc-800 disabled:opacity-50"
+              placeholder={SUGUESTAO_PROMPT}
+              className="w-full rounded-xl border border-zinc-300 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 disabled:opacity-50"
             />
-            <p className="mt-1 text-xs text-zinc-500">
-              Quanto mais claro o pedido, melhor. A IA monta a cena — não é
-              colagem com espaços brancos.
-            </p>
           </div>
 
           <div className="flex justify-center rounded-xl bg-[#ececec] p-4">

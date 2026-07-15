@@ -31,6 +31,35 @@ export type LojaConfig = {
   prazoEntregaDiasZenPro?: number | null;
   /** CEP/endereço de onde esta loja expede produtos prontos. */
   expedicao?: EnderecoExpedicao | null;
+  /**
+   * Só na loja oficial (zenpro): metas + benefícios dos níveis dos revendedores.
+   * Ouro ≥ ouroMin; Prata ≥ prataMin e &lt; ouro; Bronze abaixo.
+   */
+  niveisRevendedor?: {
+    ouroMinCentavos: number;
+    prataMinCentavos: number;
+    emailContatoZenPro?: string;
+    beneficios?: {
+      ouro?: {
+        descontoPercentual?: number;
+        freteGratis?: boolean;
+        chanceSorteioPremios?: boolean;
+        descricaoExtra?: string;
+      };
+      prata?: {
+        descontoPercentual?: number;
+        freteGratis?: boolean;
+        chanceSorteioPremios?: boolean;
+        descricaoExtra?: string;
+      };
+      bronze?: {
+        descontoPercentual?: number;
+        freteGratis?: boolean;
+        chanceSorteioPremios?: boolean;
+        descricaoExtra?: string;
+      };
+    };
+  } | null;
 };
 
 export type LojaFirestore = {
@@ -51,11 +80,28 @@ export type UsuarioMultitenantFirestore = {
   lojaId?: string | null;
 };
 
+/** Faixa de preço atacado (quantidade inclusiva). `quantidadeMax` null = sem teto. */
+export type FaixaPrecoRevendedor = {
+  quantidadeMin: number;
+  quantidadeMax: number | null;
+  precoCentavos: number;
+};
+
 /** `produtos/{produtoId}` — catálogo central da marca */
 export type ProdutoCentralFirestore = {
   nome: string;
   descricao: string;
+  /** Preço ao consumidor final (loja B2C). */
   precoBaseCentavos: number;
+  /**
+   * Preço cobrado do revendedor na reposição B2B.
+   * Se omitido/0, a reposição usa `precoBaseCentavos`.
+   */
+  precoRevendedorCentavos?: number | null;
+  /** Valor minimo da linha no pedido B2B (qty x preco >= este valor). */
+  pedidoMinimoRevendedorCentavos?: number | null;
+  /** Faixas de quantidade -> preco unitario (site /revendedor). */
+  faixasPrecoRevendedor?: FaixaPrecoRevendedor[];
   imagens: string[];
   ativo: boolean;
   /** FK → tipos/{tipoId} */
@@ -68,6 +114,21 @@ export type ProdutoCentralFirestore = {
   material?: string | null;
   /** Overrides visuais desta variante (sobrescreve specs do modelo de celular) */
   visualPersonalizacao?: import("@/features/catalogo/personalizacaoVisual").PersonalizacaoVisualFirestore;
+  /** Dimensões para cotação Melhor Envio (obrigatório para frete preciso). */
+  pesoGramas?: number | null;
+  alturaCm?: number | null;
+  larguraCm?: number | null;
+  comprimentoCm?: number | null;
+  /**
+   * Formas de pagamento online permitidas neste produto.
+   * Default: PIX + boleto + cartão até 12x.
+   */
+  pagamento?: {
+    aceitaPix?: boolean;
+    aceitaBoleto?: boolean;
+    aceitaCartao?: boolean;
+    maxParcelasCartao?: number;
+  } | null;
   categoria: string;
   destaque?: string | null;
   /** Condicional: tipoPersonalizacao === mascara_modelo */
@@ -150,10 +211,31 @@ export type PedidoLojaFormaPagamentoPresencial =
 
 export type PedidoLojaFormaPagamentoOnline = "pix" | "boleto" | "cartao";
 
+export type PedidoFreteCotacao = {
+  servicoId: number;
+  nome: string;
+  empresa: string;
+  companyId?: number | null;
+  precoCentavos: number;
+  prazoDias?: number | null;
+  cepOrigem: string;
+  cepDestino: string;
+  origemLojaId?: string;
+};
+
 export type PedidoEnvioFirestore = {
   transportadora?: string | null;
   codigoRastreio?: string | null;
   urlRastreio?: string | null;
+  etiquetaUrl?: string | null;
+  meOrderId?: string | null;
+  meProtocol?: string | null;
+  meAgencyId?: number | null;
+  meAgencyName?: string | null;
+  /** Postagem em agência — dono leva o pacote (sem coleta ME). */
+  modoPostagem?: "agencia" | null;
+  statusMelhorEnvio?: string | null;
+  erroMelhorEnvio?: string | null;
   enviadoEm?: unknown;
   previsaoEntregaEm?: unknown;
 };
@@ -182,6 +264,9 @@ export type NotaFiscalFirestore = {
 export type PedidoLojaFirestore = {
   itens: ItemPedidoLojaFirestore[];
   totalCentavos: number;
+  /** Subtotal produtos (sem frete), após descontos. */
+  totalProdutosCentavos?: number;
+  frete?: PedidoFreteCotacao | null;
   status: PedidoLojaStatus;
   cliente: {
     nome: string;
