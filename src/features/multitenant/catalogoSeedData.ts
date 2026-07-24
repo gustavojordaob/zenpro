@@ -8,7 +8,7 @@ import {
   PRODUTOS_DESTAQUE,
   type ProdutoDestaque,
 } from "@/features/loja/produtosMock";
-import type { ProdutoCentralDocumento } from "./types";
+import type { ProdutoCentralFirestore } from "./types";
 import {
   COLECOES_CATALOGO,
   SEED_CATALOGO,
@@ -99,7 +99,7 @@ export function getModelosSeed(): ({
 
 export function produtoDestaqueParaCentral(
   produto: ProdutoDestaque,
-): { id: string } & Omit<ProdutoCentralDocumento, "criadoEm"> {
+): { id: string } & Omit<ProdutoCentralFirestore, "criadoEm"> {
   const marcaId = marcaIdDoModelo({ id: produto.modeloId, marca: produto.marca });
 
   return {
@@ -125,7 +125,7 @@ export function produtoDestaqueParaCentral(
 
 export function getCatalogoCentralSeed(): ({
   id: string;
-} & Omit<ProdutoCentralDocumento, "criadoEm">)[] {
+} & Omit<ProdutoCentralFirestore, "criadoEm">)[] {
   return PRODUTOS_DESTAQUE.map(produtoDestaqueParaCentral);
 }
 

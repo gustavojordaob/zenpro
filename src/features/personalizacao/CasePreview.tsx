@@ -13,7 +13,11 @@ import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { TextoCapinha, Transform } from "./types";
 import { useCapinhaFontsReady } from "./useCapinhaFontsReady";
 import { useCorPredominante } from "./useCorPredominante";
-import { cameraPunchProps } from "./cameraPunch";
+import {
+  cameraClearLipProps,
+  cameraContactShadowProps,
+  cameraPunchProps,
+} from "./cameraPunch";
 
 const STUDIO_BG = "#ececec";
 const EDITOR_PREVIEW_WIDTH = ART_CANVAS.previewWidth;
@@ -305,14 +309,32 @@ export function CasePreview({
                 molduraH={molduraH}
               />
               {cameraImage && (
-                <KonvaImage
-                  image={cameraImage}
-                  x={molduraX}
-                  y={molduraY}
-                  width={molduraW}
-                  height={molduraH}
-                  listening={false}
-                />
+                <>
+                  <KonvaImage
+                    {...cameraContactShadowProps(cameraImage, {
+                      molduraX,
+                      molduraY,
+                      molduraW,
+                      molduraH,
+                    })}
+                  />
+                  <KonvaImage
+                    {...cameraClearLipProps(cameraImage, {
+                      molduraX,
+                      molduraY,
+                      molduraW,
+                      molduraH,
+                    })}
+                  />
+                  <KonvaImage
+                    image={cameraImage}
+                    x={molduraX}
+                    y={molduraY}
+                    width={molduraW}
+                    height={molduraH}
+                    listening={false}
+                  />
+                </>
               )}
               <Rect
                 x={molduraX + borderWidth / 2}
@@ -322,6 +344,9 @@ export function CasePreview({
                 cornerRadius={radius}
                 stroke={CASE_BORDER.outer}
                 strokeWidth={borderWidth}
+                shadowColor="#000000"
+                shadowBlur={Math.max(3, molduraW * 0.015)}
+                shadowOpacity={0.2}
                 listening={false}
               />
               <Rect

@@ -22,7 +22,11 @@ import {
   fitImageToArea,
   getLayoutSlots,
 } from "./fotoLayoutPresets";
-import { cameraPunchProps } from "./cameraPunch";
+import {
+  cameraClearLipProps,
+  cameraContactShadowProps,
+  cameraPunchProps,
+} from "./cameraPunch";
 
 const STUDIO_BG = "#ececec";
 const PLACEHOLDER_FILL = "#e4e4e7";
@@ -585,14 +589,32 @@ export function CaseEditor({
           {/* Overlay H5 (câmera) + borda — acima do buraco da foto */}
           <Layer listening={false}>
             {cameraImage && (
-              <KonvaImage
-                image={cameraImage}
-                x={molduraX}
-                y={molduraY}
-                width={molduraW}
-                height={molduraH}
-                listening={false}
-              />
+              <>
+                <KonvaImage
+                  {...cameraContactShadowProps(cameraImage, {
+                    molduraX,
+                    molduraY,
+                    molduraW,
+                    molduraH,
+                  })}
+                />
+                <KonvaImage
+                  {...cameraClearLipProps(cameraImage, {
+                    molduraX,
+                    molduraY,
+                    molduraW,
+                    molduraH,
+                  })}
+                />
+                <KonvaImage
+                  image={cameraImage}
+                  x={molduraX}
+                  y={molduraY}
+                  width={molduraW}
+                  height={molduraH}
+                  listening={false}
+                />
+              </>
             )}
             <Rect
               x={molduraX + borderWidth / 2}
@@ -602,6 +624,9 @@ export function CaseEditor({
               cornerRadius={radius}
               stroke={CASE_BORDER.outer}
               strokeWidth={borderWidth}
+              shadowColor="#000000"
+              shadowBlur={Math.max(3, molduraW * 0.015)}
+              shadowOpacity={0.2}
               listening={false}
             />
             <Rect
