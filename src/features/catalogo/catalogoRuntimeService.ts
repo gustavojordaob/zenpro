@@ -10,6 +10,7 @@ import {
 import { IPHONE_ASSETS } from "@/features/personalizacao/moldura";
 import { getModeloById as getModeloMockById, MODELOS } from "@/features/personalizacao/modelos";
 import type { ModeloCelular } from "@/features/personalizacao/types";
+import rockb2bPersonalizacao from "@/features/personalizacao/rockb2bPersonalizacao.json";
 import { COLECOES } from "@/features/multitenant/types";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import {
@@ -20,6 +21,11 @@ import {
   type TipoProdutoCatalogoFirestore,
 } from "./types";
 import { parsePersonalizacaoVisualJson } from "./personalizacaoVisual";
+
+const ROCKB2B_PERSONALIZACAO = rockb2bPersonalizacao as Record<
+  string,
+  NonNullable<ModeloFirestore["personalizacao"]>
+>;
 
 export type TipoCatalogo = { id: string } & TipoProdutoCatalogoFirestore;
 export type MarcaCatalogo = { id: string } & MarcaFirestore;
@@ -82,22 +88,31 @@ function mapModelo(id: string, data: DocumentData): ModeloCatalogo {
 }
 
 function modeloMockParaCatalogo(modelo: ModeloCelular): ModeloCatalogo {
+  const marca = modelo.marca.toLowerCase();
+  const marcaId = marca.includes("apple")
+    ? "apple"
+    : marca.includes("samsung")
+      ? "samsung"
+      : "xiaomi";
   const isIphone = modelo.id === "iphone-15";
+  const perso = ROCKB2B_PERSONALIZACAO[modelo.id];
+  const cameraFrame = perso?.cameraFrameUrl?.trim();
   return {
     id: modelo.id,
-    marcaId: modelo.marca.toLowerCase().includes("apple")
-      ? "apple"
-      : "samsung",
+    marcaId,
     nome: modelo.modelo,
     maskUrl: isIphone
       ? IPHONE_ASSETS.maskUrl
       : "/molduras/moldura-capinha-generica.svg",
-    overlayUrl: isIphone
-      ? IPHONE_ASSETS.overlayUrl
-      : "/molduras/moldura-capinha-generica.svg",
+    overlayUrl: cameraFrame
+      ? cameraFrame
+      : isIphone
+        ? IPHONE_ASSETS.overlayUrl
+        : "/molduras/moldura-capinha-generica.svg",
     larguraPx: modelo.larguraPx,
     alturaPx: modelo.alturaPx,
     ativo: true,
+    personalizacao: perso,
     criadoEm: null,
   };
 }

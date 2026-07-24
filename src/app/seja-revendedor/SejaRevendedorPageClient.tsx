@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { StoreHeader } from "@/components/loja/StoreHeader";
-import { normalizarSlugLoja } from "@/features/admin/revendedores/revendedorAdminUtils";
 import { enviarSolicitacaoRevendedor } from "@/features/revendedor/solicitacaoRevendedorService";
 
 export function SejaRevendedorPageClient() {
@@ -16,8 +15,6 @@ export function SejaRevendedorPageClient() {
   const [telefone, setTelefone] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [razaoSocial, setRazaoSocial] = useState("");
-  const [nomeLoja, setNomeLoja] = useState("");
-  const [slugDesejado, setSlugDesejado] = useState("");
   const [cep, setCep] = useState("");
   const [logradouro, setLogradouro] = useState("");
   const [numero, setNumero] = useState("");
@@ -38,8 +35,6 @@ export function SejaRevendedorPageClient() {
         telefone,
         cnpj,
         razaoSocial,
-        nomeLoja,
-        slugDesejado: slugDesejado || normalizarSlugLoja(nomeLoja),
         cep,
         logradouro,
         numero,
@@ -67,7 +62,8 @@ export function SejaRevendedorPageClient() {
           <h1 className="text-2xl font-bold text-zinc-900">Solicitação enviada!</h1>
           <p className="mt-4 text-zinc-600">
             Recebemos seus dados. A equipe Zen Pro vai analisar e, se aprovado,
-            você receberá um e-mail com login e senha para acessar sua loja.
+            você receberá um e-mail com login e senha para acessar o portal
+            revendedor.
           </p>
           <Link
             href="/"
@@ -87,8 +83,8 @@ export function SejaRevendedorPageClient() {
         <div className="mx-auto max-w-2xl px-4">
           <h1 className="text-3xl font-bold text-zinc-900">Seja um revendedor</h1>
           <p className="mt-2 text-zinc-600">
-            Preencha o formulário. Após aprovação, você recebe acesso ao painel
-            e sua loja online com catálogo oficial Zen Pro.
+            Preencha o formulário. Após aprovação, você recebe acesso ao portal
+            atacado Zen Pro com catálogo oficial e preços de revenda.
           </p>
 
           <form
@@ -142,34 +138,6 @@ export function SejaRevendedorPageClient() {
                   required
                   value={razaoSocial}
                   onChange={(e) => setRazaoSocial(e.target.value)}
-                  className={inputCls}
-                />
-              </Campo>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="font-semibold text-zinc-900">Loja</h2>
-              <Campo label="Nome da loja (como aparece para clientes)" required>
-                <input
-                  required
-                  value={nomeLoja}
-                  onChange={(e) => {
-                    setNomeLoja(e.target.value);
-                    if (!slugDesejado) setSlugDesejado(normalizarSlugLoja(e.target.value));
-                  }}
-                  className={inputCls}
-                />
-              </Campo>
-              <Campo
-                label="Endereço da loja na internet"
-                hint={`zenpro-capinhas.web.app/${slugDesejado || "sua-loja"}`}
-                required
-              >
-                <input
-                  required
-                  value={slugDesejado}
-                  onChange={(e) => setSlugDesejado(normalizarSlugLoja(e.target.value))}
-                  placeholder="minha-loja"
                   className={inputCls}
                 />
               </Campo>

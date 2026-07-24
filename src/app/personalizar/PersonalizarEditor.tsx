@@ -11,6 +11,7 @@ import { MontarColagemModal } from "@/components/personalizacao/MontarColagemMod
 import { CriarFotoIAModal } from "@/components/personalizacao/CriarFotoIAModal";
 import { PreviewCapaModal } from "@/features/personalizacao/PreviewCapaModal";
 import { PageBackLink } from "@/components/loja/PageBackLink";
+import { QuantityStepper } from "@/components/loja/QuantityStepper";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
@@ -132,6 +133,7 @@ export function PersonalizarEditor({
   );
   const [uploading, setUploading] = useState(false);
   const [comprando, setComprando] = useState(false);
+  const [quantidadeCompra, setQuantidadeCompra] = useState(1);
   const [modalRevisao, setModalRevisao] = useState(false);
   const [modalPreview, setModalPreview] = useState(false);
   const [modalColagem, setModalColagem] = useState(false);
@@ -422,6 +424,7 @@ export function PersonalizarEditor({
       larguraPx: ART_CANVAS.width,
       alturaPx: ART_CANVAS.height,
       maskUrl: contexto.visual.maskUrl,
+      cameraFrameUrl: contexto.visual.cameraFrameUrl,
       fotos: fotos.map(({ id, fotoUrl: url, transform: t }) => ({
         id,
         fotoUrl: url,
@@ -455,6 +458,7 @@ export function PersonalizarEditor({
         },
         id,
         produto?.produtoId,
+        quantidadeCompra,
       );
       setModalRevisao(false);
       router.push(paths.carrinho);
@@ -766,6 +770,14 @@ export function PersonalizarEditor({
         {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
         {comprarError && <p className="text-sm text-red-600">{comprarError}</p>}
 
+        {fotos.length > 0 && (
+          <QuantityStepper
+            value={quantidadeCompra}
+            onChange={setQuantidadeCompra}
+            className="w-full justify-between sm:justify-start"
+          />
+        )}
+
         <button
           type="button"
           disabled={fotos.length === 0 || comprando}
@@ -773,6 +785,7 @@ export function PersonalizarEditor({
           className="btn-gold w-full rounded-xl py-3 text-base disabled:opacity-40"
         >
           Revisar e adicionar ao carrinho
+          {quantidadeCompra > 1 ? ` (${quantidadeCompra})` : ""}
         </button>
 
         <p className="text-xs text-zinc-500">
@@ -824,7 +837,11 @@ export function PersonalizarEditor({
           modeloRotulo={`${modelo.marca} ${modelo.modelo}`}
           modeloId={modelo.id}
           confirmando={comprando}
-          tituloBotao="Confirmar e ir ao carrinho"
+          tituloBotao={
+            quantidadeCompra > 1
+              ? `Confirmar ${quantidadeCompra} e ir ao carrinho`
+              : "Confirmar e ir ao carrinho"
+          }
           onFechar={() => setModalRevisao(false)}
           onConfirmar={() => void confirmarCompra()}
         />

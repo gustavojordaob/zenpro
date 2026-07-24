@@ -131,7 +131,7 @@ firebase functions:secrets:set MELHOR_ENVIO_TOKEN --project zenpro-capinhas
 MELHOR_ENVIO_USER_AGENT=Zen Pro (email@dominio.com)
 MELHOR_ENVIO_SANDBOX=false
 MELHOR_ENVIO_TELEFONE_REMETENTE=5511999999999
-MELHOR_ENVIO_EMAIL_REMETENTE=contato@zenpro-capinhas.web.app
+MELHOR_ENVIO_EMAIL_REMETENTE=contato@usezenpro.com.br
 MELHOR_ENVIO_WEBHOOK_SECRET=...   # opcional
 FOCUS_NFE_CNPJ_EMITENTE=...       # remetente PJ no carrinho ME
 FOCUS_NFE_NOME_EMITENTE=...

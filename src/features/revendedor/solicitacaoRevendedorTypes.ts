@@ -30,8 +30,6 @@ export type SolicitacaoRevendedorInput = {
   telefone: string;
   cnpj: string;
   razaoSocial: string;
-  nomeLoja: string;
-  slugDesejado: string;
   cep: string;
   logradouro: string;
   numero: string;

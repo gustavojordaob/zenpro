@@ -46,6 +46,8 @@ type CriarPedidoLojaInput = {
     cepDestino: string;
     origemLojaId?: string | null;
   } | null;
+  /** Forma escolhida no checkout (pix | boleto | cartao) — usada no e-mail de aguardo. */
+  formaOnline?: "pix" | "boleto" | "cartao" | null;
   totalProdutosCentavos?: number;
 };
 
@@ -88,6 +90,7 @@ export async function criarPedidoLoja({
   canal = "loja",
   beneficioNivel,
   frete,
+  formaOnline,
   totalProdutosCentavos,
 }: CriarPedidoLojaInput): Promise<string> {
   if (!isFirebaseConfigured()) {
@@ -122,6 +125,9 @@ export async function criarPedidoLoja({
       provider: simularPagamentoMock ? "mock" : null,
       id: null,
       status: simularPagamentoMock ? "approved" : null,
+      ...(formaOnline && !simularPagamentoMock
+        ? { formaOnline }
+        : {}),
     },
     pagamentoLiberadoEnvio: simularPagamentoMock,
     clienteUid: user.uid,

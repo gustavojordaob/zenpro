@@ -9,7 +9,11 @@ import {
   where,
   type DocumentData,
 } from "firebase/firestore";
-import { criarRevendedorAdmin } from "@/features/admin/revendedores/revendedorAdminService";
+import { criarRevendedorAdmin, slugLojaDisponivel } from "@/features/admin/revendedores/revendedorAdminService";
+import {
+  normalizarSlugLoja,
+  slugLojaValido,
+} from "@/features/admin/revendedores/revendedorAdminUtils";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import {
   COLECAO_SOLICITACOES_REVENDEDOR,
@@ -79,8 +83,31 @@ export async function listarSolicitacoesRevendedorAdmin(
       const pa = a.status === "pendente" ? 0 : 1;
       const pb = b.status === "pendente" ? 0 : 1;
       if (pa !== pb) return pa - pb;
-      return a.nomeLoja.localeCompare(b.nomeLoja, "pt-BR");
+      const nomeA = a.razaoSocial || a.nomeLoja;
+      const nomeB = b.razaoSocial || b.nomeLoja;
+      return nomeA.localeCompare(nomeB, "pt-BR");
     });
+}
+
+async function resolverSlugAprovacao(solicitacao: SolicitacaoRevendedorAdmin): Promise<string> {
+  const candidatos = [
+    normalizarSlugLoja(solicitacao.slugDesejado),
+    normalizarSlugLoja(solicitacao.razaoSocial),
+    normalizarSlugLoja(solicitacao.email.split("@")[0] ?? ""),
+    `rev-${solicitacao.cnpj.slice(-8)}`,
+  ].filter((s, i, arr) => slugLojaValido(s) && arr.indexOf(s) === i);
+
+  for (const slug of candidatos) {
+    if (await slugLojaDisponivel(slug)) return slug;
+  }
+
+  const base = candidatos[0] || `rev-${solicitacao.cnpj.slice(-8)}`;
+  for (let n = 2; n <= 99; n++) {
+    const slug = `${base}-${n}`.slice(0, 48);
+    if (slugLojaValido(slug) && (await slugLojaDisponivel(slug))) return slug;
+  }
+
+  throw new Error("Não foi possível gerar um identificador único para o revendedor.");
 }
 
 export async function obterSolicitacaoRevendedorAdmin(
@@ -109,9 +136,12 @@ export async function aprovarSolicitacaoRevendedorAdmin(
     throw new Error("Esta solicitação já foi processada.");
   }
 
+  const nomeLoja = solicitacao.razaoSocial.trim() || solicitacao.nomeLoja.trim();
+  const slug = await resolverSlugAprovacao(solicitacao);
+
   const { lojaId, senhaProvisoria, contaExistente } = await criarRevendedorAdmin({
-    nomeLoja: solicitacao.nomeLoja,
-    slug: solicitacao.slugDesejado,
+    nomeLoja,
+    slug,
     emailDono: solicitacao.email,
     nomeDono: solicitacao.nomeCompleto,
   });
@@ -144,7 +174,7 @@ export async function aprovarSolicitacaoRevendedorAdmin(
   const mailtoUrl = montarMailtoAprovacaoRevendedor({
     emailDestino: solicitacao.email,
     nome: solicitacao.nomeCompleto,
-    nomeLoja: solicitacao.nomeLoja,
+    nomeLoja,
     loginEmail: solicitacao.email,
     senhaProvisoria,
     contaExistente,
@@ -157,7 +187,7 @@ export async function aprovarSolicitacaoRevendedorAdmin(
     emailOutboxId = await enfileirarEmailAprovacaoRevendedor({
       emailDestino: solicitacao.email,
       nome: solicitacao.nomeCompleto,
-      nomeLoja: solicitacao.nomeLoja,
+      nomeLoja,
       loginEmail: solicitacao.email,
       senhaProvisoria,
       contaExistente,

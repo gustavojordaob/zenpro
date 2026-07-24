@@ -89,6 +89,8 @@ type ExportOpts = {
   larguraPx?: number;
   alturaPx?: number;
   maskUrl?: string;
+  /** PNG da câmera H5 — fura a arte para a foto não cobrir o módulo. */
+  cameraFrameUrl?: string;
   corFundo?: string;
 };
 
@@ -243,6 +245,26 @@ export async function exportCaseArtDataUrl(
     }
   }
 
+  // Molde H5: remove pixels da arte sob o módulo da câmera
+  const cameraFrameUrl = opts.cameraFrameUrl?.trim();
+  if (incluirFoto && cameraFrameUrl) {
+    try {
+      const cameraImg = await loadImageForCanvasExport(cameraFrameUrl);
+      layer.add(
+        new Konva.Image({
+          image: cameraImg,
+          x: molduraX,
+          y: molduraY,
+          width: molduraW,
+          height: molduraH,
+          globalCompositeOperation: "destination-out",
+        }),
+      );
+    } catch {
+      // segue sem punch se o asset falhar
+    }
+  }
+
   if (incluirFoto) {
     if (clip === "mascara" && maskImage) {
       layer.add(
@@ -293,6 +315,7 @@ export type ArtGeo = {
   larguraPx?: number;
   alturaPx?: number;
   maskUrl?: string;
+  cameraFrameUrl?: string;
   corFundo?: string;
 };
 
@@ -338,13 +361,4 @@ export async function exportTextoArtBlob(
     ...geo,
   });
   return dataUrlParaBlob(dataUrl);
-}
-
-export function baixarBlob(blob: Blob, nomeArquivo: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = nomeArquivo;
-  a.click();
-  URL.revokeObjectURL(url);
 }

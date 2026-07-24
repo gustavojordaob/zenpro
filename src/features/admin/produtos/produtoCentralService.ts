@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -261,4 +262,14 @@ export async function alternarAtivoProdutoCentral(
     ativo,
     atualizadoEm: serverTimestamp(),
   });
+}
+
+export async function excluirProdutoCentral(produtoId: string): Promise<void> {
+  const db = requireDb();
+  const ref = doc(db, COLECOES.PRODUTOS, produtoId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    throw new Error("Produto não encontrado.");
+  }
+  await deleteDoc(ref);
 }

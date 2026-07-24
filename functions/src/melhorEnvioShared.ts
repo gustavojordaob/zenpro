@@ -4,7 +4,7 @@ export const melhorEnvioToken = defineSecret("MELHOR_ENVIO_TOKEN");
 
 /** Obrigatório pela API Melhor Envio. Formato: NomeApp (email@dominio.com) */
 export const melhorEnvioUserAgent = defineString("MELHOR_ENVIO_USER_AGENT", {
-  default: "Zen Pro (contato@zenpro-capinhas.web.app)",
+  default: "Zen Pro (contato@usezenpro.com.br)",
 });
 
 export const melhorEnvioSandbox = defineString("MELHOR_ENVIO_SANDBOX", {

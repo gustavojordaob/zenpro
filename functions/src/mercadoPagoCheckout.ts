@@ -190,6 +190,8 @@ export const criarCheckoutMercadoPago = onCall(
     secrets: [mpAccessToken],
     region: "us-central1",
     cors: true,
+    /** Evita cold start no “Confirmar e pagar”. */
+    minInstances: 1,
   },
   async (request) => {
     if (!request.auth) {

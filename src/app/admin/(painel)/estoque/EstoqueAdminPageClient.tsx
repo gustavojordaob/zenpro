@@ -90,7 +90,7 @@ export function EstoqueAdminPageClient() {
   return (
     <AdminShell
       titulo="Estoque"
-      subtitulo="Quantidade disponível no site zenpro-capinhas.web.app"
+      subtitulo="Quantidade disponível no site usezenpro.com.br"
     >
       <ExpedicaoLojaAdminCard
         lojaId={MARCA_LOJA_ID}

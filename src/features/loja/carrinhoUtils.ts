@@ -7,6 +7,7 @@ export function criarItemPersonalizado(
   personalizacao: Personalizacao,
   personalizacaoId: string,
   produtoId?: string,
+  quantidadeInicial = 1,
 ): ItemCarrinho {
   const id =
     produtoId ??
@@ -27,7 +28,7 @@ export function criarItemPersonalizado(
     personalizacao,
     precoCentavos:
       personalizacao.precoCentavos ?? getPrecoPorModelo(personalizacao.modeloId),
-    quantidade: 1,
+    quantidade: Math.max(1, Math.floor(quantidadeInicial) || 1),
     rotuloModelo: getRotuloModelo(personalizacao.modeloId),
   };
 }

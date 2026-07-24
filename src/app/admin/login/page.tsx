@@ -10,7 +10,7 @@ import {
 } from "@/features/admin/adminAuthService";
 import { useAuthAdmin } from "@/features/admin/AdminAuthProvider";
 import { entrarComEmail, sair } from "@/features/auth/authService";
-import { SEED_AUTH } from "@/features/multitenant/catalogoSeedData";
+import { BotaoEsqueciSenha } from "@/components/auth/BotaoEsqueciSenha";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
 function AdminLoginForm() {
@@ -112,6 +112,8 @@ function AdminLoginForm() {
             />
           </label>
 
+          <BotaoEsqueciSenha email={email} destino="admin" />
+
           {erro && <p className="text-sm text-red-600">{erro}</p>}
 
           <button
@@ -122,46 +124,6 @@ function AdminLoginForm() {
             {carregando ? "Entrando..." : "Entrar no admin"}
           </button>
         </form>
-
-        <div className="mt-6 rounded-xl border border-dashed border-zinc-300 bg-white p-4 text-xs text-zinc-600">
-          <p className="font-semibold text-zinc-800">Contas do seed (teste)</p>
-          <ul className="mt-2 space-y-2">
-            {[
-              {
-                rotulo: "Marca",
-                email: SEED_AUTH.MARCA_EMAIL,
-                senha: SEED_AUTH.MARCA_SENHA,
-              },
-              {
-                rotulo: "Rev. A",
-                email: SEED_AUTH.REVENDEDOR_A_EMAIL,
-                senha: SEED_AUTH.REVENDEDOR_A_SENHA,
-              },
-              {
-                rotulo: "Rev. B",
-                email: SEED_AUTH.REVENDEDOR_B_EMAIL,
-                senha: SEED_AUTH.REVENDEDOR_B_SENHA,
-              },
-            ].map((conta) => (
-              <li key={conta.email} className="flex flex-wrap items-center gap-2">
-                <span>
-                  {conta.rotulo}: {conta.email} / {conta.senha}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail(conta.email);
-                    setSenha(conta.senha);
-                    setErro(null);
-                  }}
-                  className="rounded-md border border-zinc-300 px-2 py-0.5 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50"
-                >
-                  Preencher
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
 
         <p className="mt-4 text-center text-sm text-zinc-500">
           <Link href="/" className="underline hover:text-zinc-800">

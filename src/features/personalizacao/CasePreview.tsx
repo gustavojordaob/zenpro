@@ -13,6 +13,7 @@ import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { TextoCapinha, Transform } from "./types";
 import { useCapinhaFontsReady } from "./useCapinhaFontsReady";
 import { useCorPredominante } from "./useCorPredominante";
+import { cameraPunchProps } from "./cameraPunch";
 
 const STUDIO_BG = "#ececec";
 const EDITOR_PREVIEW_WIDTH = ART_CANVAS.previewWidth;
@@ -139,8 +140,11 @@ export function CasePreview({
   const borderWidth = Math.max(2.5, molduraW * CASE_BORDER.widthRatio);
 
   const cameraSpec = visualCtx?.camera ?? getCameraSpec(modeloId);
+  const rockFrameUrl = visualCtx?.cameraFrameUrl?.trim() || null;
+  const rockCameraImage = useHtmlImage(rockFrameUrl);
 
   const cameraUrl = useMemo(() => {
+    if (rockFrameUrl) return null;
     const cor = visualCtx?.corAparelho ?? getCorAparelho(modeloId);
     const svg = buildCameraModuleSvgFromSpec(
       cameraSpec,
@@ -149,8 +153,16 @@ export function CasePreview({
       cor,
     );
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [cameraSpec, visualCtx, modeloId, molduraW, molduraH]);
-  const cameraImage = useHtmlImage(cameraUrl);
+  }, [
+    rockFrameUrl,
+    cameraSpec,
+    visualCtx?.corAparelho,
+    modeloId,
+    molduraW,
+    molduraH,
+  ]);
+  const svgCameraImage = useHtmlImage(cameraUrl);
+  const cameraImage = rockCameraImage ?? svgCameraImage;
 
   const clipInset = borderWidth;
   const clipRoundRect = (ctx: Konva.Context) => {
@@ -229,88 +241,101 @@ export function CasePreview({
           <Rect x={0} y={0} width={W} height={H} fill={STUDIO_BG} />
         </Layer>
         <Layer listening={false}>
-              {fotoImage && (
-                <Group>
-                  <Group clipFunc={clipRoundRect}>
-                    <Rect
-                      x={areaUtil.x}
-                      y={areaUtil.y}
-                      width={areaUtil.w}
-                      height={areaUtil.h}
-                      fill={corFundo}
-                      listening={false}
-                    />
-                    {bg && (
-                      <KonvaImage
-                        ref={bgRef}
-                        image={fotoImage}
-                        x={bg.x}
-                        y={bg.y}
-                        scaleX={bg.scale}
-                        scaleY={bg.scale}
-                        listening={false}
-                      />
-                    )}
-                    <KonvaImage
-                      image={fotoImage}
-                      x={transform.x}
-                      y={transform.y}
-                      scaleX={transform.scale}
-                      scaleY={transform.scale}
-                      rotation={transform.rotation}
-                      listening={false}
-                    />
-                    {textos.map((texto) => (
-                      <CaseTextNode
-                        key={texto.id}
-                        texto={texto}
-                        selecionado={false}
-                        editavel={false}
-                        onChange={() => {}}
-                        onSelect={() => {}}
-                      />
-                    ))}
-                  </Group>
+          {fotoImage && (
+            <>
+              {/* Arte só na silhueta da capa */}
+              <Group clipFunc={clipRoundRect}>
+                <Rect
+                  x={areaUtil.x}
+                  y={areaUtil.y}
+                  width={areaUtil.w}
+                  height={areaUtil.h}
+                  fill={corFundo}
+                  listening={false}
+                />
+                {bg && (
+                  <KonvaImage
+                    ref={bgRef}
+                    image={fotoImage}
+                    x={bg.x}
+                    y={bg.y}
+                    scaleX={bg.scale}
+                    scaleY={bg.scale}
+                    listening={false}
+                  />
+                )}
+                <KonvaImage
+                  image={fotoImage}
+                  x={transform.x}
+                  y={transform.y}
+                  scaleX={transform.scale}
+                  scaleY={transform.scale}
+                  rotation={transform.rotation}
+                  listening={false}
+                />
+                {textos.map((texto) => (
+                  <CaseTextNode
+                    key={texto.id}
+                    texto={texto}
+                    selecionado={false}
+                    editavel={false}
+                    onChange={() => {}}
+                    onSelect={() => {}}
+                  />
+                ))}
+              </Group>
 
-                  <ZenProLogoOverlay
-                    cameraSpec={cameraSpec}
-                    molduraX={molduraX}
-                    molduraY={molduraY}
-                    molduraW={molduraW}
-                    molduraH={molduraH}
-                  />
-                  {cameraImage && (
-                    <KonvaImage
-                      image={cameraImage}
-                      x={molduraX}
-                      y={molduraY}
-                      width={molduraW}
-                      height={molduraH}
-                      listening={false}
-                    />
-                  )}
-                  <Rect
-                    x={molduraX + borderWidth / 2}
-                    y={molduraY + borderWidth / 2}
-                    width={molduraW - borderWidth}
-                    height={molduraH - borderWidth}
-                    cornerRadius={radius}
-                    stroke={CASE_BORDER.outer}
-                    strokeWidth={borderWidth}
-                    listening={false}
-                  />
-                  <Rect
-                    x={molduraX + borderWidth * 0.78}
-                    y={molduraY + borderWidth * 0.78}
-                    width={molduraW - borderWidth * 1.56}
-                    height={molduraH - borderWidth * 1.56}
-                    cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
-                    stroke={CASE_BORDER.inner}
-                    strokeWidth={Math.max(2, borderWidth * 0.58)}
-                    listening={false}
-                  />
-                </Group>
+              {/* Molde H5: fura a foto no módulo da câmera */}
+              {cameraImage && (
+                <KonvaImage
+                  {...cameraPunchProps(cameraImage, {
+                    molduraX,
+                    molduraY,
+                    molduraW,
+                    molduraH,
+                  })}
+                />
               )}
+
+              <ZenProLogoOverlay
+                cameraSpec={cameraSpec}
+                molduraX={molduraX}
+                molduraY={molduraY}
+                molduraW={molduraW}
+                molduraH={molduraH}
+              />
+              {cameraImage && (
+                <KonvaImage
+                  image={cameraImage}
+                  x={molduraX}
+                  y={molduraY}
+                  width={molduraW}
+                  height={molduraH}
+                  listening={false}
+                />
+              )}
+              <Rect
+                x={molduraX + borderWidth / 2}
+                y={molduraY + borderWidth / 2}
+                width={molduraW - borderWidth}
+                height={molduraH - borderWidth}
+                cornerRadius={radius}
+                stroke={CASE_BORDER.outer}
+                strokeWidth={borderWidth}
+                listening={false}
+              />
+              <Rect
+                x={molduraX + borderWidth * 0.78}
+                y={molduraY + borderWidth * 0.78}
+                width={molduraW - borderWidth * 1.56}
+                height={molduraH - borderWidth * 1.56}
+                cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
+                stroke={CASE_BORDER.inner}
+                strokeWidth={Math.max(2, borderWidth * 0.58)}
+                listening={false}
+              />
+            </>
+          )}
         </Layer>
       </Stage>
     </div>

@@ -20,15 +20,11 @@
 - **Boleto** — envio só após compensação (`pagamentoLiberadoEnvio`)
 - **Cartão** — até **12x** via preference `installments`
 
-### Parcelas sem juros (ex.: 2x)
+### Parcelas sem juros (só 1x / à vista)
 
-Isso **não** é só no código Zen Pro. Ative na conta Mercado Pago da loja:
+No site, **apenas 1x** é anunciado como sem juros; a partir de 2x o cliente assume juros do Mercado Pago.
 
-1. [Mercado Pago](https://www.mercadopago.com.br) → Sua conta → **Meios de pagamento** / custos de parcelamento  
-2. Ative **“Oferecer parcelamento sem juros”** até 2x (você assume a taxa)  
-3. Salve e teste de novo o checkout  
-
-O site só limita o máximo de parcelas; o “sem acréscimo” vem do painel MP.
+No painel MP, **não** ofereça “parcelamento sem juros” em 2x+ (ou deixe só à vista sem acréscimo). O Checkout Pro respeita a config da conta.
 
 ### Qualidade / aprovação de cartão
 
@@ -63,7 +59,7 @@ Functions params: `SITE_URL`, `FOCUS_NFE_AMBIENTE`, `FOCUS_NFE_CNPJ_EMITENTE`
 Frontend `.env.local`:
 
 ```
-NEXT_PUBLIC_SITE_URL=https://zenpro-capinhas.web.app
+NEXT_PUBLIC_SITE_URL=https://usezenpro.com.br
 NEXT_PUBLIC_MOCK_PAGAMENTO=false
 NEXT_PUBLIC_MP_PUBLIC_KEY=APP_USR-...   # public key da aplicação MP
 NEXT_PUBLIC_MP_SANDBOX=false
@@ -98,5 +94,5 @@ firebase deploy --only "functions,firestore:rules,hosting"
 - [ ] `MP_ACCESS_TOKEN` (produção ou sandbox)
 - [ ] Webhook cadastrado no painel MP
 - [ ] `NEXT_PUBLIC_MOCK_PAGAMENTO=false` em produção
-- [ ] Parcelamento sem juros até 2x no painel MP
+- [ ] Painel MP: sem juros só à vista (1x); 2x+ com juros
 - [ ] Focus NFe (opcional) ou emissão manual no admin

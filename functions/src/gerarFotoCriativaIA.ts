@@ -1,3 +1,4 @@
+import * as admin from "firebase-admin";
 import { defineSecret } from "firebase-functions/params";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 
@@ -5,6 +6,9 @@ const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 const MODELO_IMAGEM = "gemini-2.5-flash-image";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODELO_IMAGEM}:generateContent`;
+
+/** Clientes finais: no máximo N montagens IA por dia (revendedor/marca sem limite). */
+const LIMITE_MONTAGENS_IA_CLIENTE_DIA = 3;
 
 type ImagemEntrada = {
   base64: string;
@@ -66,6 +70,52 @@ function extrairImagemResposta(
   return null;
 }
 
+/** YYYY-MM-DD no fuso de São Paulo. */
+function diaBrasil(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+async function usuarioIsentoLimiteIA(uid: string): Promise<boolean> {
+  const snap = await admin.firestore().doc(`usuarios/${uid}`).get();
+  const papel = String(snap.data()?.papel ?? "");
+  return papel === "revendedor" || papel === "marca";
+}
+
+/**
+ * Incrementa o contador diário. Clientes finais: máx. LIMITE_MONTAGENS_IA_CLIENTE_DIA.
+ * Revendedor/marca: só registra uso (sem teto).
+ */
+async function consumirCotaMontagemIA(uid: string): Promise<void> {
+  const isento = await usuarioIsentoLimiteIA(uid);
+  const dia = diaBrasil();
+  const ref = admin.firestore().doc(`usuarios/${uid}/uso_ia/${dia}`);
+
+  await admin.firestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const atual = Number(snap.data()?.montagens ?? 0) || 0;
+    if (!isento && atual >= LIMITE_MONTAGENS_IA_CLIENTE_DIA) {
+      throw new HttpsError(
+        "resource-exhausted",
+        `Limite de ${LIMITE_MONTAGENS_IA_CLIENTE_DIA} montagens com IA por dia. Volte amanhã ou torne-se revendedor para uso ilimitado.`,
+      );
+    }
+    tx.set(
+      ref,
+      {
+        montagens: atual + 1,
+        dia,
+        atualizadoEm: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  });
+}
+
 export const gerarFotoCriativaIA = onCall(
   {
     secrets: [geminiApiKey],
@@ -93,6 +143,8 @@ export const gerarFotoCriativaIA = onCall(
         throw new HttpsError("invalid-argument", "Imagem inválida.");
       }
     }
+
+    await consumirCotaMontagemIA(request.auth.uid);
 
     const apiKey = geminiApiKey.value()?.trim();
     if (!apiKey) {

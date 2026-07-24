@@ -18,7 +18,7 @@ export type EmailAprovacaoRevendedorConteudo = {
 function baseUrl(siteBaseUrl?: string): string {
   if (siteBaseUrl) return siteBaseUrl.replace(/\/$/, "");
   if (typeof window !== "undefined") return window.location.origin;
-  return "https://zenpro-capinhas.web.app";
+  return "https://usezenpro.com.br";
 }
 
 export function montarConteudoEmailAprovacaoRevendedor(

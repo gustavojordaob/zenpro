@@ -28,6 +28,7 @@ import {
   getDispositivoPreset,
 } from "@/features/admin/catalogo/dispositivosPresets";
 import { CAMERA_PRESET_OPCOES } from "@/features/personalizacao/cameraModules";
+import { getRockPersonalizacao } from "@/features/personalizacao/rockCameraAssets";
 import { reaisInputParaCentavos } from "@/features/admin/produtos/produtoFormUtils";
 import { validarFaixasPrecoRevendedor } from "@/features/revendedor/precoRevendedorFaixas";
 
@@ -86,6 +87,7 @@ export function CapinhaNovaPageClient() {
     if (!p) return;
     setLarguraPx(p.larguraPx);
     setAlturaPx(p.alturaPx);
+    setModeloNome(p.rotulo);
     setCameraPresetId(p.cameraPresetId);
     setCorAparelho(p.corAparelho);
     if (p.marcaSugerida) {
@@ -188,18 +190,22 @@ export function CapinhaNovaPageClient() {
           ? await criarMarcaAdmin({ nome: marcaNovaNome.trim(), ativo: true })
           : marcaId;
 
-      // 2) Modelo do aparelho (sem exigir PNGs — usa forma/câmera padrão)
+      // 2) Modelo do aparelho — id do catálogo H5 + câmera do molde
       setEtapa("Cadastrando o aparelho...");
+      const rockPerso = getRockPersonalizacao(presetId);
+      const cameraFrameUrl = rockPerso?.cameraFrameUrl?.trim() || null;
       const modeloId = await criarModeloAdmin({
+        id: presetId || undefined,
         marcaId: marcaFinalId,
         nome: modeloNome.trim(),
         maskUrl: "",
-        overlayUrl: "",
+        overlayUrl: cameraFrameUrl || "",
         larguraPx,
         alturaPx,
         ativo: true,
         corAparelho,
-        cameraPresetId,
+        cameraPresetId: cameraFrameUrl ? "sem-camera" : cameraPresetId,
+        cameraFrameUrl,
       });
 
       // 3) Produto personalizável vinculado ao modelo

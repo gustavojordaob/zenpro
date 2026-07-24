@@ -92,8 +92,50 @@ async function marcarNotificacao(
   });
 }
 
+function textoAguardoPagamento(forma: string | null | undefined): {
+  tituloExtra: string;
+  corpoTexto: string;
+  corpoHtml: string;
+} {
+  const f = String(forma ?? "").toLowerCase();
+  if (f === "boleto") {
+    return {
+      tituloExtra: "boleto",
+      corpoTexto:
+        "Você escolheu boleto. A compensação costuma levar de 1 a 3 dias úteis — isso é normal. Assim que o pagamento for confirmado, você recebe outro e-mail. Não é preciso pagar de novo.",
+      corpoHtml:
+        "<p>Você escolheu <strong>boleto</strong>. A compensação costuma levar de <strong>1 a 3 dias úteis</strong> — isso é normal.</p><p>Assim que o pagamento for confirmado, você recebe outro e-mail. Não é preciso pagar de novo.</p>",
+    };
+  }
+  if (f === "pix") {
+    return {
+      tituloExtra: "PIX",
+      corpoTexto:
+        "Você escolheu PIX. A confirmação costuma levar poucos minutos. Assim que o Mercado Pago confirmar, você recebe outro e-mail de pagamento aprovado.",
+      corpoHtml:
+        "<p>Você escolheu <strong>PIX</strong>. A confirmação costuma levar <strong>poucos minutos</strong>.</p><p>Assim que o Mercado Pago confirmar, você recebe outro e-mail de pagamento aprovado.</p>",
+    };
+  }
+  if (f === "cartao") {
+    return {
+      tituloExtra: "cartão",
+      corpoTexto:
+        "Você escolheu cartão. A aprovação costuma ser na hora. Se ficar pendente ou for recusado, tente de novo em Meus pedidos ou use PIX.",
+      corpoHtml:
+        "<p>Você escolheu <strong>cartão</strong>. A aprovação costuma ser na hora.</p><p>Se ficar pendente ou for recusado, tente de novo em Meus pedidos ou use PIX.</p>",
+    };
+  }
+  return {
+    tituloExtra: "pagamento",
+    corpoTexto:
+      "Seu pedido foi registrado e está aguardando a confirmação do pagamento. PIX costuma levar minutos; boleto pode levar 1 a 3 dias úteis.",
+    corpoHtml:
+      "<p>Seu pedido foi registrado e está aguardando a confirmação do pagamento.</p><p><strong>PIX</strong> costuma levar minutos; <strong>boleto</strong> pode levar 1 a 3 dias úteis.</p>",
+  };
+}
+
 /**
- * E-mails ao cliente quando pagamento libera, rastreio surge ou status muda.
+ * E-mails ao cliente: aguardando pagamento, aprovado, rastreio, enviado, entregue.
  */
 export const notificarClientePedidoAtualizado = onDocumentUpdated(
   {
@@ -119,6 +161,43 @@ export const notificarClientePedidoAtualizado = onDocumentUpdated(
     const link = linkMeusPedidos();
     const baseHtml = (corpo: string) =>
       `<p>Olá, ${dest.nome}!</p>${corpo}<p><a href="${link}">Acompanhar pedido</a></p><p>Zen Pro</p>`;
+
+    const pagAntes =
+      (before.pagamento as Record<string, unknown> | undefined) ?? {};
+    const pagDepois =
+      (after.pagamento as Record<string, unknown> | undefined) ?? {};
+    const checkoutAntes = String(pagAntes.checkoutUrl ?? "").trim();
+    const checkoutDepois = String(pagDepois.checkoutUrl ?? "").trim();
+    const statusAntes = String(before.status ?? "");
+    const statusDepois = String(after.status ?? "");
+    const forma =
+      String(pagDepois.formaOnline ?? pagAntes.formaOnline ?? "").trim() ||
+      null;
+
+    if (
+      !checkoutAntes &&
+      checkoutDepois &&
+      statusDepois === "aguardando_pagamento" &&
+      after.pagamentoLiberadoEnvio !== true
+    ) {
+      const ok = await marcarNotificacao(ref, "aguardandoPagamento");
+      if (ok) {
+        const aguardo = textoAguardoPagamento(forma);
+        const subject = `Pedido #${n} registrado — aguardando ${aguardo.tituloExtra}`;
+        const text = `Olá, ${dest.nome}!\n\nSeu pedido #${n} foi registrado e está aguardando pagamento.\n\n${aguardo.corpoTexto}\n\nAcompanhe ou continue o pagamento: ${link}\n\nZen Pro`;
+        await enfileirarEmail({
+          to: dest.email,
+          subject,
+          text,
+          html: baseHtml(
+            `<p>Seu pedido <strong>#${n}</strong> foi registrado e está <strong>aguardando pagamento</strong>.</p>${aguardo.corpoHtml}`,
+          ),
+          tipo: "pedido_aguardando_pagamento",
+          lojaId,
+          pedidoId,
+        });
+      }
+    }
 
     const pagoAntes = before.pagamentoLiberadoEnvio === true;
     const pagoDepois = after.pagamentoLiberadoEnvio === true;
@@ -183,8 +262,6 @@ export const notificarClientePedidoAtualizado = onDocumentUpdated(
       }
     }
 
-    const statusAntes = String(before.status ?? "");
-    const statusDepois = String(after.status ?? "");
     if (statusAntes !== statusDepois && statusDepois === "enviado") {
       const ok = await marcarNotificacao(ref, "enviado");
       if (ok) {

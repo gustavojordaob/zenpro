@@ -11,6 +11,7 @@ import {
   listarNiveisRevendedores,
   obterNiveisRevendedorConfig,
   rankingRevendedores,
+  rankingRevendedoresNoIntervalo,
   rankingRevendedoresNoMes,
   rotuloNivelRevendedor,
   salvarNiveisRevendedorConfig,
@@ -21,6 +22,12 @@ import {
   type RevendedorComNivel,
   NIVEIS_REVENDEDOR_DEFAULT,
 } from "@/features/admin/revendedores/niveisRevendedorService";
+import {
+  alternarAtivoRevendedorAdmin,
+  listarRevendedoresAdmin,
+  type RevendedorAdmin,
+} from "@/features/admin/revendedores/revendedorAdminService";
+import { formatarPreco } from "@/features/loja/produtosMock";
 
 function ymAtual(): string {
   const d = new Date();
@@ -35,12 +42,46 @@ function parseYm(ym: string): { ano: number; mesIndex0: number } | null {
   if (mes < 1 || mes > 12) return null;
   return { ano, mesIndex0: mes - 1 };
 }
-import {
-  alternarAtivoRevendedorAdmin,
-  listarRevendedoresAdmin,
-  type RevendedorAdmin,
-} from "@/features/admin/revendedores/revendedorAdminService";
-import { formatarPreco } from "@/features/loja/produtosMock";
+
+/** Valor `YYYY-Www` da semana ISO atual (segunda–domingo). */
+function isoWeekAtual(): string {
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayNr = (target.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const week =
+    1 +
+    Math.round(
+      ((target.getTime() - firstThursday.getTime()) / 86400000 -
+        3 +
+        ((firstThursday.getDay() + 6) % 7)) /
+        7,
+    );
+  return `${target.getFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function intervaloIsoWeek(
+  weekValue: string,
+): { inicio: Date; fim: Date } | null {
+  const m = /^(\d{4})-W(\d{2})$/.exec(weekValue);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const week = Number(m[2]);
+  if (week < 1 || week > 53) return null;
+  const jan4 = new Date(year, 0, 4);
+  const jan4Day = (jan4.getDay() + 6) % 7;
+  const mondayWeek1 = new Date(year, 0, 4 - jan4Day);
+  const inicio = new Date(mondayWeek1);
+  inicio.setDate(mondayWeek1.getDate() + (week - 1) * 7);
+  inicio.setHours(0, 0, 0, 0);
+  const fim = new Date(inicio);
+  fim.setDate(inicio.getDate() + 6);
+  fim.setHours(23, 59, 59, 999);
+  return { inicio, fim };
+}
+
+type RankingPeriodo = "semana" | "mes" | "ano" | "total";
 
 function badgeNivel(nivel: NivelRevendedor) {
   if (nivel === "ouro") {
@@ -130,15 +171,15 @@ export function RevendedoresAdminPageClient() {
   const [beneficios, setBeneficios] = useState(
     NIVEIS_REVENDEDOR_DEFAULT.beneficios,
   );
-  const [rankingPeriodo, setRankingPeriodo] = useState<"mes" | "ano" | "total">(
-    "mes",
-  );
+  const [rankingPeriodo, setRankingPeriodo] = useState<RankingPeriodo>("mes");
   const [mesFiltro, setMesFiltro] = useState(ymAtual);
+  const [semanaFiltro, setSemanaFiltro] = useState(isoWeekAtual);
   const [vendedorFiltro, setVendedorFiltro] = useState("todos");
-  const [rankingMesCustom, setRankingMesCustom] = useState<RankingItemMes[]>(
-    [],
-  );
-  const [carregandoRankingMes, setCarregandoRankingMes] = useState(false);
+  const [rankingPeriodoCustom, setRankingPeriodoCustom] = useState<
+    RankingItemMes[]
+  >([]);
+  const [carregandoRankingPeriodo, setCarregandoRankingPeriodo] =
+    useState(false);
   const [salvandoNiveis, setSalvandoNiveis] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -181,40 +222,71 @@ export function RevendedoresAdminPageClient() {
   }, [carregar]);
 
   useEffect(() => {
-    if (rankingPeriodo !== "mes" || lojas.length === 0) {
-      setRankingMesCustom([]);
+    if (
+      (rankingPeriodo !== "mes" && rankingPeriodo !== "semana") ||
+      lojas.length === 0
+    ) {
+      setRankingPeriodoCustom([]);
       return;
     }
-    const parsed = parseYm(mesFiltro);
-    if (!parsed) return;
+
     let cancelled = false;
-    setCarregandoRankingMes(true);
-    void rankingRevendedoresNoMes(
-      lojas.map((l) => ({
-        lojaId: l.lojaId,
-        donoUid: l.donoUid,
-        nome: l.nome,
-      })),
-      parsed.ano,
-      parsed.mesIndex0,
-      config,
-    )
+    setCarregandoRankingPeriodo(true);
+
+    const revendedores = lojas.map((l) => ({
+      lojaId: l.lojaId,
+      donoUid: l.donoUid,
+      nome: l.nome,
+    }));
+
+    const carregar =
+      rankingPeriodo === "mes"
+        ? (() => {
+            const parsed = parseYm(mesFiltro);
+            if (!parsed) return null;
+            return rankingRevendedoresNoMes(
+              revendedores,
+              parsed.ano,
+              parsed.mesIndex0,
+              config,
+            );
+          })()
+        : (() => {
+            const intervalo = intervaloIsoWeek(semanaFiltro);
+            if (!intervalo) return null;
+            return rankingRevendedoresNoIntervalo(
+              revendedores,
+              intervalo.inicio,
+              intervalo.fim,
+              config,
+            );
+          })();
+
+    if (!carregar) {
+      setCarregandoRankingPeriodo(false);
+      return;
+    }
+
+    void carregar
       .then((rows) => {
-        if (!cancelled) setRankingMesCustom(rows);
+        if (!cancelled) setRankingPeriodoCustom(rows);
       })
       .catch((e) => console.error(e))
       .finally(() => {
-        if (!cancelled) setCarregandoRankingMes(false);
+        if (!cancelled) setCarregandoRankingPeriodo(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, [rankingPeriodo, mesFiltro, lojas, config]);
+  }, [rankingPeriodo, mesFiltro, semanaFiltro, lojas, config]);
 
   const rankingBase = useMemo(() => {
-    if (rankingPeriodo === "mes") return rankingMesCustom;
+    if (rankingPeriodo === "mes" || rankingPeriodo === "semana") {
+      return rankingPeriodoCustom;
+    }
     return rankingRevendedores(niveisPorLoja, rankingPeriodo);
-  }, [rankingPeriodo, rankingMesCustom, niveisPorLoja]);
+  }, [rankingPeriodo, rankingPeriodoCustom, niveisPorLoja]);
 
   const ranking = useMemo(() => {
     if (vendedorFiltro === "todos") return rankingBase;
@@ -347,6 +419,7 @@ export function RevendedoresAdminPageClient() {
           <div className="flex rounded-xl border border-zinc-200 p-1">
             {(
               [
+                ["semana", "Semana"],
                 ["mes", "Mês"],
                 ["ano", "Ano"],
                 ["total", "Total"],
@@ -372,6 +445,17 @@ export function RevendedoresAdminPageClient() {
         </p>
 
         <div className="mt-4 flex flex-wrap gap-3">
+          {rankingPeriodo === "semana" && (
+            <label className="block text-xs font-medium text-zinc-600">
+              Semana
+              <input
+                type="week"
+                value={semanaFiltro}
+                onChange={(e) => setSemanaFiltro(e.target.value)}
+                className="mt-1 block rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+              />
+            </label>
+          )}
           {rankingPeriodo === "mes" && (
             <label className="block text-xs font-medium text-zinc-600">
               Mês
@@ -400,7 +484,9 @@ export function RevendedoresAdminPageClient() {
           </label>
         </div>
 
-        {carregando || (rankingPeriodo === "mes" && carregandoRankingMes) ? (
+        {carregando ||
+        ((rankingPeriodo === "mes" || rankingPeriodo === "semana") &&
+          carregandoRankingPeriodo) ? (
           <p className="mt-4 text-sm text-zinc-500">Carregando…</p>
         ) : ranking.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500">
@@ -410,7 +496,7 @@ export function RevendedoresAdminPageClient() {
           <ol className="mt-4 divide-y divide-zinc-100">
             {ranking.map((r, i) => {
               let vol: number;
-              if (rankingPeriodo === "mes") {
+              if (rankingPeriodo === "mes" || rankingPeriodo === "semana") {
                 vol =
                   "volumePeriodoCentavos" in r
                     ? Number(r.volumePeriodoCentavos)
@@ -420,10 +506,13 @@ export function RevendedoresAdminPageClient() {
               } else {
                 vol = r.volumeCentavos;
               }
-              const pedidosMes =
-                rankingPeriodo === "mes" && "pedidosPeriodo" in r
+              const pedidosPeriodo =
+                (rankingPeriodo === "mes" || rankingPeriodo === "semana") &&
+                "pedidosPeriodo" in r
                   ? Number(r.pedidosPeriodo)
                   : null;
+              const rotuloPedidosPeriodo =
+                rankingPeriodo === "semana" ? "na semana" : "no mês";
               return (
                 <li
                   key={r.lojaId}
@@ -439,8 +528,8 @@ export function RevendedoresAdminPageClient() {
                         Mês atual {formatarPreco(r.volumeMesCentavos)} · Ano{" "}
                         {formatarPreco(r.volumeAnoCentavos)} · Total{" "}
                         {formatarPreco(r.volumeCentavos)}
-                        {pedidosMes != null
-                          ? ` · ${pedidosMes} pedido(s) no mês`
+                        {pedidosPeriodo != null
+                          ? ` · ${pedidosPeriodo} pedido(s) ${rotuloPedidosPeriodo}`
                           : ""}
                       </p>
                     </div>
@@ -461,7 +550,6 @@ export function RevendedoresAdminPageClient() {
           </ol>
         )}
       </section>
-
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-zinc-600">{lojas.length} loja(s)</p>
         <Link

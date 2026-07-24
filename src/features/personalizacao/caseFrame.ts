@@ -14,7 +14,8 @@ export type CaseFrameSpec = {
 
 const SPECS: Record<string, CaseFrameSpec> = {
   "iphone-17-pro-max": {
-    radius: 0.15,
+    /** Cantos de capa realista — evita silhueta “pílula” exagerada. */
+    radius: 0.11,
     camera: { x0: 0.04, y0: 0.028, x1: 0.95, y1: 0.28, radius: 0.06 },
   },
 };

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ProdutoImagem } from "@/components/loja/ProdutoImagem";
+import { QuantityStepper } from "@/components/loja/QuantityStepper";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
@@ -23,12 +24,16 @@ export function CatalogProductCard({ produto }: Props) {
   const [adicionado, setAdicionado] = useState(false);
   const [qty, setQty] = useState(1);
   const isB2b = Boolean(loja?.isB2b);
+  const maxEstoque =
+    produto.controlaEstoque && typeof produto.disponivelVenda === "number"
+      ? Math.max(1, produto.disponivelVenda)
+      : undefined;
 
   function handleComprar() {
     if (produto.esgotado) return;
     adicionarPronta({
       ...produto,
-      quantidadeInicial: isB2b ? Math.max(1, qty) : 1,
+      quantidadeInicial: Math.max(1, qty),
       precoCentavos: produto.precoCentavos,
     });
     setAdicionado(true);
@@ -78,17 +83,13 @@ export function CatalogProductCard({ produto }: Props) {
             {produto.disponivelVenda ?? 0} em estoque
           </p>
         )}
-        {isB2b && (
-          <label className="mt-1 flex items-center gap-2 text-xs text-zinc-600">
-            Qtd
-            <input
-              type="number"
-              min={1}
-              value={qty}
-              onChange={(e) => setQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-              className="w-16 rounded border border-zinc-300 px-2 py-1 text-sm"
-            />
-          </label>
+        {!produto.esgotado && (
+          <QuantityStepper
+            className="mt-1"
+            value={qty}
+            max={maxEstoque}
+            onChange={setQty}
+          />
         )}
         <button
           type="button"

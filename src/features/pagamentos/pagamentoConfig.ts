@@ -7,16 +7,15 @@ export function siteUrlBase(): string {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
   if (fromEnv) return fromEnv;
   if (typeof window !== "undefined") return window.location.origin;
-  return "https://zenpro-capinhas.web.app";
+  return "https://usezenpro.com.br";
 }
 
 export const PARCELAMENTO_MAXIMO = 12;
 /**
- * Até quantas parcelas o site anuncia como “sem juros”.
- * A regra real de “sem acréscimo” fica no painel Mercado Pago
- * (Oferecer parcelamento sem juros) — o Checkout Pro lê dali.
+ * Só à vista (1x) é anunciado como sem juros.
+ * A partir de 2x o Mercado Pago aplica juros (configurar no painel MP).
  */
-export const PARCELAMENTO_SEM_JUROS = 2;
+export const PARCELAMENTO_SEM_JUROS = 1;
 
 /** Rótulo da opção de parcelas no checkout (valor por parcela). */
 export function rotuloParcelaCheckout(
@@ -47,7 +46,7 @@ export const FORMAS_PAGAMENTO_ONLINE: {
   {
     id: "cartao",
     rotulo: "Cartão de crédito",
-    descricao: `Até ${PARCELAMENTO_MAXIMO}x — ${PARCELAMENTO_SEM_JUROS}x sem juros`,
+    descricao: `Até ${PARCELAMENTO_MAXIMO}x — à vista sem juros`,
   },
   {
     id: "boleto",

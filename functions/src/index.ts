@@ -14,6 +14,7 @@ import { processarEnvioOutbox } from "./processarEnvioOutbox";
 import { webhookMelhorEnvio } from "./webhookMelhorEnvio";
 import { reprocessarEnvioMelhorEnvio } from "./reprocessarEnvioMelhorEnvio";
 import { notificarClientePedidoAtualizado } from "./pedidoClienteEmail";
+import { baixarArquivoStorage } from "./baixarArquivoStorage";
 
 admin.initializeApp();
 
@@ -30,12 +31,14 @@ export {
   webhookMelhorEnvio,
   reprocessarEnvioMelhorEnvio,
   notificarClientePedidoAtualizado,
+  baixarArquivoStorage,
 };
 
 const resendApiKey = defineString("RESEND_API_KEY", { default: "" });
 const emailFrom = defineString("EMAIL_FROM", {
-  default: "Zen Pro <noreply@zenpro-capinhas.web.app>",
+  default: "Zen Pro <contato@usezenpro.com.br>",
 });
+const emailReplyTo = defineString("EMAIL_REPLY_TO", { default: "" });
 const smtpHost = defineString("SMTP_HOST", { default: "" });
 const smtpPort = defineString("SMTP_PORT", { default: "587" });
 const smtpUser = defineString("SMTP_USER", { default: "" });
@@ -57,6 +60,7 @@ async function enviarViaResend(
   subject: string,
   text: string,
   html?: string,
+  replyTo?: string,
 ): Promise<void> {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -70,6 +74,7 @@ async function enviarViaResend(
       subject,
       text,
       html: html || undefined,
+      ...(replyTo ? { reply_to: replyTo } : {}),
     }),
   });
 
@@ -132,11 +137,12 @@ export const processarEmailOutbox = onDocumentCreated(
     }
 
     const from = emailFrom.value();
+    const replyTo = emailReplyTo.value().trim() || undefined;
 
     try {
       const resend = resendApiKey.value();
       if (resend) {
-        await enviarViaResend(resend, from, to, subject, text, html);
+        await enviarViaResend(resend, from, to, subject, text, html, replyTo);
       } else {
         const host = smtpHost.value();
         const user = smtpUser.value();

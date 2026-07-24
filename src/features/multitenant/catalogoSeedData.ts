@@ -3,11 +3,12 @@
  */
 import { MODELOS } from "@/features/personalizacao/modelos";
 import { IPHONE_ASSETS } from "@/features/personalizacao/moldura";
+import rockb2bPersonalizacao from "@/features/personalizacao/rockb2bPersonalizacao.json";
 import {
   PRODUTOS_DESTAQUE,
   type ProdutoDestaque,
 } from "@/features/loja/produtosMock";
-import type { ProdutoCentralFirestore } from "./types";
+import type { ProdutoCentralDocumento } from "./types";
 import {
   COLECOES_CATALOGO,
   SEED_CATALOGO,
@@ -35,17 +36,45 @@ export function getMarcasSeed(): ({
   return [
     { id: SEED_CATALOGO.MARCA_APPLE, nome: "Apple", ativo: true },
     { id: SEED_CATALOGO.MARCA_SAMSUNG, nome: "Samsung", ativo: true },
+    { id: SEED_CATALOGO.MARCA_XIAOMI, nome: "Xiaomi", ativo: true },
   ];
 }
+
+function marcaIdDoModelo(modelo: { id: string; marca?: string }): string {
+  const marca = (modelo.marca ?? "").toLowerCase();
+  const id = modelo.id.toLowerCase();
+  if (marca.includes("apple") || id.includes("iphone")) {
+    return SEED_CATALOGO.MARCA_APPLE;
+  }
+  if (
+    marca.includes("samsung") ||
+    id.includes("galaxy") ||
+    id.startsWith("samsung-")
+  ) {
+    return SEED_CATALOGO.MARCA_SAMSUNG;
+  }
+  return SEED_CATALOGO.MARCA_XIAOMI;
+}
+
+function nomeMarca(marcaId: string): string {
+  if (marcaId === SEED_CATALOGO.MARCA_APPLE) return "Apple";
+  if (marcaId === SEED_CATALOGO.MARCA_SAMSUNG) return "Samsung";
+  if (marcaId === SEED_CATALOGO.MARCA_XIAOMI) return "Xiaomi";
+  return "Outro";
+}
+
+/** Preset de câmera + cor — catálogo RockB2B. */
+const PERSONALIZACAO_POR_MODELO = rockb2bPersonalizacao as Record<
+  string,
+  ModeloFirestore["personalizacao"]
+>;
 
 export function getModelosSeed(): ({
   id: string;
 } & Omit<ModeloFirestore, "criadoEm">)[] {
   return MODELOS.map((modelo) => ({
     id: modelo.id,
-    marcaId: modelo.id.includes("iphone")
-      ? SEED_CATALOGO.MARCA_APPLE
-      : SEED_CATALOGO.MARCA_SAMSUNG,
+    marcaId: marcaIdDoModelo(modelo),
     nome: modelo.modelo,
     maskUrl:
       modelo.id === "iphone-15"
@@ -58,28 +87,20 @@ export function getModelosSeed(): ({
     larguraPx: modelo.larguraPx,
     alturaPx: modelo.alturaPx,
     ativo: true,
-    personalizacao: PERSONALIZACAO_POR_MODELO[modelo.id],
+    personalizacao: PERSONALIZACAO_POR_MODELO[modelo.id]
+      ? {
+          cameraPresetId:
+            PERSONALIZACAO_POR_MODELO[modelo.id]?.cameraPresetId,
+          corAparelho: PERSONALIZACAO_POR_MODELO[modelo.id]?.corAparelho,
+        }
+      : undefined,
   }));
 }
 
-/** Preset de câmera + cor por modelo conhecido (espelha cameraModules). */
-const PERSONALIZACAO_POR_MODELO: Record<
-  string,
-  ModeloFirestore["personalizacao"]
-> = {
-  "iphone-17-pro-max": { cameraPresetId: "iphone-17-pro", corAparelho: "#d1732a" },
-  "iphone-15": { cameraPresetId: "iphone-15", corAparelho: "#e7e0d3" },
-  "samsung-s24": { cameraPresetId: "galaxy-s24", corAparelho: "#3a3f44" },
-};
-
 export function produtoDestaqueParaCentral(
   produto: ProdutoDestaque,
-): { id: string } & Omit<ProdutoCentralFirestore, "criadoEm"> {
-  const marcaId = produto.modeloId.includes("iphone")
-    ? SEED_CATALOGO.MARCA_APPLE
-    : produto.modeloId.includes("samsung")
-      ? SEED_CATALOGO.MARCA_SAMSUNG
-      : null;
+): { id: string } & Omit<ProdutoCentralDocumento, "criadoEm"> {
+  const marcaId = marcaIdDoModelo({ id: produto.modeloId, marca: produto.marca });
 
   return {
     id: produto.id,
@@ -104,7 +125,7 @@ export function produtoDestaqueParaCentral(
 
 export function getCatalogoCentralSeed(): ({
   id: string;
-} & Omit<ProdutoCentralFirestore, "criadoEm">)[] {
+} & Omit<ProdutoCentralDocumento, "criadoEm">)[] {
   return PRODUTOS_DESTAQUE.map(produtoDestaqueParaCentral);
 }
 
@@ -112,7 +133,7 @@ export function getCatalogoCentralSeed(): ({
 export function getModelosCelularSeed() {
   return getModelosSeed().map((m) => ({
     id: m.id,
-    marca: m.marcaId === SEED_CATALOGO.MARCA_APPLE ? "Apple" : "Samsung",
+    marca: nomeMarca(m.marcaId),
     modelo: m.nome,
     maskUrl: m.maskUrl,
     overlayUrl: m.overlayUrl,

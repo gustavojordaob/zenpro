@@ -167,7 +167,7 @@ async function main() {
   }
 
   console.log("\n✅ Todas as contas autenticam com as senhas do seed.");
-  console.log("   Login: https://zenpro-capinhas.web.app/admin/login");
+  console.log("   Login: https://usezenpro.com.br/admin/login");
   console.log("\n   Se entrar mas aparecer 'sem permissão de admin',");
   console.log("   sincronize usuarios/{uid} no Firestore (seed:multitenant ou Console).\n");
 }

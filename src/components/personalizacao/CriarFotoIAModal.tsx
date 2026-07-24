@@ -113,7 +113,8 @@ export function CriarFotoIAModal({
               Criar foto com IA
             </h2>
             <p className="text-xs text-zinc-500">
-              Junta suas fotos numa cena só — ex.: você e alguém juntos
+              Junta suas fotos numa cena só — ex.: você e alguém juntos.
+              Clientes: até 3 montagens por dia (revendedores sem limite).
             </p>
           </div>
           <button

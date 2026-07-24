@@ -40,6 +40,7 @@ type CarrinhoContextValue = {
     personalizacao: Personalizacao,
     personalizacaoId: string,
     produtoId?: string,
+    quantidadeInicial?: number,
   ) => void;
   adicionarPronta: (produto: ProdutoDestaque) => void;
   alterarQuantidade: (id: string, quantidade: number) => void;
@@ -97,11 +98,32 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
       personalizacao: Personalizacao,
       personalizacaoId: string,
       produtoId?: string,
+      quantidadeInicial = 1,
     ) => {
-      setItens((prev) => [
-        ...prev,
-        criarItemPersonalizado(personalizacao, personalizacaoId, produtoId),
-      ]);
+      const addQty = Math.max(1, Math.floor(quantidadeInicial) || 1);
+      setItens((prev) => {
+        const existente = prev.find(
+          (i) =>
+            i.tipo === "personalizada" &&
+            i.personalizacaoId === personalizacaoId,
+        );
+        if (existente) {
+          return prev.map((i) =>
+            i.id === existente.id
+              ? recalcularPrecoItem(i, (i.quantidade || 1) + addQty)
+              : i,
+          );
+        }
+        return [
+          ...prev,
+          criarItemPersonalizado(
+            personalizacao,
+            personalizacaoId,
+            produtoId,
+            addQty,
+          ),
+        ];
+      });
     },
     [],
   );
@@ -112,10 +134,13 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
       const existente = prev.find(
         (i) => i.tipo === "pronta" && i.produtoId === produtoId,
       );
-      if (existente && (produto.faixasPrecoRevendedor?.length || produto.precoRevendedorCentavos)) {
+      if (existente) {
         return prev.map((i) =>
           i.id === existente.id
-            ? recalcularPrecoItem(i, (i.quantidade || 1) + (produto.quantidadeInicial ?? 1))
+            ? recalcularPrecoItem(
+                i,
+                (i.quantidade || 1) + (produto.quantidadeInicial ?? 1),
+              )
             : i,
         );
       }

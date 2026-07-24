@@ -9,6 +9,7 @@ import {
   criarContaComEmail,
   entrarComEmail,
 } from "@/features/auth/authService";
+import { BotaoEsqueciSenha } from "@/components/auth/BotaoEsqueciSenha";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
 type Modo = "entrar" | "criar";
@@ -144,6 +145,10 @@ function LoginForm() {
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-900 outline-none ring-zinc-900 focus:ring-2"
               />
             </label>
+          )}
+
+          {modo === "entrar" && (
+            <BotaoEsqueciSenha email={email} destino="loja" />
           )}
 
           {erro && <p className="text-sm text-red-600">{erro}</p>}

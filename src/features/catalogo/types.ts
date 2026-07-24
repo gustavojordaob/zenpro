@@ -83,4 +83,5 @@ export const SEED_CATALOGO = {
   TIPO_CAPINHA: "capinha",
   MARCA_APPLE: "apple",
   MARCA_SAMSUNG: "samsung",
+  MARCA_XIAOMI: "xiaomi",
 } as const;

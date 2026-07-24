@@ -47,6 +47,8 @@ export type Personalizacao = {
   alturaPx?: number;
   /** Molde do modelo (PNG/SVG) para o recorte da arte de produção. */
   maskUrl?: string;
+  /** Câmera H5 RockB2B — punch + overlay (foto não cobre o módulo). */
+  cameraFrameUrl?: string;
   /** Até 4 fotos — quando presente, substitui fotoUrl/transform únicos. */
   fotos?: FotoPersonalizacao[];
   fotoUrl: string;

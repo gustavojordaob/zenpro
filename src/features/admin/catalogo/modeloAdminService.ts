@@ -15,6 +15,8 @@ import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 export type ModeloCatalogoAdmin = { id: string } & ModeloFirestore;
 
 export type ModeloFormInput = {
+  /** Se informado (ex.: id RockB2B), usa este id em vez de gerar pelo nome. */
+  id?: string | null;
   marcaId: string;
   nome: string;
   maskUrl: string;
@@ -26,6 +28,8 @@ export type ModeloFormInput = {
   corAparelho?: string | null;
   /** Preset de layout de câmera (ex.: "iphone-pro") */
   cameraPresetId?: string | null;
+  /** PNG de câmera RockB2B (print-h5) — prioridade sobre SVG. */
+  cameraFrameUrl?: string | null;
 };
 
 function requireDb() {
@@ -51,11 +55,17 @@ function mapModelo(id: string, data: DocumentData): ModeloCatalogoAdmin {
 }
 
 function personalizacaoPayload(input: ModeloFormInput) {
-  const payload: { corAparelho?: string; cameraPresetId?: string } = {};
+  const payload: {
+    corAparelho?: string;
+    cameraPresetId?: string;
+    cameraFrameUrl?: string;
+  } = {};
   const cor = input.corAparelho?.trim();
   if (cor) payload.corAparelho = cor;
   const preset = input.cameraPresetId?.trim();
   if (preset) payload.cameraPresetId = preset;
+  const frame = input.cameraFrameUrl?.trim();
+  if (frame) payload.cameraFrameUrl = frame;
   return Object.keys(payload).length > 0 ? payload : undefined;
 }
 
@@ -86,13 +96,35 @@ export async function obterModeloAdmin(
 }
 
 export async function criarModeloAdmin(input: ModeloFormInput): Promise<string> {
-  const id = gerarIdModelo(input.nome);
+  const id = input.id?.trim() || gerarIdModelo(input.nome);
   const personalizacao = personalizacaoPayload(input);
-  await setDoc(doc(requireDb(), COLECOES_CATALOGO.MODELOS, id), {
+  const ref = doc(requireDb(), COLECOES_CATALOGO.MODELOS, id);
+  const existing = await getDoc(ref);
+  const overlay =
+    input.overlayUrl.trim() ||
+    input.cameraFrameUrl?.trim() ||
+    "";
+
+  if (existing.exists()) {
+    await updateDoc(ref, {
+      marcaId: input.marcaId,
+      nome: input.nome.trim(),
+      maskUrl: input.maskUrl.trim() || existing.data()?.maskUrl || "",
+      overlayUrl: overlay || existing.data()?.overlayUrl || "",
+      larguraPx: input.larguraPx,
+      alturaPx: input.alturaPx,
+      ativo: input.ativo,
+      ...(personalizacao ? { personalizacao } : {}),
+      atualizadoEm: serverTimestamp(),
+    });
+    return id;
+  }
+
+  await setDoc(ref, {
     marcaId: input.marcaId,
     nome: input.nome.trim(),
     maskUrl: input.maskUrl.trim(),
-    overlayUrl: input.overlayUrl.trim(),
+    overlayUrl: overlay,
     larguraPx: input.larguraPx,
     alturaPx: input.alturaPx,
     ativo: input.ativo,

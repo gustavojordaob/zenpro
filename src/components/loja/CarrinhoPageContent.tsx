@@ -4,6 +4,7 @@ import Link from "next/link";
 import { VerPreviewPersonalizacaoButton } from "@/components/personalizacao/VerPreviewPersonalizacaoButton";
 import { CartItemPreview } from "@/components/loja/CartItemPreview";
 import { PageBackLink } from "@/components/loja/PageBackLink";
+import { QuantityStepper } from "@/components/loja/QuantityStepper";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
@@ -110,23 +111,11 @@ export function CarrinhoPageContent({ mostrarCheckout = true }: Props) {
                         </p>
                       )}
                       <VerPreviewPersonalizacaoButton item={item} />
-                      {isB2b && (
-                        <label className="mt-2 flex items-center gap-2 text-sm text-zinc-700">
-                          Qtd
-                          <input
-                            type="number"
-                            min={1}
-                            value={qty}
-                            onChange={(e) =>
-                              alterarQuantidade(
-                                item.id,
-                                Math.max(1, parseInt(e.target.value, 10) || 1),
-                              )
-                            }
-                            className="w-20 rounded-lg border border-zinc-300 px-2 py-1"
-                          />
-                        </label>
-                      )}
+                      <QuantityStepper
+                        className="mt-2"
+                        value={qty}
+                        onChange={(n) => alterarQuantidade(item.id, n)}
+                      />
                       <p className="mt-2 font-semibold text-zinc-900">
                         {formatarPreco(item.precoCentavos)}
                         {qty > 1 ? (

@@ -188,15 +188,17 @@ export function CheckoutPageContent() {
     setPagando(true);
 
     try {
-      for (const item of itens) {
-        if (item.tipo === "pronta") {
-          await validarEstoqueVenda(
-            loja.lojaId,
-            item.produtoId,
-            Math.max(1, item.quantidade || 1),
-          );
-        }
-      }
+      await Promise.all(
+        itens
+          .filter((item) => item.tipo === "pronta")
+          .map((item) =>
+            validarEstoqueVenda(
+              loja.lojaId,
+              item.produtoId,
+              Math.max(1, item.quantidade || 1),
+            ),
+          ),
+      );
 
       const id = await criarPedidoLoja({
         lojaId: loja.lojaId,
@@ -228,6 +230,7 @@ export function CheckoutPageContent() {
           cepDestino: freteMeta.cepDestino || "",
           origemLojaId: freteMeta.origemLojaId || null,
         },
+        formaOnline: formaPagamento,
       });
 
       if (mockPagamento) {
@@ -340,11 +343,21 @@ export function CheckoutPageContent() {
                   <p className="text-sm text-zinc-500">
                     {item.rotuloModelo} ·{" "}
                     {item.tipo === "personalizada" ? "Personalizada" : "Produto"}
+                    {(item.quantidade || 1) > 1
+                      ? ` · Qtd ${item.quantidade}`
+                      : ""}
                   </p>
                   <VerPreviewPersonalizacaoButton item={item} />
                 </div>
-                <p className="shrink-0 font-semibold tabular-nums text-zinc-900">
-                  {formatarPreco(item.precoCentavos)}
+                <p className="shrink-0 text-right font-semibold tabular-nums text-zinc-900">
+                  {formatarPreco(
+                    item.precoCentavos * Math.max(1, item.quantidade || 1),
+                  )}
+                  {(item.quantidade || 1) > 1 && (
+                    <span className="mt-0.5 block text-xs font-normal text-zinc-500">
+                      {formatarPreco(item.precoCentavos)} × {item.quantidade}
+                    </span>
+                  )}
                 </p>
               </li>
             ))}

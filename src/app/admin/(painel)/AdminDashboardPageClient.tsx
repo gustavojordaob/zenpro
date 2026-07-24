@@ -84,6 +84,46 @@ function BarChartSimple({
   );
 }
 
+/** Home do revendedor: nível/compras B2B — sem dashboard de pedidos da loja. */
+function DashboardRevendedor() {
+  const { sessao, lojaId } = useAuthAdmin();
+
+  return (
+    <AdminShell
+      titulo="Dashboard"
+      subtitulo={lojaId ? `Portal do revendedor (${lojaId})` : "Portal do revendedor"}
+    >
+      <p className="mb-4 text-sm text-zinc-600">
+        Olá{sessao?.nomeCompleto ? `, ${sessao.nomeCompleto}` : ""}. Seu
+        progresso é pelo volume de compras na Zen Pro (atacado / reposição).
+      </p>
+
+      <NivelRevendedorAdminPanel />
+
+      <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <h2 className="font-semibold text-zinc-900">Atalhos</h2>
+        <p className="mt-1 text-sm text-zinc-600">
+          Compre no portal atacado e acompanhe seus pedidos de reposição.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href="/revendedor"
+            className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
+          >
+            Site / portal atacado
+          </Link>
+          <Link
+            href="/admin/pedidos"
+            className="rounded-xl border border-zinc-300 px-4 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+          >
+            Pedidos da loja
+          </Link>
+        </div>
+      </section>
+    </AdminShell>
+  );
+}
+
 export function AdminDashboardPageClient() {
   const { sessao, isMarca, lojaId } = useAuthAdmin();
   const [periodo, setPeriodo] = useState<PeriodoDashboard>("mes");
@@ -91,16 +131,12 @@ export function AdminDashboardPageClient() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const lojaFiltro = isMarca ? null : lojaId;
-
   const carregar = useCallback(async () => {
+    if (!isMarca) return;
     setCarregando(true);
     setErro(null);
     try {
-      if (!isMarca && !lojaId) {
-        throw new Error("Revendedor sem loja vinculada.");
-      }
-      setData(await carregarDashboardAdmin(lojaFiltro, periodo));
+      setData(await carregarDashboardAdmin(null, periodo));
     } catch (error) {
       setErro(
         error instanceof Error ? error.message : "Erro ao carregar dashboard.",
@@ -108,19 +144,18 @@ export function AdminDashboardPageClient() {
     } finally {
       setCarregando(false);
     }
-  }, [isMarca, lojaId, lojaFiltro, periodo]);
+  }, [isMarca, periodo]);
 
   useEffect(() => {
     void carregar();
   }, [carregar]);
 
-  const subtitulo = isMarca
-    ? "Métricas de todas as lojas da rede"
-    : `Métricas da sua loja (${lojaId})`;
+  if (!isMarca) {
+    return <DashboardRevendedor />;
+  }
 
   return (
-    <AdminShell titulo="Dashboard" subtitulo={subtitulo}>
-      <NivelRevendedorAdminPanel />
+    <AdminShell titulo="Dashboard" subtitulo="Métricas de todas as lojas da rede">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-zinc-600">
           Olá{sessao?.nomeCompleto ? `, ${sessao.nomeCompleto}` : ""}.{" "}
@@ -244,11 +279,9 @@ export function AdminDashboardPageClient() {
                           className="text-sm font-medium text-zinc-900 hover:underline"
                         >
                           {numeroPedidoCurto(pedido.id)}
-                          {isMarca && (
-                            <span className="ml-1 text-xs font-normal text-zinc-500">
-                              · {pedido.lojaId}
-                            </span>
-                          )}
+                          <span className="ml-1 text-xs font-normal text-zinc-500">
+                            · {pedido.lojaId}
+                          </span>
                         </Link>
                         <PedidoStatusBadge status={pedido.status} />
                       </div>
@@ -263,25 +296,23 @@ export function AdminDashboardPageClient() {
             </section>
           </div>
 
-          {isMarca && (
-            <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-              <h2 className="font-semibold text-zinc-900">Gestão</h2>
-              <div className="mt-3 flex flex-wrap gap-3">
-                <Link
-                  href="/admin/revendedores"
-                  className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
-                >
-                  Revendedores
-                </Link>
-                <Link
-                  href="/admin/produtos"
-                  className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-                >
-                  Catálogo
-                </Link>
-              </div>
-            </section>
-          )}
+          <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+            <h2 className="font-semibold text-zinc-900">Gestão</h2>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Link
+                href="/admin/revendedores"
+                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
+              >
+                Revendedores
+              </Link>
+              <Link
+                href="/admin/produtos"
+                className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+              >
+                Catálogo
+              </Link>
+            </div>
+          </section>
         </div>
       )}
     </AdminShell>

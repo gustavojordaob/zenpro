@@ -58,6 +58,7 @@ export async function carregarContextoPersonalizacao(
       larguraPx: modeloCatalogo.larguraPx,
       alturaPx: modeloCatalogo.alturaPx,
       maskUrl: modeloCatalogo.maskUrl,
+      nome: modeloCatalogo.nome,
     },
   });
 

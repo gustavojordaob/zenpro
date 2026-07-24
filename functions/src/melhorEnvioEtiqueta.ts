@@ -32,7 +32,7 @@ const meTelefoneRemetente = defineString("MELHOR_ENVIO_TELEFONE_REMETENTE", {
   default: "",
 });
 const meEmailRemetente = defineString("MELHOR_ENVIO_EMAIL_REMETENTE", {
-  default: "contato@zenpro-capinhas.web.app",
+  default: "contato@usezenpro.com.br",
 });
 
 export type ResultadoEtiquetaMelhorEnvio = {
@@ -518,7 +518,7 @@ export async function comprarEGerarEtiquetaMelhorEnvio(opts: {
       tags: [
         {
           tag: `zenpro:${tipo}:${lojaIdPedido}:${pedidoId}`,
-          Url: `https://zenpro-capinhas.web.app/admin/pedidos/detalhe?lojaId=${encodeURIComponent(lojaIdPedido)}&id=${encodeURIComponent(pedidoId)}`,
+          Url: `https://usezenpro.com.br/admin/pedidos/detalhe?lojaId=${encodeURIComponent(lojaIdPedido)}&id=${encodeURIComponent(pedidoId)}`,
         },
       ],
     },

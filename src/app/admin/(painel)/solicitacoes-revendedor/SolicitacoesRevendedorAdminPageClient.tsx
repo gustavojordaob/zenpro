@@ -178,15 +178,17 @@ export function SolicitacoesRevendedorAdminPageClient() {
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="font-semibold text-zinc-900">{s.nomeLoja}</h2>
+                  <h2 className="font-semibold text-zinc-900">
+                    {s.razaoSocial || s.nomeLoja}
+                  </h2>
                   <p className="text-sm text-zinc-600">
                     {s.nomeCompleto} · {s.email} · {s.telefone}
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">
-                    CNPJ {formatarCnpj(s.cnpj)} · {s.razaoSocial}
+                    CNPJ {formatarCnpj(s.cnpj)}
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">
-                    Slug: /{s.slugDesejado} · {s.cidade}/{s.uf}
+                    {s.cidade}/{s.uf}
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">
                     {s.logradouro}, {s.numero}

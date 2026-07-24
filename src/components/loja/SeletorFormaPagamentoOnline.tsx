@@ -3,7 +3,6 @@
 import {
   FORMAS_PAGAMENTO_ONLINE,
   PARCELAMENTO_MAXIMO,
-  PARCELAMENTO_SEM_JUROS,
   rotuloParcelaCheckout,
 } from "@/features/pagamentos/pagamentoConfig";
 import type { PedidoLojaFormaPagamentoOnline } from "@/features/multitenant/types";
@@ -60,7 +59,7 @@ export function SeletorFormaPagamentoOnline({
             <span className="font-semibold text-zinc-900">{forma.rotulo}</span>
             <span className="mt-1 block text-xs text-zinc-500">
               {forma.id === "cartao"
-                ? `Até ${max}x — ${PARCELAMENTO_SEM_JUROS}x sem juros`
+                ? `Até ${max}x — à vista sem juros`
                 : forma.descricao}
             </span>
           </button>
@@ -88,8 +87,7 @@ export function SeletorFormaPagamentoOnline({
             ))}
           </select>
           <p className="text-xs text-zinc-500">
-            * Acima de {PARCELAMENTO_SEM_JUROS}x: juros calculados no Mercado
-            Pago.
+            * A partir de 2x: juros calculados no Mercado Pago.
           </p>
           <p className="text-xs text-amber-800">
             Se o cartão não for aceito, escolha PIX — costuma ser o mais rápido.

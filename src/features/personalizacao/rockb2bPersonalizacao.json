@@ -1,0 +1,507 @@
+{
+  "redmi-note-10-pro-max": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/redmi-note-10-pro-max-camera.png?v=12"
+  },
+  "mi-12-pro": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/mi-12-pro-camera.png?v=12"
+  },
+  "mi-12x": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/mi-12x-camera.png?v=12"
+  },
+  "mi-12": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/mi-12-camera.png?v=12"
+  },
+  "mi-11t": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/mi-11t-camera.png?v=12"
+  },
+  "mi-11t-pro": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/mi-11t-pro-camera.png?v=12"
+  },
+  "redmi-note-10-pro-china": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/redmi-note-10-pro-china-camera.png?v=12"
+  },
+  "redmi-note-10s": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/redmi-note-10s-camera.png?v=12"
+  },
+  "mi-11-lite-4g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/mi-11-lite-4g-camera.png?v=12"
+  },
+  "mi-11-lite-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/mi-11-lite-5g-camera.png?v=12"
+  },
+  "galaxy-s26-ultra": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s26-ultra-camera.png?v=12"
+  },
+  "galaxy-s26-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s26-plus-camera.png?v=12"
+  },
+  "galaxy-s26": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s26-camera.png?v=12"
+  },
+  "galaxy-s25-edge": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s25-edge-camera.png?v=12"
+  },
+  "galaxy-s25-ultra": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s25-ultra-camera.png?v=12"
+  },
+  "galaxy-s25-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s25-plus-camera.png?v=12"
+  },
+  "galaxy-s25": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s25-camera.png?v=12"
+  },
+  "galaxy-s24-fe": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#3a3f44",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s24-fe-camera.png?v=12"
+  },
+  "galaxy-s24-ultra": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#3a3f44",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s24-ultra-camera.png?v=12"
+  },
+  "galaxy-s24-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#3a3f44",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s24-plus-camera.png?v=12"
+  },
+  "samsung-s24": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#3a3f44",
+    "cameraFrameUrl": "/molduras/rock/samsung-s24-camera.png?v=12"
+  },
+  "galaxy-s23-fe": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s23-fe-camera.png?v=12"
+  },
+  "galaxy-a34": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a34-camera.png?v=12"
+  },
+  "galaxy-a14-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a14-5g-camera.png?v=12"
+  },
+  "galaxy-s23-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s23-5g-camera.png?v=12"
+  },
+  "galaxy-s23-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s23-plus-camera.png?v=12"
+  },
+  "galaxy-s23-ultra": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s23-ultra-camera.png?v=12"
+  },
+  "galaxy-a33-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a33-5g-camera.png?v=12"
+  },
+  "galaxy-a13": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a13-camera.png?v=12"
+  },
+  "galaxy-a73": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a73-camera.png?v=12"
+  },
+  "galaxy-a53-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a53-5g-camera.png?v=12"
+  },
+  "galaxy-s22-plus-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s22-plus-5g-camera.png?v=12"
+  },
+  "galaxy-s22-ultra-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s22-ultra-5g-camera.png?v=12"
+  },
+  "galaxy-s22-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s22-5g-camera.png?v=12"
+  },
+  "galaxy-s21-fe-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s21-fe-5g-camera.png?v=12"
+  },
+  "galaxy-s20-ultra-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s20-ultra-5g-camera.png?v=12"
+  },
+  "galaxy-a22-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a22-5g-camera.png?v=12"
+  },
+  "galaxy-a52": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a52-camera.png?v=12"
+  },
+  "galaxy-a52-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a52-5g-camera.png?v=12"
+  },
+  "galaxy-a72": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a72-camera.png?v=12"
+  },
+  "galaxy-a32-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a32-5g-camera.png?v=12"
+  },
+  "galaxy-s21-ultra-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s21-ultra-5g-camera.png?v=12"
+  },
+  "galaxy-s21-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s21-5g-camera.png?v=12"
+  },
+  "galaxy-s21-plus-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s21-plus-5g-camera.png?v=12"
+  },
+  "galaxy-a42": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a42-camera.png?v=12"
+  },
+  "galaxy-s10-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s10-plus-camera.png?v=12"
+  },
+  "galaxy-note-20": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-note-20-camera.png?v=12"
+  },
+  "galaxy-note-20-ultra-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-note-20-ultra-5g-camera.png?v=12"
+  },
+  "galaxy-s10-lite": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s10-lite-camera.png?v=12"
+  },
+  "galaxy-a71-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a71-5g-camera.png?v=12"
+  },
+  "galaxy-a51-5g": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-a51-5g-camera.png?v=12"
+  },
+  "galaxy-s7": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s7-camera.png?v=12"
+  },
+  "galaxy-s10e": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s10e-camera.png?v=12"
+  },
+  "galaxy-s8": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s8-camera.png?v=12"
+  },
+  "galaxy-note10": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-note10-camera.png?v=12"
+  },
+  "galaxy-s9": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s9-camera.png?v=12"
+  },
+  "galaxy-s20": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s20-camera.png?v=12"
+  },
+  "galaxy-note-8": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-note-8-camera.png?v=12"
+  },
+  "galaxy-s10": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s10-camera.png?v=12"
+  },
+  "galaxy-s20-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s20-plus-camera.png?v=12"
+  },
+  "galaxy-s9-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-s9-plus-camera.png?v=12"
+  },
+  "galaxy-note-9": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-note-9-camera.png?v=12"
+  },
+  "galaxy-note-10-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/galaxy-note-10-plus-camera.png?v=12"
+  },
+  "iphone-17e": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-17e-camera.png?v=12"
+  },
+  "iphone-17-pro-max": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-17-pro-max-camera.png?v=12"
+  },
+  "iphone-air": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-air-camera.png?v=12"
+  },
+  "iphone-17-pro": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-17-pro-camera.png?v=12"
+  },
+  "iphone-17": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-17-camera.png?v=12"
+  },
+  "iphone-16e": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-16e-camera.png?v=12"
+  },
+  "iphone-16-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-16-plus-camera.png?v=12"
+  },
+  "iphone-16-pro-max": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-16-pro-max-camera.png?v=12"
+  },
+  "iphone-16": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-16-camera.png?v=12"
+  },
+  "iphone-16-pro": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-16-pro-camera.png?v=12"
+  },
+  "iphone-15-pro-max": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-15-pro-max-camera.png?v=12"
+  },
+  "iphone-15-pro": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-15-pro-camera.png?v=12"
+  },
+  "iphone-15-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#e7e0d3",
+    "cameraFrameUrl": "/molduras/rock/iphone-15-plus-camera.png?v=12"
+  },
+  "iphone-15": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#e7e0d3",
+    "cameraFrameUrl": "/molduras/rock/iphone-15-camera.png?v=12"
+  },
+  "iphone-14-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-14-plus-camera.png?v=12"
+  },
+  "iphone-14": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-14-camera.png?v=12"
+  },
+  "iphone-14-pro": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-14-pro-camera.png?v=12"
+  },
+  "iphone-14-pro-max": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-14-pro-max-camera.png?v=12"
+  },
+  "iphone-13-mini": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-13-mini-camera.png?v=12"
+  },
+  "iphone-13": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-13-camera.png?v=12"
+  },
+  "iphone-13-pro-max": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-13-pro-max-camera.png?v=12"
+  },
+  "iphone-13-pro": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-13-pro-camera.png?v=12"
+  },
+  "iphone-12-mini": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-12-mini-camera.png?v=12"
+  },
+  "iphone-12": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-12-camera.png?v=12"
+  },
+  "iphone-12-pro-max": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-12-pro-max-camera.png?v=12"
+  },
+  "iphone-12-pro": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-12-pro-camera.png?v=12"
+  },
+  "iphone-11": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-11-camera.png?v=12"
+  },
+  "iphone-se": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-se-camera.png?v=12"
+  },
+  "iphone-xs": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-xs-camera.png?v=12"
+  },
+  "iphone-7": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-7-camera.png?v=12"
+  },
+  "iphone-7-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-7-plus-camera.png?v=12"
+  },
+  "iphone-x": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-x-camera.png?v=12"
+  },
+  "iphone-8": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-8-camera.png?v=12"
+  },
+  "iphone-8-plus": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-8-plus-camera.png?v=12"
+  },
+  "iphone-xs-max": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-xs-max-camera.png?v=12"
+  },
+  "iphone-11-pro": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-11-pro-camera.png?v=12"
+  },
+  "iphone-xr": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#1a1a1a",
+    "cameraFrameUrl": "/molduras/rock/iphone-xr-camera.png?v=12"
+  },
+  "iphone-11-pro-max": {
+    "cameraPresetId": "sem-camera",
+    "corAparelho": "#2b2b2e",
+    "cameraFrameUrl": "/molduras/rock/iphone-11-pro-max-camera.png?v=12"
+  }
+}

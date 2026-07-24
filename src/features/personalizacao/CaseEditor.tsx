@@ -22,6 +22,7 @@ import {
   fitImageToArea,
   getLayoutSlots,
 } from "./fotoLayoutPresets";
+import { cameraPunchProps } from "./cameraPunch";
 
 const STUDIO_BG = "#ececec";
 const PLACEHOLDER_FILL = "#e4e4e7";
@@ -323,14 +324,32 @@ export function CaseEditor({
   const radius = frame.radius * molduraW;
   const borderWidth = Math.max(2.5, molduraW * CASE_BORDER.widthRatio);
 
-  const cameraUrl = useMemo(() => {
-    const cameraSpec = visualCtx?.camera ?? getCameraSpec(modelo.id);
-    const cor = visualCtx?.corAparelho ?? getCorAparelho(modelo.id);
-    const svg = buildCameraModuleSvgFromSpec(cameraSpec, molduraW, molduraH, cor);
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, [visualCtx, modelo.id, molduraW, molduraH]);
   const cameraSpec = visualCtx?.camera ?? getCameraSpec(modelo.id);
-  const { image: cameraImage } = useHtmlImage(cameraUrl);
+  const rockFrameUrl = visualCtx?.cameraFrameUrl?.trim() || null;
+  const { image: rockCameraImage, loadError: rockFrameError } =
+    useHtmlImage(rockFrameUrl);
+
+  const cameraUrl = useMemo(() => {
+    if (rockFrameUrl && !rockFrameError) return null;
+    const cor = visualCtx?.corAparelho ?? getCorAparelho(modelo.id);
+    const svg = buildCameraModuleSvgFromSpec(
+      cameraSpec,
+      molduraW,
+      molduraH,
+      cor,
+    );
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }, [
+    rockFrameUrl,
+    rockFrameError,
+    visualCtx?.corAparelho,
+    cameraSpec,
+    modelo.id,
+    molduraW,
+    molduraH,
+  ]);
+  const { image: svgCameraImage } = useHtmlImage(cameraUrl);
+  const cameraImage = rockCameraImage ?? svgCameraImage;
 
   /** Área generosa para arraste — foto pode ultrapassar a moldura no editor. */
   const areaArraste = useMemo(
@@ -468,6 +487,7 @@ export function CaseEditor({
             />
           </Layer>
 
+          {/* Conteúdo da arte — punch da câmera H5 (foto não cobre o módulo). */}
           <Layer>
             {fotos.length > 0 && (
               <Group
@@ -552,6 +572,20 @@ export function CaseEditor({
 
             {cameraImage && (
               <KonvaImage
+                {...cameraPunchProps(cameraImage, {
+                  molduraX,
+                  molduraY,
+                  molduraW,
+                  molduraH,
+                })}
+              />
+            )}
+          </Layer>
+
+          {/* Overlay H5 (câmera) + borda — acima do buraco da foto */}
+          <Layer listening={false}>
+            {cameraImage && (
+              <KonvaImage
                 image={cameraImage}
                 x={molduraX}
                 y={molduraY}
@@ -560,7 +594,6 @@ export function CaseEditor({
                 listening={false}
               />
             )}
-
             <Rect
               x={molduraX + borderWidth / 2}
               y={molduraY + borderWidth / 2}

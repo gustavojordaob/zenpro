@@ -235,14 +235,15 @@ const SPEC_XIAOMI_ULTRA: CameraModuleSpec = {
 };
 
 const SPEC_REDMI: CameraModuleSpec = {
-  // Redmi Note / Poco — lente principal grande + secundária
+  // Redmi Note 10 Pro / Pro Max — ilha vertical compacta (mock polido)
   formato: "quadrado",
-  plateau: { x0: 0.05, y0: 0.03, x1: 0.3, y1: 0.33, radius: 0.1 },
+  plateau: { x0: 0.055, y0: 0.028, x1: 0.34, y1: 0.255, radius: 0.09 },
   lentes: [
-    { cx: 0.155, cy: 0.115, r: 0.088 },
-    { cx: 0.155, cy: 0.245, r: 0.052 },
+    { cx: 0.155, cy: 0.09, r: 0.058 },
+    { cx: 0.155, cy: 0.165, r: 0.036 },
+    { cx: 0.155, cy: 0.215, r: 0.036 },
   ],
-  acessorios: [{ cx: 0.27, cy: 0.09, r: 0.016, tipo: "flash" }],
+  acessorios: [{ cx: 0.275, cy: 0.09, r: 0.015, tipo: "flash" }],
 };
 
 const SPEC_PIXEL_8: CameraModuleSpec = {

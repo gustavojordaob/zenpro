@@ -1,13 +1,11 @@
 /**
  * Specs visuais da personalização — resolução dinâmica.
  *
- * Hierarquia (maior prioridade primeiro):
- * 1. Produto (`produtos/{id}.visualPersonalizacao`) — variante (couro, plástico…)
- * 2. Modelo de celular (`modelos/{id}.personalizacao`) — geometria do aparelho
- * 3. Código (`caseFrame.ts` / `cameraModules.ts` SPECS) — fallback
- *
- * Adicionar celular: admin → Modelos (dimensões + opcional cor/spec).
- * Adicionar variante: admin → Produto personalizável + modelos compatíveis + preço + material.
+ * Padrão molde H5 RockB2B (todos os modelos):
+ * 1. `cameraFrameUrl` = PNG da câmera extraído do frame H5
+ * 2. Foto é furada com esse PNG (`destination-out`) — não cobre o módulo
+ * 3. O mesmo PNG é desenhado por cima como overlay
+ * Fallback sem H5: SVG (`cameraPresetId` / cameraModules).
  */
 import type { CaseFrameSpec } from "@/features/personalizacao/caseFrame";
 import { getCaseFrameSpec } from "@/features/personalizacao/caseFrame";
@@ -17,15 +15,16 @@ import {
   getCameraSpec,
   getCorAparelho,
 } from "@/features/personalizacao/cameraModules";
+import { resolveRockCameraFrameUrl } from "@/features/personalizacao/rockCameraAssets";
 
 /** Overrides opcionais gravados no Firestore (modelo ou produto). */
 export type PersonalizacaoVisualFirestore = {
   caseFrame?: CaseFrameSpec;
-  /** Spec completa da câmera (avançado). */
   camera?: CameraModuleSpec;
-  /** Preset de câmera escolhido no admin (ex.: "iphone-pro"). */
   cameraPresetId?: string;
   corAparelho?: string;
+  /** Câmera extraída do molde H5 RockB2B. */
+  cameraFrameUrl?: string;
 };
 
 /** Specs já resolvidas para render/export. */
@@ -33,11 +32,11 @@ export type ResolvedPersonalizacaoVisual = {
   caseFrame: CaseFrameSpec;
   camera: CameraModuleSpec;
   corAparelho: string;
-  /** Legado/admin — não altera layout do editor (canvas 9:16 fixo). */
   larguraPx: number;
   alturaPx: number;
-  /** Molde (PNG/SVG) do modelo — usado no recorte da arte de produção. */
   maskUrl?: string;
+  /** Overlay da câmera H5 (prioridade sobre SVG). */
+  cameraFrameUrl?: string;
 };
 
 export function resolverVisualPersonalizacao(
@@ -45,11 +44,11 @@ export function resolverVisualPersonalizacao(
   overrides?: {
     modelo?: PersonalizacaoVisualFirestore | null;
     produto?: PersonalizacaoVisualFirestore | null;
-    /** Geometria/molde do aparelho (modelos/{id}). */
     assets?: {
       larguraPx?: number;
       alturaPx?: number;
       maskUrl?: string;
+      nome?: string;
     } | null;
   },
 ): ResolvedPersonalizacaoVisual {
@@ -58,12 +57,28 @@ export function resolverVisualPersonalizacao(
     overrides?.modelo?.caseFrame ??
     getCaseFrameSpec(modeloId);
 
-  const camera =
-    overrides?.produto?.camera ??
-    overrides?.modelo?.camera ??
-    getCameraPresetSpec(overrides?.produto?.cameraPresetId) ??
-    getCameraPresetSpec(overrides?.modelo?.cameraPresetId) ??
-    getCameraSpec(modeloId);
+  const cameraFrameUrl =
+    resolveRockCameraFrameUrl(modeloId, overrides?.assets?.nome) ||
+    overrides?.produto?.cameraFrameUrl?.trim() ||
+    overrides?.modelo?.cameraFrameUrl?.trim() ||
+    undefined;
+
+  const presetId =
+    overrides?.produto?.cameraPresetId ??
+    overrides?.modelo?.cameraPresetId ??
+    null;
+  const presetSpec =
+    presetId && presetId !== "sem-camera"
+      ? getCameraPresetSpec(presetId)
+      : null;
+
+  // Com frame H5, SVG vazio (evita câmera fantasma).
+  const camera = cameraFrameUrl
+    ? (getCameraPresetSpec("sem-camera") ?? getCameraSpec(modeloId))
+    : (overrides?.produto?.camera ??
+      overrides?.modelo?.camera ??
+      presetSpec ??
+      getCameraSpec(modeloId));
 
   const corAparelho =
     overrides?.produto?.corAparelho ??
@@ -86,10 +101,10 @@ export function resolverVisualPersonalizacao(
     larguraPx,
     alturaPx,
     maskUrl: overrides?.assets?.maskUrl || undefined,
+    cameraFrameUrl,
   };
 }
 
-/** Parse seguro de JSON vindo do admin (campo opcional). */
 export function parsePersonalizacaoVisualJson(
   raw: unknown,
 ): PersonalizacaoVisualFirestore | null {

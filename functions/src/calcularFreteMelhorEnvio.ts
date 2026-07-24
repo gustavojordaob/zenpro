@@ -67,6 +67,8 @@ export const calcularFreteMelhorEnvio = onCall(
     secrets: [melhorEnvioToken],
     region: "us-central1",
     cors: true,
+    /** Evita cold start na cotação do checkout (~1–3s). */
+    minInstances: 1,
   },
   async (request) => {
     const { lojaId, cepDestino, itens } = (request.data ??
@@ -114,29 +116,31 @@ export const calcularFreteMelhorEnvio = onCall(
     }
 
     const db = admin.firestore();
-    const products: MelhorEnvioProdutoDim[] = [];
+    const products: MelhorEnvioProdutoDim[] = (
+      await Promise.all(
+        itens.map(async (item) => {
+          const produtoId = String(item.produtoId ?? "");
+          const qty = Math.max(1, Number(item.quantidade ?? 1));
+          if (!produtoId) return null;
 
-    for (const item of itens) {
-      const produtoId = String(item.produtoId ?? "");
-      const qty = Math.max(1, Number(item.quantidade ?? 1));
-      if (!produtoId) continue;
+          const snap = await db.doc(`produtos/${produtoId}`).get();
+          const data = (snap.data() ?? {}) as Record<string, unknown>;
+          const dim = dimensoesProduto(data);
+          const unitPrice =
+            Number(item.precoCentavos ?? data.precoBaseCentavos ?? 0) / 100;
 
-      const snap = await db.doc(`produtos/${produtoId}`).get();
-      const data = (snap.data() ?? {}) as Record<string, unknown>;
-      const dim = dimensoesProduto(data);
-      const unitPrice =
-        Number(item.precoCentavos ?? data.precoBaseCentavos ?? 0) / 100;
-
-      products.push({
-        id: produtoId,
-        width: dim.width,
-        height: dim.height,
-        length: dim.length,
-        weight: dim.weightKg,
-        insurance_value: Math.max(1, unitPrice),
-        quantity: qty,
-      });
-    }
+          return {
+            id: produtoId,
+            width: dim.width,
+            height: dim.height,
+            length: dim.length,
+            weight: dim.weightKg,
+            insurance_value: Math.max(1, unitPrice),
+            quantity: qty,
+          } satisfies MelhorEnvioProdutoDim;
+        }),
+      )
+    ).filter((p): p is MelhorEnvioProdutoDim => p != null);
 
     if (products.length === 0) {
       throw new HttpsError("invalid-argument", "Nenhum produto válido para frete.");

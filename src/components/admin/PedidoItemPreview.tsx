@@ -1,7 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import { CasePreview } from "@/features/personalizacao/CasePreviewLazy";
 import { ProdutoImagem } from "@/components/loja/ProdutoImagem";
 import type { ItemPedidoLojaFirestore } from "@/features/multitenant/types";
 import { formatarPreco } from "@/features/loja/produtosMock";
+import { baixarUrlComoArquivo } from "@/lib/baixarArquivo";
 
 type Props = {
   item: ItemPedidoLojaFirestore;
@@ -15,6 +19,11 @@ export function PedidoItemPreview({ item }: Props) {
     item.titulo?.trim() || null,
     ...((item.textos ?? []).map((t) => t.conteudo?.trim() || null)),
   ].filter((linha): linha is string => Boolean(linha));
+
+  const prefixo =
+    item.personalizacaoId?.slice(0, 8) ||
+    item.produtoId?.slice(0, 8) ||
+    "pedido";
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 sm:flex-row sm:items-start">
@@ -72,16 +81,33 @@ export function PedidoItemPreview({ item }: Props) {
             </p>
             <div className="mt-1.5 flex flex-wrap gap-2">
               {item.arteProducaoUrl && (
-                <ArteLink href={item.arteProducaoUrl} rotulo="Arte final (foto + texto)" />
+                <ArteDownloadButton
+                  href={item.arteProducaoUrl}
+                  rotulo="Arte final (foto + texto)"
+                  nomeArquivo={`${prefixo}-arte-final`}
+                />
               )}
               {item.arteFotoUrl && (
-                <ArteLink href={item.arteFotoUrl} rotulo="Só a foto" />
+                <ArteDownloadButton
+                  href={item.arteFotoUrl}
+                  rotulo="Só a foto"
+                  nomeArquivo={`${prefixo}-so-foto`}
+                />
               )}
               {item.arteTextoUrl && (
-                <ArteLink href={item.arteTextoUrl} rotulo="Só o texto" />
+                <ArteDownloadButton
+                  href={item.arteTextoUrl}
+                  rotulo="Só o texto"
+                  nomeArquivo={`${prefixo}-so-texto`}
+                />
               )}
               {item.fotoUrl && (
-                <ArteLink href={item.fotoUrl} rotulo="Foto original" variante="neutro" />
+                <ArteDownloadButton
+                  href={item.fotoUrl}
+                  rotulo="Foto original"
+                  nomeArquivo={`${prefixo}-foto-original`}
+                  variante="neutro"
+                />
               )}
             </div>
             {!item.arteProducaoUrl && !item.arteFotoUrl && (
@@ -107,28 +133,49 @@ export function PedidoItemPreview({ item }: Props) {
   );
 }
 
-function ArteLink({
+function ArteDownloadButton({
   href,
   rotulo,
+  nomeArquivo,
   variante = "gold",
 }: {
   href: string;
   rotulo: string;
+  nomeArquivo: string;
   variante?: "gold" | "neutro";
 }) {
+  const [baixando, setBaixando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
   const classe =
     variante === "gold"
       ? "border-gold/50 bg-gold/10 text-gold-dark hover:bg-gold/20"
       : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50";
+
+  async function handleClick() {
+    setErro(null);
+    setBaixando(true);
+    try {
+      await baixarUrlComoArquivo(href, nomeArquivo);
+    } catch (e) {
+      console.error(e);
+      setErro("Falha ao baixar. Tente de novo.");
+    } finally {
+      setBaixando(false);
+    }
+  }
+
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      download
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${classe}`}
-    >
-      ↓ {rotulo}
-    </a>
+    <span className="inline-flex flex-col gap-0.5">
+      <button
+        type="button"
+        onClick={() => void handleClick()}
+        disabled={baixando}
+        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:opacity-60 ${classe}`}
+      >
+        ↓ {baixando ? "Baixando…" : rotulo}
+      </button>
+      {erro ? <span className="text-[10px] text-rose-600">{erro}</span> : null}
+    </span>
   );
 }

@@ -4,7 +4,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
-import { normalizarSlugLoja, slugLojaValido } from "@/features/admin/revendedores/revendedorAdminUtils";
+import { normalizarSlugLoja } from "@/features/admin/revendedores/revendedorAdminUtils";
 import {
   COLECAO_SOLICITACOES_REVENDEDOR,
   type SolicitacaoRevendedorInput,
@@ -16,22 +16,25 @@ function requireDb() {
   return getFirebaseDb();
 }
 
+/** Slug provisório só para registro interno — loja/slug final na aprovação. */
+function slugProvisorio(cnpj: string, razaoSocial: string): string {
+  const daRazao = normalizarSlugLoja(razaoSocial);
+  if (daRazao.length >= 2) return daRazao;
+  return `rev-${cnpj.slice(-8)}`;
+}
+
 export async function enviarSolicitacaoRevendedor(
   input: SolicitacaoRevendedorInput,
 ): Promise<string> {
   const email = input.email.trim().toLowerCase();
   const cnpj = normalizarCnpj(input.cnpj);
-  const slug = normalizarSlugLoja(input.slugDesejado);
+  const razaoSocial = input.razaoSocial.trim();
 
   if (!input.nomeCompleto.trim()) throw new Error("Informe seu nome.");
   if (!email.includes("@")) throw new Error("E-mail inválido.");
   if (!input.telefone.trim()) throw new Error("Informe um telefone.");
   if (!cnpjValido(cnpj)) throw new Error("CNPJ inválido (14 dígitos).");
-  if (!input.razaoSocial.trim()) throw new Error("Informe a razão social.");
-  if (!input.nomeLoja.trim()) throw new Error("Informe o nome da loja.");
-  if (!slugLojaValido(slug)) {
-    throw new Error("Endereço da loja inválido. Use letras, números e hífens.");
-  }
+  if (!razaoSocial) throw new Error("Informe a razão social.");
   if (normalizarCep(input.cep).length !== 8) throw new Error("CEP inválido.");
   if (!input.logradouro.trim() || !input.numero.trim()) {
     throw new Error("Informe endereço completo.");
@@ -47,9 +50,9 @@ export async function enviarSolicitacaoRevendedor(
     email,
     telefone: input.telefone.trim(),
     cnpj,
-    razaoSocial: input.razaoSocial.trim(),
-    nomeLoja: input.nomeLoja.trim(),
-    slugDesejado: slug,
+    razaoSocial,
+    nomeLoja: razaoSocial,
+    slugDesejado: slugProvisorio(cnpj, razaoSocial),
     cep: normalizarCep(input.cep),
     logradouro: input.logradouro.trim(),
     numero: input.numero.trim(),

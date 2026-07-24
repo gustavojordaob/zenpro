@@ -91,36 +91,26 @@ export async function salvarPersonalizacao({
     larguraPx: dados.larguraPx,
     alturaPx: dados.alturaPx,
     maskUrl: dados.maskUrl,
+    cameraFrameUrl: dados.cameraFrameUrl,
     corFundo: dados.corFundo,
   };
 
   try {
-    const [blobCombinada, blobFoto] = await Promise.all([
+    const [blobCombinada, blobFoto, blobTexto] = await Promise.all([
       exportCaseArtBlob(fotosParaArte, transformRef, textos, undefined, geo),
       exportFotoArtBlob(fotosParaArte, transformRef, undefined, geo),
+      temTexto
+        ? exportTextoArtBlob(transformRef, textos, undefined, geo)
+        : Promise.resolve(null),
     ]);
 
-    const [arteProducaoUrl, arteFotoUrl] = await Promise.all([
+    const [arteProducaoUrl, arteFotoUrl, arteTextoUrl] = await Promise.all([
       subirArteProducao(userId, ref.id, blobCombinada, "combinada"),
       subirArteProducao(userId, ref.id, blobFoto, "foto"),
+      blobTexto
+        ? subirArteProducao(userId, ref.id, blobTexto, "texto")
+        : Promise.resolve(null),
     ]);
-
-    // Arte só do texto — apenas quando há texto.
-    let arteTextoUrl: string | null = null;
-    if (temTexto) {
-      const blobTexto = await exportTextoArtBlob(
-        transformRef,
-        textos,
-        undefined,
-        geo,
-      );
-      arteTextoUrl = await subirArteProducao(
-        userId,
-        ref.id,
-        blobTexto,
-        "texto",
-      );
-    }
 
     await updateDoc(ref, { arteProducaoUrl, arteFotoUrl, arteTextoUrl });
     return { id: ref.id, arteProducaoUrl, arteFotoUrl, arteTextoUrl };

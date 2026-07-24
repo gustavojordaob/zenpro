@@ -2,7 +2,7 @@ import { defineSecret, defineString } from "firebase-functions/params";
 
 export const mpAccessToken = defineSecret("MP_ACCESS_TOKEN");
 export const siteUrl = defineString("SITE_URL", {
-  default: "https://zenpro-capinhas.web.app",
+  default: "https://usezenpro.com.br",
 });
 
 export const MARCA_LOJA_ID = "zenpro";

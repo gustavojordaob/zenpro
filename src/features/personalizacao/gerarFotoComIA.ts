@@ -65,6 +65,12 @@ function mensagemErroCallable(error: unknown): string {
     if (fe.code === "functions/unauthenticated") {
       return "Faça login para usar a criação com IA.";
     }
+    if (fe.code === "functions/resource-exhausted") {
+      return (
+        fe.message?.replace(/^.*?:\s*/, "") ||
+        "Limite diário de montagens com IA atingido. Volte amanhã ou torne-se revendedor."
+      );
+    }
     if (fe.message?.trim()) return fe.message;
   }
   if (error instanceof Error && error.message) return error.message;

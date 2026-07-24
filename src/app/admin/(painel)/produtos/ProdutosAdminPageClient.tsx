@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   alternarAtivoProdutoCentral,
+  excluirProdutoCentral,
   listarProdutosCentral,
   type ProdutoCentral,
 } from "@/features/admin/produtos/produtoCentralService";
@@ -19,6 +20,7 @@ export function ProdutosAdminPageClient() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [alternandoId, setAlternandoId] = useState<string | null>(null);
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
@@ -68,6 +70,26 @@ export function ProdutosAdminPageClient() {
       );
     } finally {
       setAlternandoId(null);
+    }
+  }
+
+  async function handleExcluir(produto: ProdutoCentral) {
+    const ok = window.confirm(
+      `Excluir "${produto.nome}" do catálogo?\n\nEsta ação não pode ser desfeita.`,
+    );
+    if (!ok) return;
+
+    setExcluindoId(produto.id);
+    setErro(null);
+    try {
+      await excluirProdutoCentral(produto.id);
+      await carregar();
+    } catch (error) {
+      setErro(
+        error instanceof Error ? error.message : "Erro ao excluir produto.",
+      );
+    } finally {
+      setExcluindoId(null);
     }
   }
 
@@ -269,6 +291,14 @@ export function ProdutosAdminPageClient() {
                                 ? "Desativar"
                                 : "Ativar"}
                           </button>
+                          <button
+                            type="button"
+                            disabled={excluindoId === produto.id}
+                            onClick={() => void handleExcluir(produto)}
+                            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            {excluindoId === produto.id ? "..." : "Excluir"}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -349,6 +379,14 @@ export function ProdutosAdminPageClient() {
                       : produto.ativo
                         ? "Desativar"
                         : "Ativar"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={excluindoId === produto.id}
+                    onClick={() => void handleExcluir(produto)}
+                    className="rounded-xl border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 active:bg-red-50 disabled:opacity-50"
+                  >
+                    {excluindoId === produto.id ? "..." : "Excluir"}
                   </button>
                 </div>
               </div>

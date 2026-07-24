@@ -394,6 +394,21 @@ export async function volumeNoMesAno(
   );
 }
 
+/** Volume faturado entre inicio e fim (inclusivos). */
+export async function volumeNoIntervalo(
+  donoUid: string,
+  inicio: Date,
+  fim: Date,
+): Promise<{ centavos: number; pedidos: number }> {
+  const inicioMs = inicio.getTime();
+  const fimMs = fim.getTime();
+  const linhas = await coletarLinhasVolume(donoUid);
+  return somarPeriodo(linhas, (d) => {
+    const t = d.getTime();
+    return t >= inicioMs && t <= fimMs;
+  });
+}
+
 export type RankingItemMes = RevendedorComNivel & {
   volumePeriodoCentavos: number;
   pedidosPeriodo: number;
@@ -405,13 +420,24 @@ export async function rankingRevendedoresNoMes(
   mesIndex0: number,
   config?: NiveisRevendedorConfig,
 ): Promise<RankingItemMes[]> {
+  const inicio = new Date(ano, mesIndex0, 1, 0, 0, 0, 0);
+  const fim = new Date(ano, mesIndex0 + 1, 0, 23, 59, 59, 999);
+  return rankingRevendedoresNoIntervalo(revendedores, inicio, fim, config);
+}
+
+export async function rankingRevendedoresNoIntervalo(
+  revendedores: { lojaId: string; donoUid: string; nome?: string }[],
+  inicio: Date,
+  fim: Date,
+  config?: NiveisRevendedorConfig,
+): Promise<RankingItemMes[]> {
   const cfg = config ?? (await obterNiveisRevendedorConfig());
   const mapa = await listarNiveisRevendedores(revendedores, cfg);
   const out: RankingItemMes[] = [];
   for (const r of revendedores) {
     const base = mapa[r.lojaId];
     if (!base) continue;
-    const vol = await volumeNoMesAno(r.donoUid, ano, mesIndex0);
+    const vol = await volumeNoIntervalo(r.donoUid, inicio, fim);
     out.push({
       ...base,
       volumePeriodoCentavos: vol.centavos,
