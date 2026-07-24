@@ -13,11 +13,8 @@ import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
 import type { TextoCapinha, Transform } from "./types";
 import { useCapinhaFontsReady } from "./useCapinhaFontsReady";
 import { useCorPredominante } from "./useCorPredominante";
-import {
-  cameraClearLipProps,
-  cameraContactShadowProps,
-  cameraPunchProps,
-} from "./cameraPunch";
+import { cameraPunchProps } from "./cameraPunch";
+import { useCameraMockDepth } from "./useCameraMockDepth";
 
 const STUDIO_BG = "#ececec";
 const EDITOR_PREVIEW_WIDTH = ART_CANVAS.previewWidth;
@@ -167,6 +164,8 @@ export function CasePreview({
   ]);
   const svgCameraImage = useHtmlImage(cameraUrl);
   const cameraImage = rockCameraImage ?? svgCameraImage;
+  const corAparelho = visualCtx?.corAparelho ?? getCorAparelho(modeloId);
+  const cameraDepth = useCameraMockDepth(cameraImage, corAparelho);
 
   const clipInset = borderWidth;
   const clipRoundRect = (ctx: Konva.Context) => {
@@ -310,22 +309,26 @@ export function CasePreview({
               />
               {cameraImage && (
                 <>
-                  <KonvaImage
-                    {...cameraContactShadowProps(cameraImage, {
-                      molduraX,
-                      molduraY,
-                      molduraW,
-                      molduraH,
-                    })}
-                  />
-                  <KonvaImage
-                    {...cameraClearLipProps(cameraImage, {
-                      molduraX,
-                      molduraY,
-                      molduraW,
-                      molduraH,
-                    })}
-                  />
+                  {cameraDepth && (
+                    <>
+                      <KonvaImage
+                        image={cameraDepth.contactShadow}
+                        x={molduraX}
+                        y={molduraY + Math.max(1, molduraW * 0.008)}
+                        width={molduraW}
+                        height={molduraH}
+                        listening={false}
+                      />
+                      <KonvaImage
+                        image={cameraDepth.bodyFill}
+                        x={molduraX}
+                        y={molduraY}
+                        width={molduraW}
+                        height={molduraH}
+                        listening={false}
+                      />
+                    </>
+                  )}
                   <KonvaImage
                     image={cameraImage}
                     x={molduraX}
@@ -345,8 +348,9 @@ export function CasePreview({
                 stroke={CASE_BORDER.outer}
                 strokeWidth={borderWidth}
                 shadowColor="#000000"
-                shadowBlur={Math.max(3, molduraW * 0.015)}
-                shadowOpacity={0.2}
+                shadowBlur={Math.max(8, molduraW * 0.04)}
+                shadowOffsetY={Math.max(2, molduraW * 0.012)}
+                shadowOpacity={0.28}
                 listening={false}
               />
               <Rect
@@ -356,7 +360,7 @@ export function CasePreview({
                 height={molduraH - borderWidth * 1.56}
                 cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
                 stroke={CASE_BORDER.inner}
-                strokeWidth={Math.max(2, borderWidth * 0.58)}
+                strokeWidth={Math.max(1.5, borderWidth * 0.45)}
                 listening={false}
               />
             </>

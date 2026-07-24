@@ -22,11 +22,8 @@ import {
   fitImageToArea,
   getLayoutSlots,
 } from "./fotoLayoutPresets";
-import {
-  cameraClearLipProps,
-  cameraContactShadowProps,
-  cameraPunchProps,
-} from "./cameraPunch";
+import { cameraPunchProps } from "./cameraPunch";
+import { useCameraMockDepth } from "./useCameraMockDepth";
 
 const STUDIO_BG = "#ececec";
 const PLACEHOLDER_FILL = "#e4e4e7";
@@ -354,6 +351,8 @@ export function CaseEditor({
   ]);
   const { image: svgCameraImage } = useHtmlImage(cameraUrl);
   const cameraImage = rockCameraImage ?? svgCameraImage;
+  const corAparelho = visualCtx?.corAparelho ?? getCorAparelho(modelo.id);
+  const cameraDepth = useCameraMockDepth(cameraImage, corAparelho);
 
   /** Área generosa para arraste — foto pode ultrapassar a moldura no editor. */
   const areaArraste = useMemo(
@@ -590,22 +589,26 @@ export function CaseEditor({
           <Layer listening={false}>
             {cameraImage && (
               <>
-                <KonvaImage
-                  {...cameraContactShadowProps(cameraImage, {
-                    molduraX,
-                    molduraY,
-                    molduraW,
-                    molduraH,
-                  })}
-                />
-                <KonvaImage
-                  {...cameraClearLipProps(cameraImage, {
-                    molduraX,
-                    molduraY,
-                    molduraW,
-                    molduraH,
-                  })}
-                />
+                {cameraDepth && (
+                  <>
+                    <KonvaImage
+                      image={cameraDepth.contactShadow}
+                      x={molduraX}
+                      y={molduraY + Math.max(1, molduraW * 0.008)}
+                      width={molduraW}
+                      height={molduraH}
+                      listening={false}
+                    />
+                    <KonvaImage
+                      image={cameraDepth.bodyFill}
+                      x={molduraX}
+                      y={molduraY}
+                      width={molduraW}
+                      height={molduraH}
+                      listening={false}
+                    />
+                  </>
+                )}
                 <KonvaImage
                   image={cameraImage}
                   x={molduraX}
@@ -625,8 +628,9 @@ export function CaseEditor({
               stroke={CASE_BORDER.outer}
               strokeWidth={borderWidth}
               shadowColor="#000000"
-              shadowBlur={Math.max(3, molduraW * 0.015)}
-              shadowOpacity={0.2}
+              shadowBlur={Math.max(8, molduraW * 0.04)}
+              shadowOffsetY={Math.max(2, molduraW * 0.012)}
+              shadowOpacity={0.28}
               listening={false}
             />
             <Rect
@@ -636,7 +640,7 @@ export function CaseEditor({
               height={molduraH - borderWidth * 1.56}
               cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
               stroke={CASE_BORDER.inner}
-              strokeWidth={Math.max(2, borderWidth * 0.58)}
+              strokeWidth={Math.max(1.5, borderWidth * 0.45)}
               listening={false}
             />
           </Layer>

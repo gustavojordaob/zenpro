@@ -43,11 +43,11 @@ export const DEFAULT_COR_FUNDO_CAPINHA = "#ffffff";
  */
 export const CASE_BORDER = {
   /** Reflexo externo do TPU transparente. */
-  outer: "rgba(255, 255, 255, 0.92)",
+  outer: "rgba(255, 255, 255, 0.95)",
   /** Contorno interno suave que sugere espessura sem parecer moldura preta. */
-  inner: "rgba(82, 82, 91, 0.5)",
+  inner: "rgba(63, 63, 70, 0.38)",
   /** Fração da largura da moldura (anel externo) */
-  widthRatio: 0.026,
+  widthRatio: 0.028,
 } as const;
 
 export const ZOOM_MIN = 0.08;
