@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CasePreview } from "@/features/personalizacao/CasePreviewLazy";
 import {
   CaseFake3dPreview,
   isFake3dSupported,
 } from "@/features/personalizacao/CaseFake3dPreview";
+import { MOLDURA_VISUAL } from "./caseVisualConstants";
 import type { FotoExportInput } from "./exportCaseArt";
 import type { TextoCapinha } from "./types";
 
@@ -18,6 +19,11 @@ type Props = {
   modeloRotulo: string;
   onFechar: () => void;
 };
+
+/** Altura reservada p/ header + toggle + rodapé + paddings + safe-area. */
+const CHROME_VH = 210;
+/** Margem extra do fake 3D (sombra / perspectiva). */
+const FAKE3D_EXTRA_H = 72;
 
 /**
  * Prévia ilustrativa no editor — reutiliza CasePreview (mesmo render do
@@ -39,30 +45,58 @@ export function PreviewCapaModal({
   const principal = fotosValidas[0];
   const podeFake3d = isFake3dSupported(modeloId);
   const [modoFake3d, setModoFake3d] = useState(true);
+  const [previewWidth, setPreviewWidth] = useState(200);
+
+  useEffect(() => {
+    if (!aberto) return;
+
+    const recalcular = () => {
+      const vh = window.visualViewport?.height ?? window.innerHeight;
+      const vw = window.visualViewport?.width ?? window.innerWidth;
+      const disponivelH = Math.max(180, vh - CHROME_VH);
+      const usarFake = podeFake3d && modoFake3d;
+      const alturaUtil = usarFake
+        ? Math.max(140, disponivelH - FAKE3D_EXTRA_H)
+        : disponivelH;
+      const porAltura = alturaUtil * MOLDURA_VISUAL.aspect;
+      const porLargura = Math.min(vw - 56, usarFake ? 220 : 260);
+      setPreviewWidth(
+        Math.round(Math.max(130, Math.min(porAltura, porLargura))),
+      );
+    };
+
+    recalcular();
+    window.addEventListener("resize", recalcular);
+    window.visualViewport?.addEventListener("resize", recalcular);
+    return () => {
+      window.removeEventListener("resize", recalcular);
+      window.visualViewport?.removeEventListener("resize", recalcular);
+    };
+  }, [aberto, modoFake3d, podeFake3d]);
 
   if (!aberto) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="flex w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
-          <div>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
+      <div className="flex max-h-[100dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:max-h-[min(100dvh,920px)] sm:rounded-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-4 py-3">
+          <div className="min-w-0 pr-2">
             <h2 className="text-base font-semibold text-zinc-900">
               Prévia da case
             </h2>
-            <p className="text-xs text-zinc-500">{modeloRotulo}</p>
+            <p className="truncate text-xs text-zinc-500">{modeloRotulo}</p>
           </div>
           <button
             type="button"
             onClick={onFechar}
-            className="rounded-lg px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
+            className="shrink-0 rounded-lg px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
           >
             Fechar
           </button>
         </div>
 
         {podeFake3d && (
-          <div className="flex items-center justify-center gap-2 border-b border-zinc-100 px-4 py-2">
+          <div className="flex shrink-0 items-center justify-center gap-2 border-b border-zinc-100 px-4 py-2">
             <button
               type="button"
               onClick={() => setModoFake3d(true)}
@@ -89,7 +123,7 @@ export function PreviewCapaModal({
         )}
 
         <div
-          className="flex items-center justify-center p-6"
+          className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-3 py-3 sm:px-6 sm:py-5"
           style={{
             background:
               podeFake3d && modoFake3d
@@ -98,7 +132,7 @@ export function PreviewCapaModal({
           }}
         >
           {!principal ? (
-            <div className="flex h-[420px] items-center justify-center px-6 text-center text-sm text-red-600">
+            <div className="flex max-h-full items-center justify-center px-6 text-center text-sm text-red-600">
               Adicione pelo menos uma foto para ver a prévia.
             </div>
           ) : podeFake3d && modoFake3d ? (
@@ -107,7 +141,7 @@ export function PreviewCapaModal({
               transform={principal.transform}
               textos={textos}
               modeloId={modeloId}
-              previewWidth={240}
+              previewWidth={previewWidth}
             />
           ) : (
             <CasePreview
@@ -115,12 +149,12 @@ export function PreviewCapaModal({
               transform={principal.transform}
               textos={textos}
               modeloId={modeloId}
-              previewWidth={280}
+              previewWidth={previewWidth}
             />
           )}
         </div>
 
-        <p className="px-4 py-3 text-center text-xs text-zinc-500">
+        <p className="shrink-0 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-xs text-zinc-500">
           {podeFake3d && modoFake3d
             ? "Visual ilustrativo da personalização aplicada na capinha."
             : `Visual ilustrativo — ${fotosValidas.length} foto${
