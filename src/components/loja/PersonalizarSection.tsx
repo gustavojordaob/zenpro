@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/loja/ProductCard";
 import {
+  fatiaPagina,
+  PAGINA_LOJA,
+  PaginationBar,
+  totalPaginasDe,
+} from "@/components/ui/PaginationBar";
+import { rotuloMaterial } from "@/features/catalogo/materiaisCapinha";
+import {
   listarMarcasAtivas,
   listarModelosAtivos,
 } from "@/features/catalogo/catalogoRuntimeService";
@@ -10,6 +17,8 @@ import { listarProdutosPersonalizaveisAtivos } from "@/features/loja/catalogoPro
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
 import type { ProdutoDestaque } from "@/features/loja/produtosMock";
 import { isFirebaseConfigured } from "@/lib/firebase";
+
+type Ordenacao = "nome" | "preco-asc" | "preco-desc";
 
 export function PersonalizarSection() {
   const loja = useLojaEfetiva();
@@ -24,6 +33,9 @@ export function PersonalizarSection() {
   const [busca, setBusca] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("todos");
   const [filtroModelo, setFiltroModelo] = useState("todos");
+  const [filtroMaterial, setFiltroMaterial] = useState("todos");
+  const [ordenacao, setOrdenacao] = useState<Ordenacao>("nome");
+  const [pagina, setPagina] = useState(1);
 
   useEffect(() => {
     if (!isFirebaseConfigured()) return;
@@ -38,7 +50,11 @@ export function PersonalizarSection() {
           listarModelosAtivos(),
         ]);
         setProdutos(lista);
-        setMarcas(marcasAtivas.map((m) => ({ id: m.id, nome: m.nome })));
+        setMarcas(
+          [...marcasAtivas]
+            .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+            .map((m) => ({ id: m.id, nome: m.nome })),
+        );
         setModelos(
           modelosAtivos.map((m) => ({
             id: m.id,
@@ -60,38 +76,46 @@ export function PersonalizarSection() {
     })();
   }, [modoB2b]);
 
+  /** Todas as marcas do catálogo (não só as que já têm produto). */
   const marcasDisponiveis = useMemo(() => {
+    if (marcas.length > 0) return marcas;
     const nomes = new Set(
       produtos.map((p) => p.marca.trim()).filter(Boolean),
     );
-    const porNome = marcas.filter((m) => nomes.has(m.nome));
-    if (porNome.length > 0) return porNome;
     return Array.from(nomes)
       .sort((a, b) => a.localeCompare(b, "pt-BR"))
       .map((nome) => ({ id: nome, nome }));
-  }, [produtos, marcas]);
+  }, [marcas, produtos]);
 
+  /** Todos os modelos do catálogo; estreita por marca quando filtrado. */
   const modelosDisponiveis = useMemo(() => {
-    const ids = new Set(produtos.map((p) => p.modeloId));
-    let lista = modelos.filter((m) => ids.has(m.id));
+    let lista = [...modelos];
     if (filtroMarca !== "todos") {
       const marca = marcasDisponiveis.find((m) => m.id === filtroMarca);
-      if (marca) {
-        const porMarcaId = lista.filter((m) => m.marcaId === filtroMarca);
-        if (porMarcaId.length > 0) {
-          lista = porMarcaId;
-        } else {
-          const produtosMarca = new Set(
-            produtos
-              .filter((p) => p.marca === marca.nome)
-              .map((p) => p.modeloId),
-          );
-          lista = lista.filter((m) => produtosMarca.has(m.id));
-        }
+      const porMarcaId = lista.filter((m) => m.marcaId === filtroMarca);
+      if (porMarcaId.length > 0) {
+        lista = porMarcaId;
+      } else if (marca) {
+        const produtosMarca = new Set(
+          produtos
+            .filter((p) => p.marca === marca.nome)
+            .map((p) => p.modeloId),
+        );
+        lista = lista.filter((m) => produtosMarca.has(m.id));
       }
     }
     return lista.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  }, [produtos, modelos, filtroMarca, marcasDisponiveis]);
+  }, [modelos, filtroMarca, marcasDisponiveis, produtos]);
+
+  const materiaisDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of produtos) {
+      if (p.material?.trim()) set.add(p.material.trim());
+    }
+    return Array.from(set).sort((a, b) =>
+      (rotuloMaterial(a) ?? a).localeCompare(rotuloMaterial(b) ?? b, "pt-BR"),
+    );
+  }, [produtos]);
 
   useEffect(() => {
     if (
@@ -104,7 +128,7 @@ export function PersonalizarSection() {
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return produtos.filter((p) => {
+    const lista = produtos.filter((p) => {
       if (filtroMarca !== "todos") {
         const marca = marcasDisponiveis.find((m) => m.id === filtroMarca);
         const marcaOk =
@@ -113,6 +137,9 @@ export function PersonalizarSection() {
         if (!marcaOk) return false;
       }
       if (filtroModelo !== "todos" && p.modeloId !== filtroModelo) return false;
+      if (filtroMaterial !== "todos" && (p.material ?? "") !== filtroMaterial) {
+        return false;
+      }
       if (!q) return true;
       return (
         p.nome.toLowerCase().includes(q) ||
@@ -121,7 +148,30 @@ export function PersonalizarSection() {
         (p.material ?? "").toLowerCase().includes(q)
       );
     });
-  }, [produtos, busca, filtroMarca, filtroModelo, marcasDisponiveis]);
+
+    lista.sort((a, b) => {
+      if (ordenacao === "preco-asc") return a.precoCentavos - b.precoCentavos;
+      if (ordenacao === "preco-desc") return b.precoCentavos - a.precoCentavos;
+      return a.nome.localeCompare(b.nome, "pt-BR");
+    });
+    return lista;
+  }, [
+    produtos,
+    busca,
+    filtroMarca,
+    filtroModelo,
+    filtroMaterial,
+    ordenacao,
+    marcasDisponiveis,
+  ]);
+
+  useEffect(() => {
+    setPagina(1);
+  }, [busca, filtroMarca, filtroModelo, filtroMaterial, ordenacao]);
+
+  const totalPaginas = totalPaginasDe(filtrados.length, PAGINA_LOJA);
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginaItens = fatiaPagina(filtrados, paginaAtual, PAGINA_LOJA);
 
   return (
     <section id="personalizar" className="border-t border-zinc-200 bg-white">
@@ -131,7 +181,7 @@ export function PersonalizarSection() {
             Personalize com sua foto
           </h2>
           <p className="mt-1 text-zinc-600">
-            Escolha a marca e o modelo do celular para personalizar sua case.
+            Compare marcas, modelos e materiais e escolha a case ideal.
           </p>
         </div>
 
@@ -165,7 +215,7 @@ export function PersonalizarSection() {
           <select
             value={filtroModelo}
             onChange={(e) => setFiltroModelo(e.target.value)}
-            className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900"
+            className="min-w-[10rem] rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 sm:max-w-xs"
             aria-label="Filtrar por modelo"
           >
             <option value="todos">Todos os modelos</option>
@@ -174,6 +224,29 @@ export function PersonalizarSection() {
                 {m.nome}
               </option>
             ))}
+          </select>
+          <select
+            value={filtroMaterial}
+            onChange={(e) => setFiltroMaterial(e.target.value)}
+            className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900"
+            aria-label="Filtrar por material"
+          >
+            <option value="todos">Todos os materiais</option>
+            {materiaisDisponiveis.map((mat) => (
+              <option key={mat} value={mat}>
+                {rotuloMaterial(mat) ?? mat}
+              </option>
+            ))}
+          </select>
+          <select
+            value={ordenacao}
+            onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
+            className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900"
+            aria-label="Ordenar"
+          >
+            <option value="nome">Ordenar: nome</option>
+            <option value="preco-asc">Menor preço</option>
+            <option value="preco-desc">Maior preço</option>
           </select>
         </div>
 
@@ -194,20 +267,29 @@ export function PersonalizarSection() {
           </p>
         ) : filtrados.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-zinc-600">
-            Nenhuma capinha com esses filtros. Tente outra marca ou modelo.
+            Nenhuma capinha com esses filtros. Tente outra marca, modelo ou
+            material.
           </p>
         ) : (
           <>
-            <p className="mb-4 text-sm text-zinc-500">
-              {filtrados.length} opção{filtrados.length !== 1 ? "ões" : ""}
-            </p>
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-              {filtrados.map((produto) => (
-                <li key={produto.id} className="h-full">
+              {paginaItens.map((produto) => (
+                <li
+                  key={`${produto.produtoBaseId ?? produto.id}-${produto.modeloId}`}
+                  className="h-full"
+                >
                   <ProductCard produto={produto} />
                 </li>
               ))}
             </ul>
+            <PaginationBar
+              pagina={paginaAtual}
+              totalPaginas={totalPaginas}
+              totalItens={filtrados.length}
+              porPagina={PAGINA_LOJA}
+              onChange={setPagina}
+              rotulo="opções"
+            />
           </>
         )}
       </div>

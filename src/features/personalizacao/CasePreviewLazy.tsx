@@ -23,6 +23,8 @@ type Props = {
   textos?: TextoCapinha[];
   modeloId?: string;
   previewWidth?: number;
+  embedded?: boolean;
+  hideBorder?: boolean;
   larguraPx?: number;
   alturaPx?: number;
 };

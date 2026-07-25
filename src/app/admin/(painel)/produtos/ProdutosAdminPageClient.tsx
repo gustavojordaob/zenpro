@@ -5,6 +5,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
+  fatiaPagina,
+  PAGINA_ADMIN,
+  PaginationBar,
+  totalPaginasDe,
+} from "@/components/ui/PaginationBar";
+import {
   alternarAtivoProdutoCentral,
   excluirProdutoCentral,
   listarProdutosCentral,
@@ -21,15 +27,19 @@ export function ProdutosAdminPageClient() {
   const [erro, setErro] = useState<string | null>(null);
   const [alternandoId, setAlternandoId] = useState<string | null>(null);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
+  const [excluindoLote, setExcluindoLote] = useState(false);
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
+  const [pagina, setPagina] = useState(1);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
     setErro(null);
     try {
       setProdutos(await listarProdutosCentral());
+      setSelecionados(new Set());
     } catch (error) {
       setErro(
         error instanceof Error ? error.message : "Erro ao carregar produtos.",
@@ -58,6 +68,44 @@ export function ProdutosAdminPageClient() {
       );
     });
   }, [produtos, busca, filtroStatus, filtroTipo]);
+
+  useEffect(() => {
+    setPagina(1);
+    setSelecionados(new Set());
+  }, [busca, filtroStatus, filtroTipo]);
+
+  const totalPaginas = totalPaginasDe(filtrados.length, PAGINA_ADMIN);
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginaItens = fatiaPagina(filtrados, paginaAtual, PAGINA_ADMIN);
+
+  const idsPagina = useMemo(
+    () => paginaItens.map((p) => p.id),
+    [paginaItens],
+  );
+  const todosPaginaSelecionados =
+    idsPagina.length > 0 && idsPagina.every((id) => selecionados.has(id));
+  const algunsPaginaSelecionados = idsPagina.some((id) => selecionados.has(id));
+
+  function toggleUm(id: string) {
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function togglePagina() {
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      if (todosPaginaSelecionados) {
+        for (const id of idsPagina) next.delete(id);
+      } else {
+        for (const id of idsPagina) next.add(id);
+      }
+      return next;
+    });
+  }
 
   async function handleAlternarAtivo(produto: ProdutoCentral) {
     setAlternandoId(produto.id);
@@ -93,6 +141,33 @@ export function ProdutosAdminPageClient() {
     }
   }
 
+  async function handleExcluirSelecionados() {
+    const ids = Array.from(selecionados);
+    if (ids.length === 0) return;
+    const ok = window.confirm(
+      `Excluir ${ids.length} produto${ids.length !== 1 ? "s" : ""} selecionado${ids.length !== 1 ? "s" : ""}?\n\nEsta ação não pode ser desfeita.`,
+    );
+    if (!ok) return;
+
+    setExcluindoLote(true);
+    setErro(null);
+    try {
+      for (const id of ids) {
+        await excluirProdutoCentral(id);
+      }
+      await carregar();
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Erro ao excluir produtos selecionados.",
+      );
+      await carregar();
+    } finally {
+      setExcluindoLote(false);
+    }
+  }
+
   return (
     <AdminShell
       titulo="Produtos"
@@ -114,8 +189,23 @@ export function ProdutosAdminPageClient() {
         <p className="text-sm text-zinc-600">
           {filtrados.length} de {produtos.length} produto
           {produtos.length !== 1 ? "s" : ""}
+          {selecionados.size > 0
+            ? ` · ${selecionados.size} selecionado${selecionados.size !== 1 ? "s" : ""}`
+            : ""}
         </p>
         <div className="flex flex-wrap gap-2">
+          {selecionados.size > 0 && (
+            <button
+              type="button"
+              disabled={excluindoLote}
+              onClick={() => void handleExcluirSelecionados()}
+              className="rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+            >
+              {excluindoLote
+                ? "Excluindo…"
+                : `Excluir selecionados (${selecionados.size})`}
+            </button>
+          )}
           <Link
             href="/admin/produtos/novo"
             className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
@@ -188,6 +278,22 @@ export function ProdutosAdminPageClient() {
               <table className="min-w-full text-left text-sm">
                 <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   <tr>
+                    <th className="w-10 px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={todosPaginaSelecionados}
+                        ref={(el) => {
+                          if (el) {
+                            el.indeterminate =
+                              algunsPaginaSelecionados &&
+                              !todosPaginaSelecionados;
+                          }
+                        }}
+                        onChange={togglePagina}
+                        aria-label="Selecionar todos nesta página"
+                        className="h-4 w-4 rounded border-zinc-300"
+                      />
+                    </th>
                     <th className="px-4 py-3">Produto</th>
                     <th className="px-4 py-3">Loja</th>
                     <th className="px-4 py-3">Revendedor</th>
@@ -197,8 +303,22 @@ export function ProdutosAdminPageClient() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
-                  {filtrados.map((produto) => (
-                    <tr key={produto.id} className="hover:bg-zinc-50/80">
+                  {paginaItens.map((produto) => (
+                    <tr
+                      key={produto.id}
+                      className={`hover:bg-zinc-50/80 ${
+                        selecionados.has(produto.id) ? "bg-amber-50/40" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selecionados.has(produto.id)}
+                          onChange={() => toggleUm(produto.id)}
+                          aria-label={`Selecionar ${produto.nome}`}
+                          className="h-4 w-4 rounded border-zinc-300"
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
@@ -293,7 +413,7 @@ export function ProdutosAdminPageClient() {
                           </button>
                           <button
                             type="button"
-                            disabled={excluindoId === produto.id}
+                            disabled={excluindoId === produto.id || excluindoLote}
                             onClick={() => void handleExcluir(produto)}
                             className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
                           >
@@ -309,12 +429,30 @@ export function ProdutosAdminPageClient() {
           </div>
 
           <div className="flex flex-col gap-3 sm:hidden">
-            {filtrados.map((produto) => (
+            <label className="flex items-center gap-2 text-sm text-zinc-700">
+              <input
+                type="checkbox"
+                checked={todosPaginaSelecionados}
+                onChange={togglePagina}
+                className="h-4 w-4 rounded border-zinc-300"
+              />
+              Selecionar todos nesta página
+            </label>
+            {paginaItens.map((produto) => (
               <div
                 key={`m-${produto.id}`}
-                className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
+                className={`rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm ${
+                  selecionados.has(produto.id) ? "ring-2 ring-amber-300" : ""
+                }`}
               >
                 <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selecionados.has(produto.id)}
+                    onChange={() => toggleUm(produto.id)}
+                    className="mt-1 h-4 w-4 rounded border-zinc-300"
+                    aria-label={`Selecionar ${produto.nome}`}
+                  />
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
                     {produto.imagens[0] ? (
                       <Image
@@ -382,7 +520,7 @@ export function ProdutosAdminPageClient() {
                   </button>
                   <button
                     type="button"
-                    disabled={excluindoId === produto.id}
+                    disabled={excluindoId === produto.id || excluindoLote}
                     onClick={() => void handleExcluir(produto)}
                     className="rounded-xl border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 active:bg-red-50 disabled:opacity-50"
                   >
@@ -392,6 +530,15 @@ export function ProdutosAdminPageClient() {
               </div>
             ))}
           </div>
+
+          <PaginationBar
+            pagina={paginaAtual}
+            totalPaginas={totalPaginas}
+            totalItens={filtrados.length}
+            porPagina={PAGINA_ADMIN}
+            onChange={setPagina}
+            rotulo="produtos"
+          />
         </>
       )}
     </AdminShell>

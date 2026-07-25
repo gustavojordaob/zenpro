@@ -26,6 +26,10 @@ type Props = {
   modeloId?: string;
   /** Largura visual da capinha (px). Transform usa coords do editor (280px). */
   previewWidth?: number;
+  /** Sem padding/fundo de studio — para embutir no fake 3D. */
+  embedded?: boolean;
+  /** Sem anéis CASE_BORDER (a casca TPU do fake 3D faz a borda). */
+  hideBorder?: boolean;
   /** @deprecated Canvas 9:16 fixo — não afeta layout. */
   larguraPx?: number;
   /** @deprecated Canvas 9:16 fixo — não afeta layout. */
@@ -119,6 +123,8 @@ export function CasePreview({
   textos = [],
   modeloId = "iphone-17-pro-max",
   previewWidth = 120,
+  embedded = false,
+  hideBorder = false,
 }: Props) {
   useCapinhaFontsReady();
   const visualCtx = usePersonalizacaoVisual();
@@ -167,7 +173,7 @@ export function CasePreview({
   const corAparelho = visualCtx?.corAparelho ?? getCorAparelho(modeloId);
   const cameraDepth = useCameraMockDepth(cameraImage, corAparelho);
 
-  const clipInset = borderWidth;
+  const clipInset = hideBorder ? Math.max(1, borderWidth * 0.15) : borderWidth;
   const clipRoundRect = (ctx: Konva.Context) => {
     const x = molduraX + clipInset;
     const y = molduraY + clipInset;
@@ -215,16 +221,23 @@ export function CasePreview({
     };
   }, [fotoImage, bg, blurRadius]);
 
-  const scale = previewWidth / EDITOR_PREVIEW_WIDTH;
-  const displayW = Math.round(W * scale);
-  const displayH = Math.round(H * scale);
-  const padOuter = Math.max(4, Math.round(previewWidth * 0.05));
+  // Embedded (fake 3D): a capa ocupa 100% do canvas — sem studio em volta.
+  const scale = embedded
+    ? previewWidth / molduraW
+    : previewWidth / EDITOR_PREVIEW_WIDTH;
+  const displayW = embedded ? previewWidth : Math.round(W * scale);
+  const displayH = embedded
+    ? Math.round(molduraH * scale)
+    : Math.round(H * scale);
+  const stageX = embedded ? -molduraX * scale : 0;
+  const stageY = embedded ? -molduraY * scale : 0;
+  const padOuter = embedded ? 0 : Math.max(4, Math.round(previewWidth * 0.05));
 
   return (
     <div
-      className="inline-flex shrink-0 overflow-hidden rounded-xl"
+      className={`inline-flex shrink-0 overflow-hidden ${embedded ? "" : "rounded-xl"}`}
       style={{
-        backgroundColor: STUDIO_BG,
+        backgroundColor: embedded ? "transparent" : STUDIO_BG,
         padding: padOuter,
         width: displayW + padOuter * 2,
         height: displayH + padOuter * 2,
@@ -236,12 +249,16 @@ export function CasePreview({
       <Stage
         width={displayW}
         height={displayH}
+        x={stageX}
+        y={stageY}
         scaleX={scale}
         scaleY={scale}
         listening={false}
       >
         <Layer listening={false}>
-          <Rect x={0} y={0} width={W} height={H} fill={STUDIO_BG} />
+          {!embedded && (
+            <Rect x={0} y={0} width={W} height={H} fill={STUDIO_BG} />
+          )}
         </Layer>
         <Layer listening={false}>
           {fotoImage && (
@@ -339,30 +356,34 @@ export function CasePreview({
                   />
                 </>
               )}
-              <Rect
-                x={molduraX + borderWidth / 2}
-                y={molduraY + borderWidth / 2}
-                width={molduraW - borderWidth}
-                height={molduraH - borderWidth}
-                cornerRadius={radius}
-                stroke={CASE_BORDER.outer}
-                strokeWidth={borderWidth}
-                shadowColor="#000000"
-                shadowBlur={Math.max(8, molduraW * 0.04)}
-                shadowOffsetY={Math.max(2, molduraW * 0.012)}
-                shadowOpacity={0.28}
-                listening={false}
-              />
-              <Rect
-                x={molduraX + borderWidth * 0.78}
-                y={molduraY + borderWidth * 0.78}
-                width={molduraW - borderWidth * 1.56}
-                height={molduraH - borderWidth * 1.56}
-                cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
-                stroke={CASE_BORDER.inner}
-                strokeWidth={Math.max(1.5, borderWidth * 0.45)}
-                listening={false}
-              />
+              {!hideBorder && (
+                <>
+                  <Rect
+                    x={molduraX + borderWidth / 2}
+                    y={molduraY + borderWidth / 2}
+                    width={molduraW - borderWidth}
+                    height={molduraH - borderWidth}
+                    cornerRadius={radius}
+                    stroke={CASE_BORDER.outer}
+                    strokeWidth={borderWidth}
+                    shadowColor="#000000"
+                    shadowBlur={Math.max(8, molduraW * 0.04)}
+                    shadowOffsetY={Math.max(2, molduraW * 0.012)}
+                    shadowOpacity={0.28}
+                    listening={false}
+                  />
+                  <Rect
+                    x={molduraX + borderWidth * 0.78}
+                    y={molduraY + borderWidth * 0.78}
+                    width={molduraW - borderWidth * 1.56}
+                    height={molduraH - borderWidth * 1.56}
+                    cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
+                    stroke={CASE_BORDER.inner}
+                    strokeWidth={Math.max(1.5, borderWidth * 0.45)}
+                    listening={false}
+                  />
+                </>
+              )}
             </>
           )}
         </Layer>
