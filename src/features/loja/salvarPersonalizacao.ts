@@ -14,6 +14,11 @@ import {
   type FotoExportInput,
 } from "@/features/personalizacao/exportCaseArt";
 import { subirArteProducao } from "@/features/personalizacao/uploadArteProducao";
+import {
+  resolveRockBodyMaskUrl,
+  resolveRockCameraFrameUrl,
+  resolveRockMolduraAspect,
+} from "@/features/personalizacao/rockCameraAssets";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import { sanitizarParaFirestore } from "@/lib/firestoreSanitize";
 import type { PersonalizacaoFirestore } from "./firestoreTypes";
@@ -87,11 +92,17 @@ export async function salvarPersonalizacao({
         : [{ url: dados.fotoUrl, transform: dados.transform }];
 
   const transformRef = fotosParaArte[0]?.transform ?? dados.transform;
+  const bodyMask =
+    resolveRockBodyMaskUrl(dados.modeloId) || dados.maskUrl;
   const geo = {
     larguraPx: dados.larguraPx,
     alturaPx: dados.alturaPx,
-    maskUrl: dados.maskUrl,
-    cameraFrameUrl: dados.cameraFrameUrl,
+    // Silhueta H5 (borda da capa) — não o mask genérico iPhone se houver Rock.
+    maskUrl: bodyMask,
+    cameraFrameUrl:
+      dados.cameraFrameUrl || resolveRockCameraFrameUrl(dados.modeloId),
+    molduraAspect:
+      dados.molduraAspect || resolveRockMolduraAspect(dados.modeloId),
     corFundo: dados.corFundo,
   };
 
@@ -116,11 +127,9 @@ export async function salvarPersonalizacao({
     return { id: ref.id, arteProducaoUrl, arteFotoUrl, arteTextoUrl };
   } catch (error) {
     console.error("Falha ao gerar arte de produção:", error);
-    return {
-      id: ref.id,
-      arteProducaoUrl: null,
-      arteFotoUrl: null,
-      arteTextoUrl: null,
-    };
+    // Sem artes o dono não imprime — não engolir o erro no carrinho.
+    throw error instanceof Error
+      ? error
+      : new Error("Não foi possível gerar a arte de produção.");
   }
 }

@@ -22,6 +22,8 @@ export default function AdminLojaPageClient({ lojaId }: Props) {
   const [cor, setCor] = useState("#18181b");
   const [whatsapp, setWhatsapp] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [descontoPixLoja, setDescontoPixLoja] = useState("0");
+  const [maxParcelasLoja, setMaxParcelasLoja] = useState("12");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -41,6 +43,12 @@ export default function AdminLojaPageClient({ lojaId }: Props) {
       setCor(data.config.cor ?? "#18181b");
       setWhatsapp(data.config.whatsapp ?? "");
       setLogoUrl(data.config.logo ?? null);
+      setDescontoPixLoja(
+        String(data.config.pagamentoPadrao?.descontoPixPercentual ?? 0),
+      );
+      setMaxParcelasLoja(
+        String(data.config.pagamentoPadrao?.maxParcelasCartao ?? 12),
+      );
     } catch (error) {
       setErro(error instanceof Error ? error.message : "Erro ao carregar loja.");
     } finally {
@@ -81,6 +89,20 @@ export default function AdminLojaPageClient({ lojaId }: Props) {
             logo: logoUrl,
             cor,
             whatsapp: whatsapp.trim() || null,
+            ...(isMarca
+              ? {
+                  pagamentoPadrao: {
+                    descontoPixPercentual: Math.min(
+                      100,
+                      Math.max(0, Number(descontoPixLoja) || 0),
+                    ),
+                    maxParcelasCartao: Math.min(
+                      12,
+                      Math.max(1, Number(maxParcelasLoja) || 12),
+                    ),
+                  },
+                }
+              : {}),
           },
         },
         false,
@@ -192,6 +214,54 @@ export default function AdminLojaPageClient({ lojaId }: Props) {
               {salvando ? "Salvando..." : "Salvar branding"}
             </button>
           </form>
+
+          {isMarca && (
+            <form
+              onSubmit={(e) => void handleSubmit(e)}
+              className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/40 p-5"
+            >
+              <h2 className="font-semibold text-zinc-900">
+                Pagamento padrão (loja)
+              </h2>
+              <p className="text-xs text-zinc-600">
+                Usado quando o produto não define desconto PIX ou parcelas.
+                No produto você pode sobrescrever.
+              </p>
+              <label className="block text-sm text-zinc-700">
+                Desconto PIX padrão (%)
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={descontoPixLoja}
+                  onChange={(e) => setDescontoPixLoja(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm text-zinc-700">
+                Parcelas máximas no cartão (padrão)
+                <select
+                  value={maxParcelasLoja}
+                  onChange={(e) => setMaxParcelasLoja(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>
+                      Até {n}x
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="submit"
+                disabled={salvando}
+                className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
+              >
+                {salvando ? "Salvando..." : "Salvar pagamento padrão"}
+              </button>
+            </form>
+          )}
 
           <div className="space-y-4">
             {loja && (

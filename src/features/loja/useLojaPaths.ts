@@ -7,6 +7,8 @@ export type LojaPaths = {
   home: string;
   produtosHash: string;
   personalizarHash: string;
+  /** Página do produto com seletor de modelos. */
+  produto: (produtoId: string) => string;
   personalizar: (modeloId: string, produtoId?: string) => string;
   carrinho: string;
   checkout: string;
@@ -33,6 +35,8 @@ export function useLojaPaths(): LojaPaths {
         home: "/",
         produtosHash: "/#produtos",
         personalizarHash: "/#personalizar",
+        produto: (produtoId: string) =>
+          `/produto?id=${encodeURIComponent(produtoId)}`,
         personalizar: (modeloId: string, produtoId?: string) => {
           const params = new URLSearchParams({ modelo: modeloId });
           if (produtoId) params.set("produto", produtoId);
@@ -51,6 +55,8 @@ export function useLojaPaths(): LojaPaths {
       home: base,
       produtosHash: `${base}#produtos`,
       personalizarHash: `${base}#personalizar`,
+      produto: (produtoId: string) =>
+        `${base}/produto?id=${encodeURIComponent(produtoId)}`,
       personalizar: (modeloId: string, produtoId?: string) =>
         buildPersonalizarUrl(base, modeloId, produtoId),
       carrinho: `${base}/carrinho`,

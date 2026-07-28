@@ -319,13 +319,33 @@ export const criarCheckoutMercadoPago = onCall(
 
     const payer = await montarPayerMercadoPago(request.auth.uid, payerEmail);
 
-    const paymentMethodsBase =
-      formaPagamento === "cartao" || !formaPagamento
-        ? {
-            installments: tetoParcelas,
-            default_installments: parcelasValidas,
-          }
-        : {};
+    const paymentMethods: NonNullable<MpPreferenceBody["payment_methods"]> = {
+      ...mapFormaParaMp(formaPagamento, parcelasValidas),
+    };
+    // Reforça teto + padrão = parcelas escolhidas no site (ex.: 4x).
+    // Na 1ª tela do Checkout Pro só aparece “Cartão”; as parcelas (1…N)
+    // aparecem depois de escolher o cartão, com N pré-selecionado.
+    if (formaPagamento === "cartao") {
+      paymentMethods.installments = parcelasValidas;
+      paymentMethods.default_installments = parcelasValidas;
+    } else if (
+      !formaPagamento &&
+      paymentMethods.installments == null
+    ) {
+      paymentMethods.installments = tetoParcelas;
+      paymentMethods.default_installments = parcelasValidas;
+    }
+
+    if (formaPagamento === "cartao" && parcelasValidas > 1 && items[0]) {
+      const baseDesc = items[0].description ?? items[0].title;
+      items[0] = {
+        ...items[0],
+        description: `${baseDesc} — cartão em até ${parcelasValidas}x`.slice(
+          0,
+          256,
+        ),
+      };
+    }
 
     const preferenceBody: MpPreferenceBody = {
       items,
@@ -337,13 +357,7 @@ export const criarCheckoutMercadoPago = onCall(
       // Só letras/números (espaço quebra em algumas contas).
       statement_descriptor: "ZENPRO",
       binary_mode: false,
-      payment_methods: {
-        installments: tetoParcelas,
-        ...(formaPagamento === "cartao"
-          ? { default_installments: parcelasValidas }
-          : paymentMethodsBase),
-        ...mapFormaParaMp(formaPagamento),
-      },
+      payment_methods: paymentMethods,
       metadata: {
         tipo,
         pedidoId,

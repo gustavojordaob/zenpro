@@ -236,6 +236,7 @@ export function CapinhaNovaPageClient() {
           aceitaBoleto: true,
           aceitaCartao: true,
           maxParcelasCartao: 12,
+          descontoPixPercentual: 0,
         },
       };
       const produtoId = await criarProdutoCentral(produtoPayload);

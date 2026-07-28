@@ -153,7 +153,13 @@ export function PersonalizarEditor({
 
   const aplicarLayoutPadrao = useCallback(async (lista: FotoSlot[]) => {
     if (lista.length === 0) return;
-    const { areaUtil } = getCaseLayout();
+    const { areaUtil } = getCaseLayout(
+      ART_CANVAS.previewWidth,
+      ART_CANVAS.width,
+      ART_CANVAS.height,
+      undefined,
+      { molduraAspect: contexto.visual.molduraAspect },
+    );
     const transforms = await calcularTransformsLayout(
       lista.map((f) => ({ id: f.id, url: urlParaExport(f) })),
       areaUtil,
@@ -166,7 +172,7 @@ export function PersonalizarEditor({
     for (const [id, t] of Object.entries(transforms)) {
       coverScalePorFoto.current[id] = t.scale;
     }
-  }, []);
+  }, [contexto.visual.molduraAspect]);
 
   const produtoId = produto?.produtoId;
   const personalizarPath = (modeloId: string) =>
@@ -425,6 +431,7 @@ export function PersonalizarEditor({
       alturaPx: ART_CANVAS.height,
       maskUrl: contexto.visual.maskUrl,
       cameraFrameUrl: contexto.visual.cameraFrameUrl,
+      molduraAspect: contexto.visual.molduraAspect,
       fotos: fotos.map(({ id, fotoUrl: url, transform: t }) => ({
         id,
         fotoUrl: url,
@@ -478,7 +485,13 @@ export function PersonalizarEditor({
   }
 
   function adicionarTexto() {
-    const { areaUtil } = getCaseLayout();
+    const { areaUtil } = getCaseLayout(
+      ART_CANVAS.previewWidth,
+      ART_CANVAS.width,
+      ART_CANVAS.height,
+      undefined,
+      { molduraAspect: contexto.visual.molduraAspect },
+    );
     const novo = criarTextoPadrao(
       areaUtil.x,
       areaUtil.y,

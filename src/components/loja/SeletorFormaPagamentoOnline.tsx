@@ -89,6 +89,11 @@ export function SeletorFormaPagamentoOnline({
           <p className="text-xs text-zinc-500">
             * A partir de 2x: juros calculados no Mercado Pago.
           </p>
+          <p className="text-xs text-amber-900">
+            No Mercado Pago a 1ª tela mostra só “Cartão”. Depois de escolher o
+            cartão, as parcelas vão até {Math.min(parcelas, max)}x (já
+            pré-selecionado).
+          </p>
           <p className="text-xs text-amber-800">
             Se o cartão não for aceito, escolha PIX — costuma ser o mais rápido.
           </p>

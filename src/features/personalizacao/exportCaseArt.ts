@@ -2,6 +2,7 @@ import Konva from "konva";
 import { getFonteFamilia } from "./caseTextFonts";
 import { getCaseLayout } from "./caseGeometry";
 import { ART_CANVAS, EXPORT_ART_WIDTH } from "./caseVisualConstants";
+import { hardenBodyMaskAlpha } from "./cameraMockClean";
 import { extrairCorPredominante } from "./extrairCorPredominante";
 import { loadImageForCanvasExport } from "./loadImageForCanvasExport";
 import { IPHONE_ASSETS } from "./moldura";
@@ -91,6 +92,13 @@ type ExportOpts = {
   maskUrl?: string;
   /** PNG da câmera H5 — fura a arte para a foto não cobrir o módulo. */
   cameraFrameUrl?: string;
+  /**
+   * Após o punch, redesenha a câmera H5 por cima (lentes reais).
+   * Sem isso o buraco fica preto/transparente no download.
+   */
+  overlayCamera?: boolean;
+  /** Proporção W/H da silhueta H5 (iPhone etc.). */
+  molduraAspect?: number;
   corFundo?: string;
 };
 
@@ -173,6 +181,8 @@ export async function exportCaseArtDataUrl(
     exportWidth,
     ART_CANVAS.width,
     ART_CANVAS.height,
+    undefined,
+    { molduraAspect: opts.molduraAspect },
   );
   const { molduraX, molduraY, molduraW, molduraH, stageWidth, stageHeight, areaUtil } =
     layout;
@@ -191,6 +201,8 @@ export async function exportCaseArtDataUrl(
   const maskImage = precisaMascara
     ? await loadMaskImage(opts.maskUrl)
     : null;
+  const maskHard =
+    maskImage != null ? hardenBodyMaskAlpha(maskImage, 140) : null;
 
   const container = document.createElement("div");
   const stage = new Konva.Stage({
@@ -245,9 +257,13 @@ export async function exportCaseArtDataUrl(
     }
   }
 
-  // Molde H5: remove pixels da arte sob o módulo da câmera
-  const cameraFrameUrl = opts.cameraFrameUrl?.trim();
-  if (incluirFoto && cameraFrameUrl) {
+  // Punch da câmera + overlay H5 (mesmo pipeline do CasePreview).
+  // Arte de produção (máscara) e mock usam a silhueta do body mask.
+  const cameraFrameUrl = opts.cameraFrameUrl?.trim() || undefined;
+  const aplicarCamera =
+    Boolean(incluirFoto && cameraFrameUrl) &&
+    (clip === "mascara" || opts.overlayCamera === true);
+  if (aplicarCamera && cameraFrameUrl) {
     try {
       const cameraImg = await loadImageForCanvasExport(cameraFrameUrl);
       layer.add(
@@ -260,16 +276,28 @@ export async function exportCaseArtDataUrl(
           globalCompositeOperation: "destination-out",
         }),
       );
+      // Redesenha lentes/módulo — sem isso o download fica com bloco preto.
+      if (opts.overlayCamera !== false) {
+        layer.add(
+          new Konva.Image({
+            image: cameraImg,
+            x: molduraX,
+            y: molduraY,
+            width: molduraW,
+            height: molduraH,
+          }),
+        );
+      }
     } catch {
       // segue sem punch se o asset falhar
     }
   }
 
   if (incluirFoto) {
-    if (clip === "mascara" && maskImage) {
+    if (clip === "mascara" && (maskHard || maskImage)) {
       layer.add(
         new Konva.Image({
-          image: maskImage,
+          image: maskHard ?? maskImage!,
           x: molduraX,
           y: molduraY,
           width: molduraW,
@@ -316,9 +344,11 @@ export type ArtGeo = {
   alturaPx?: number;
   maskUrl?: string;
   cameraFrameUrl?: string;
+  molduraAspect?: number;
   corFundo?: string;
 };
 
+/** Arte H5 para o dono: silhueta body-mask + câmera com overlay (como o cliente vê). */
 export async function exportCaseArtBlob(
   fotoUrlOrFotos: string | FotoExportInput[],
   transform: Transform,
@@ -328,23 +358,27 @@ export async function exportCaseArtBlob(
 ): Promise<Blob> {
   const dataUrl = await exportCaseArtDataUrl(fotoUrlOrFotos, transform, textos, {
     exportWidth,
-    clip: "retangulo",
+    clip: "mascara",
+    overlayCamera: true,
     ...geo,
   });
   return dataUrlParaBlob(dataUrl);
 }
 
+/** Camada só foto — retângulo full-bleed (sem punch) para composição de impressão. */
 export async function exportFotoArtBlob(
   fotoUrlOrFotos: string | FotoExportInput[],
   transform: Transform,
   exportWidth = EXPORT_ART_WIDTH,
   geo: ArtGeo = {},
 ): Promise<Blob> {
+  const { cameraFrameUrl: _c, ...geoSemCamera } = geo;
   const dataUrl = await exportCaseArtDataUrl(fotoUrlOrFotos, transform, [], {
     exportWidth,
     clip: "retangulo",
     incluirTexto: false,
-    ...geo,
+    overlayCamera: false,
+    ...geoSemCamera,
   });
   return dataUrlParaBlob(dataUrl);
 }

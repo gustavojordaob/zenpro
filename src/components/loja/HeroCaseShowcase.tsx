@@ -39,6 +39,7 @@ export function HeroCaseShowcase() {
           fotoUrl={DEMO_FOTO}
           transform={DEMO_TRANSFORM}
           textos={DEMO_TEXTOS}
+          modeloId="iphone-17-pro-max"
           previewWidth={220}
         />
         <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-zinc-900 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white opacity-0 transition group-hover:opacity-100">

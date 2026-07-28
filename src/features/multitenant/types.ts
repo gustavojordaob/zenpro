@@ -60,6 +60,15 @@ export type LojaConfig = {
       };
     };
   } | null;
+  /**
+   * Padrão da loja (admin) quando o produto não define pagamento.
+   * Produto pode sobrescrever formas, parcelas e desconto PIX.
+   */
+  pagamentoPadrao?: {
+    maxParcelasCartao?: number;
+    /** % desconto PIX padrão (0–100). */
+    descontoPixPercentual?: number;
+  } | null;
 };
 
 export type LojaFirestore = {
@@ -121,13 +130,15 @@ export type ProdutoCentralFirestore = {
   comprimentoCm?: number | null;
   /**
    * Formas de pagamento online permitidas neste produto.
-   * Default: PIX + boleto + cartão até 12x.
+   * Campos omitidos / null → usa padrão da loja (admin) ou default global.
    */
   pagamento?: {
     aceitaPix?: boolean;
     aceitaBoleto?: boolean;
     aceitaCartao?: boolean;
     maxParcelasCartao?: number;
+    /** % de desconto no PIX (0–100). null = padrão da loja. */
+    descontoPixPercentual?: number | null;
   } | null;
   categoria: string;
   destaque?: string | null;

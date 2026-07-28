@@ -52,6 +52,12 @@ export function produtoCentralParaDestaque(
     ? precoRevendedorAPartirDe(data)
     : data.precoBaseCentavos;
 
+  const modelosCompativeis = data.modelosCompativeis?.length
+    ? data.modelosCompativeis
+    : data.modeloId
+      ? [data.modeloId]
+      : [];
+
   return {
     id: opts?.modeloIdOverride ? `${id}__${modeloId}` : id,
     produtoBaseId: id,
@@ -60,6 +66,7 @@ export function produtoCentralParaDestaque(
       : data.nome,
     descricao: data.descricao,
     modeloId,
+    modelosCompativeis,
     marca,
     precoCentavos,
     tipo: modoVenda,
@@ -67,6 +74,7 @@ export function produtoCentralParaDestaque(
     material: data.material ?? undefined,
     destaque: data.destaque ?? undefined,
     imagemUrl: data.imagens[0],
+    imagens: data.imagens?.length ? data.imagens : undefined,
     controlaEstoque: controla,
     disponivelVenda: disponivel,
     esgotado: controla && disponivel <= 0,
@@ -149,21 +157,19 @@ export async function listarProdutosPersonalizaveisAtivos(opts?: {
 
     if (listaModelos.length === 0) continue;
 
-    for (const modeloId of listaModelos) {
-      const modeloInfo = modelosMap[modeloId];
-      const marcaId = data.marcaId ?? modeloInfo?.marcaId ?? null;
-      const marcaNome =
-        (marcaId ? marcasMap[marcaId] : undefined) || data.marca || "";
+    // Um card por produto — o seletor de iPhone fica na página do produto.
+    const primeiroModelo = listaModelos[0];
+    const modeloInfo = modelosMap[primeiroModelo];
+    const marcaId = data.marcaId ?? modeloInfo?.marcaId ?? null;
+    const marcaNome =
+      (marcaId ? marcasMap[marcaId] : undefined) || data.marca || "";
 
-      itens.push(
-        produtoCentralParaDestaque(docSnap.id, data, {
-          modeloIdOverride: modeloId,
-          marcaNome,
-          modeloNome: modeloInfo?.nome,
-          modoB2b: opts?.modoB2b,
-        }),
-      );
-    }
+    itens.push(
+      produtoCentralParaDestaque(docSnap.id, data, {
+        marcaNome,
+        modoB2b: opts?.modoB2b,
+      }),
+    );
   }
 
   return itens.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));

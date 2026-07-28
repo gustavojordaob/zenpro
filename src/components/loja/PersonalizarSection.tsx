@@ -136,7 +136,12 @@ export function PersonalizarSection() {
           (marca != null && p.marca === marca.nome);
         if (!marcaOk) return false;
       }
-      if (filtroModelo !== "todos" && p.modeloId !== filtroModelo) return false;
+      if (filtroModelo !== "todos") {
+        const compativeis = p.modelosCompativeis?.length
+          ? p.modelosCompativeis
+          : [p.modeloId];
+        if (!compativeis.includes(filtroModelo)) return false;
+      }
       if (filtroMaterial !== "todos" && (p.material ?? "") !== filtroMaterial) {
         return false;
       }
@@ -275,7 +280,7 @@ export function PersonalizarSection() {
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
               {paginaItens.map((produto) => (
                 <li
-                  key={`${produto.produtoBaseId ?? produto.id}-${produto.modeloId}`}
+                  key={produto.produtoBaseId ?? produto.id}
                   className="h-full"
                 >
                   <ProductCard produto={produto} />

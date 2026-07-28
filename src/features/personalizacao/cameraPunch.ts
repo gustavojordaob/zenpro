@@ -14,7 +14,7 @@ export type CameraPunchLayout = {
 };
 
 export function cameraPunchProps(
-  cameraImage: HTMLImageElement,
+  cameraImage: HTMLImageElement | HTMLCanvasElement,
   layout: CameraPunchLayout,
 ) {
   return {

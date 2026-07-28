@@ -130,27 +130,21 @@ export type MpPaymentResponse = {
 
 export function mapFormaParaMp(
   forma?: string,
-): Pick<
-  NonNullable<MpPreferenceBody["payment_methods"]>,
-  "excluded_payment_types"
-> {
-  if (!forma || forma === "cartao") {
-    if (forma === "cartao") {
-      return {
-        excluded_payment_types: [
-          { id: "ticket" },
-          { id: "bank_transfer" },
-        ],
-      };
-    }
-    return {};
-  }
+  parcelas?: number,
+): NonNullable<MpPreferenceBody["payment_methods"]> {
   if (forma === "pix") {
-    // PIX = bank_transfer. Excluir cartão no Checkout Pro esconde o PIX
-    // em várias contas BR e deixa só "conta MP" / pré-pago.
-    // Mantém cartão + PIX; remove só boleto.
+    // PIX = bank_transfer / método pix. NÃO excluir bank_transfer (some o PIX).
+    // NÃO excluir account_money — o MP rejeita com "account_money cannot be excluded".
     return {
-      excluded_payment_types: [{ id: "ticket" }],
+      excluded_payment_types: [
+        { id: "credit_card" },
+        { id: "debit_card" },
+        { id: "ticket" },
+        { id: "atm" },
+        { id: "prepaid_card" },
+      ],
+      default_payment_method_id: "pix",
+      installments: 1,
     };
   }
   if (forma === "boleto") {
@@ -159,7 +153,28 @@ export function mapFormaParaMp(
         { id: "credit_card" },
         { id: "debit_card" },
         { id: "bank_transfer" },
+        { id: "atm" },
+        { id: "prepaid_card" },
       ],
+      installments: 1,
+    };
+  }
+  if (forma === "cartao") {
+    const n = Math.min(
+      PARCELAMENTO_MAXIMO,
+      Math.max(1, Number(parcelas ?? 1) || 1),
+    );
+    // Só crédito; teto = parcelas escolhidas no site (ex.: 2x → até 2x no MP).
+    return {
+      excluded_payment_types: [
+        { id: "ticket" },
+        { id: "bank_transfer" },
+        { id: "atm" },
+        { id: "debit_card" },
+        { id: "prepaid_card" },
+      ],
+      installments: n,
+      default_installments: n,
     };
   }
   return {};

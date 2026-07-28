@@ -49,6 +49,8 @@ export type Personalizacao = {
   maskUrl?: string;
   /** Câmera H5 RockB2B — punch + overlay (foto não cobre o módulo). */
   cameraFrameUrl?: string;
+  /** Proporção W/H da silhueta H5 (preview/export). */
+  molduraAspect?: number;
   /** Até 4 fotos — quando presente, substitui fotoUrl/transform únicos. */
   fotos?: FotoPersonalizacao[];
   fotoUrl: string;

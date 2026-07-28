@@ -1,6 +1,8 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { CasePreview } from "@/features/personalizacao/CasePreviewLazy";
+import { useCaseVisual } from "./useCaseVisual";
 import { MOLDURA_VISUAL } from "./caseVisualConstants";
 import type { TextoCapinha, Transform } from "./types";
 
@@ -58,9 +60,24 @@ function BotaoLateral({
   );
 }
 
+function rockMaskStyle(maskUrl: string | undefined): CSSProperties {
+  if (!maskUrl) return {};
+  return {
+    WebkitMaskImage: `url(${maskUrl})`,
+    maskImage: `url(${maskUrl})`,
+    WebkitMaskSize: "100% 100%",
+    maskSize: "100% 100%",
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
+  };
+}
+
 /**
- * Protótipo local de fake 3D (capas padrão; exclui fold/flip).
- * Print full-bleed + casca TPU com volume, luz e botões.
+ * Fake 3D — molde H5.
+ * Com body-mask: stack FLAT (sem preserve-3d) + máscara no wrapper rotacionado
+ * — evita foto “fugindo” na direita. Moldura TPU bem visível (lip opaco).
  */
 export function CaseFake3dPreview({
   fotoUrl,
@@ -69,11 +86,25 @@ export function CaseFake3dPreview({
   modeloId,
   previewWidth = 260,
 }: Props) {
+  const visual = useCaseVisual(modeloId);
+  const aspect =
+    visual.molduraAspect && visual.molduraAspect > 0.2
+      ? visual.molduraAspect
+      : MOLDURA_VISUAL.aspect;
+  const radiusFrac = visual.caseFrame?.radius ?? 0.118;
+  const bodyMaskUrl = visual.bodyMaskUrl?.trim() || undefined;
+  const comMoldeH5 = Boolean(bodyMaskUrl);
+  const botoesCss = !comMoldeH5;
+
   const caseW = previewWidth;
-  const caseH = Math.round(caseW / MOLDURA_VISUAL.aspect);
-  const shellPad = Math.max(3.5, Math.round(caseW * 0.014));
-  const radius = Math.round(caseW * 0.118);
-  const printRadius = Math.max(7, radius - shellPad);
+  const caseH = Math.round(caseW / aspect);
+  /** Lip TPU visível — a “moldura” entre silhueta e print. */
+  const shellPad = comMoldeH5
+    ? Math.max(7, Math.round(caseW * 0.028))
+    : Math.max(3.5, Math.round(caseW * 0.014));
+  const radius = Math.round(caseW * radiusFrac);
+  const printRadius = Math.max(6, radius - shellPad);
+  const maskCss = rockMaskStyle(bodyMaskUrl);
 
   return (
     <div
@@ -85,7 +116,6 @@ export function CaseFake3dPreview({
         perspectiveOrigin: "48% 38%",
       }}
     >
-      {/* Sombra de contato no chão */}
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-[100%]"
@@ -100,91 +130,111 @@ export function CaseFake3dPreview({
         }}
       />
 
+      {/*
+        H5: máscara + overflow no MESMO nó da rotação, transform-style flat.
+        preserve-3d faz o canvas do Konva escapar da mask na borda direita.
+      */}
       <div
-        className="relative"
+        className="relative overflow-hidden"
         style={{
           width: caseW + shellPad * 2,
           height: caseH + shellPad * 2,
-          transformStyle: "preserve-3d",
-          transform: "rotateY(-20deg) rotateX(8deg) rotateZ(-1.2deg)",
+          transformStyle: comMoldeH5 ? "flat" : "preserve-3d",
+          transform: comMoldeH5
+            ? "rotateY(-16deg) rotateX(6deg)"
+            : "rotateY(-18deg) rotateX(7deg) rotateZ(-1deg)",
+          ...(comMoldeH5 ? maskCss : {}),
+          borderRadius: comMoldeH5 ? 0 : undefined,
         }}
       >
-        {/* Face traseira (espessura) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            borderRadius: radius,
-            transform: "translateZ(-9px) translateX(1px)",
-            background:
-              "linear-gradient(160deg, #d8d8de 0%, #b4b4bc 55%, #9c9ca4 100%)",
-            boxShadow: "0 0 0 1px rgba(0,0,0,0.08)",
-          }}
-        />
+        {!comMoldeH5 && (
+          <>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{
+                borderRadius: radius,
+                transform: "translateZ(-9px) translateX(1px)",
+                background:
+                  "linear-gradient(160deg, #d8d8de 0%, #b4b4bc 55%, #9c9ca4 100%)",
+                boxShadow: "0 0 0 1px rgba(0,0,0,0.08)",
+              }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute"
+              style={{
+                top: 10,
+                bottom: 10,
+                right: 0,
+                width: 10,
+                borderRadius: `0 ${radius}px ${radius}px 0`,
+                transform: "translateZ(-5px) rotateY(90deg)",
+                transformOrigin: "right center",
+                background:
+                  "linear-gradient(180deg, rgba(250,250,252,0.85) 0%, rgba(210,210,218,0.9) 40%, rgba(150,150,160,0.95) 100%)",
+                boxShadow: "inset 1px 0 0 rgba(255,255,255,0.5)",
+              }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute"
+              style={{
+                left: 12,
+                right: 12,
+                bottom: 0,
+                height: 8,
+                borderRadius: `0 0 ${radius}px ${radius}px`,
+                transform: "translateZ(-4px) rotateX(-88deg)",
+                transformOrigin: "center bottom",
+                background:
+                  "linear-gradient(90deg, #c8c8d0 0%, #e4e4ea 50%, #b0b0b8 100%)",
+              }}
+            />
+          </>
+        )}
 
-        {/* Lado direito (espessura) */}
+        {/* Casca TPU — moldura opaca ao redor do print */}
         <div
-          aria-hidden
-          className="pointer-events-none absolute"
+          className="relative h-full w-full overflow-hidden"
           style={{
-            top: 10,
-            bottom: 10,
-            right: 0,
-            width: 10,
-            borderRadius: `0 ${radius}px ${radius}px 0`,
-            transform: "translateZ(-5px) rotateY(90deg)",
-            transformOrigin: "right center",
-            background:
-              "linear-gradient(180deg, rgba(250,250,252,0.85) 0%, rgba(210,210,218,0.9) 40%, rgba(150,150,160,0.95) 100%)",
-            boxShadow: "inset 1px 0 0 rgba(255,255,255,0.5)",
-          }}
-        />
-
-        {/* Base inferior (espessura) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute"
-          style={{
-            left: 12,
-            right: 12,
-            bottom: 0,
-            height: 8,
-            borderRadius: `0 0 ${radius}px ${radius}px`,
-            transform: "translateZ(-4px) rotateX(-88deg)",
-            transformOrigin: "center bottom",
-            background:
-              "linear-gradient(90deg, #c8c8d0 0%, #e4e4ea 50%, #b0b0b8 100%)",
-          }}
-        />
-
-        {/* Casca TPU frontal */}
-        <div
-          className="relative overflow-hidden"
-          style={{
-            width: "100%",
-            height: "100%",
-            borderRadius: radius,
+            borderRadius: comMoldeH5 ? 0 : radius,
             padding: shellPad,
-            background:
-              "linear-gradient(150deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 32%, rgba(230,230,236,0.28) 70%, rgba(200,200,210,0.35) 100%)",
-            boxShadow: `
-              0 22px 44px rgba(0,0,0,0.28),
-              0 2px 0 rgba(255,255,255,0.75) inset,
-              0 -2px 6px rgba(0,0,0,0.08) inset,
-              inset 0 0 0 1.25px rgba(255,255,255,0.55),
-              inset 0 0 18px rgba(255,255,255,0.12)
-            `,
-            transform: "translateZ(0.5px)",
+            background: comMoldeH5
+              ? `
+                linear-gradient(145deg,
+                  #f2f2f6 0%,
+                  #d8d8e0 28%,
+                  #c4c4cc 55%,
+                  #b0b0ba 78%,
+                  #a0a0aa 100%)
+              `
+              : "linear-gradient(150deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 32%, rgba(230,230,236,0.28) 70%, rgba(200,200,210,0.35) 100%)",
+            boxShadow: comMoldeH5
+              ? `
+                0 18px 36px rgba(0,0,0,0.28),
+                inset 0 1px 0 rgba(255,255,255,0.85),
+                inset 0 -2px 4px rgba(0,0,0,0.12),
+                inset 0 0 0 1.5px rgba(255,255,255,0.55),
+                inset 0 0 0 ${shellPad}px rgba(255,255,255,0.08)
+              `
+              : `
+                0 22px 44px rgba(0,0,0,0.28),
+                0 2px 0 rgba(255,255,255,0.75) inset,
+                0 -2px 6px rgba(0,0,0,0.08) inset,
+                inset 0 0 0 1.25px rgba(255,255,255,0.55)
+              `,
+            ...(!comMoldeH5 ? maskCss : {}),
           }}
         >
-          {/* Print */}
+          {/* Print — clip Konva na silhueta H5; sem scale extra */}
           <div
             className="relative overflow-hidden"
             style={{
-              borderRadius: printRadius,
+              borderRadius: comMoldeH5 ? Math.max(4, printRadius * 0.85) : printRadius,
               boxShadow: `
-                0 0 0 0.6px rgba(0,0,0,0.18),
-                inset 0 0 10px rgba(0,0,0,0.06)
+                0 0 0 1px rgba(0,0,0,0.22),
+                inset 0 0 10px rgba(0,0,0,0.08)
               `,
             }}
           >
@@ -196,60 +246,79 @@ export function CaseFake3dPreview({
               previewWidth={caseW}
               embedded
               hideBorder
+              silhouetteClip
             />
 
-            {/* AO suave nos cantos do print */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0"
               style={{
-                borderRadius: printRadius,
-                boxShadow: "inset 0 0 14px rgba(0,0,0,0.12)",
+                borderRadius: comMoldeH5
+                  ? Math.max(4, printRadius * 0.85)
+                  : printRadius,
+                boxShadow: "inset 0 0 14px rgba(0,0,0,0.14)",
               }}
             />
           </div>
 
-          {/* Lip interno (cristal) */}
+          {/* Anel interno da moldura (cristal / lip) */}
           <div
             aria-hidden
             className="pointer-events-none absolute"
             style={{
-              inset: shellPad - 0.5,
-              borderRadius: printRadius + 0.5,
-              boxShadow: `
-                inset 0 0 0 1px rgba(255,255,255,0.35),
-                inset 0 1px 2px rgba(255,255,255,0.25)
-              `,
+              inset: Math.max(0, shellPad - 1),
+              borderRadius: comMoldeH5
+                ? Math.max(5, printRadius * 0.9)
+                : printRadius + 0.5,
+              boxShadow: comMoldeH5
+                ? `
+                  inset 0 0 0 1.5px rgba(255,255,255,0.65),
+                  inset 0 0 0 3px rgba(0,0,0,0.06),
+                  inset 0 2px 3px rgba(255,255,255,0.35)
+                `
+                : `
+                  inset 0 0 0 1px rgba(255,255,255,0.35),
+                  inset 0 1px 2px rgba(255,255,255,0.25)
+                `,
             }}
           />
 
-          {/* Specular topo-esquerda */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
             style={{
-              borderRadius: radius,
-              background:
-                "linear-gradient(118deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 14%, transparent 32%)",
-            }}
-          />
-
-          {/* Specular fino na borda direita */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute top-6 bottom-6 right-0 w-[2px]"
-            style={{
-              background:
-                "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.55) 30%, rgba(255,255,255,0.2) 70%, transparent 100%)",
-              opacity: 0.7,
+              borderRadius: comMoldeH5 ? 0 : radius,
+              background: comMoldeH5
+                ? "linear-gradient(125deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 16%, transparent 34%)"
+                : "linear-gradient(118deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 14%, transparent 32%)",
             }}
           />
         </div>
 
-        <BotaoLateral side="left" top="20%" height={Math.round(caseH * 0.035)} />
-        <BotaoLateral side="left" top="27%" height={Math.round(caseH * 0.07)} />
-        <BotaoLateral side="left" top="37%" height={Math.round(caseH * 0.07)} />
-        <BotaoLateral side="right" top="30%" height={Math.round(caseH * 0.12)} />
+        {botoesCss && (
+          <>
+            <BotaoLateral
+              side="left"
+              top="20%"
+              height={Math.round(caseH * 0.035)}
+            />
+            <BotaoLateral
+              side="left"
+              top="27%"
+              height={Math.round(caseH * 0.07)}
+            />
+            <BotaoLateral
+              side="left"
+              top="37%"
+              height={Math.round(caseH * 0.07)}
+            />
+            <BotaoLateral
+              side="right"
+              top="30%"
+              height={Math.round(caseH * 0.12)}
+            />
+          </>
+        )}
       </div>
     </div>
   );

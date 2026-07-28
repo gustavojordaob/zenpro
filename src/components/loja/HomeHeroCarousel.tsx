@@ -302,6 +302,8 @@ export function HomeHeroCarousel({
     >
       {slides.map((slide, i) => {
         const ativo = i === indice;
+        // Só monta o slide ativo (+ vizinhos) — evita Konva/vídeo de todos de uma vez.
+        const montar = ativo || i === indice - 1 || i === indice + 1;
         return (
           <div
             key={slide.id}
@@ -312,7 +314,7 @@ export function HomeHeroCarousel({
             }`}
             aria-hidden={!ativo}
           >
-            {renderSlide(slide, ativo, compact)}
+            {montar ? renderSlide(slide, ativo, compact) : null}
           </div>
         );
       })}

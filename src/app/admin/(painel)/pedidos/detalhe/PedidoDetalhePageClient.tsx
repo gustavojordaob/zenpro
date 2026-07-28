@@ -273,7 +273,19 @@ export function PedidoDetalhePageClient({ lojaId, pedidoId }: Props) {
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-zinc-900">Itens</h2>
           {pedido.itens.map((item, index) => (
-            <PedidoItemPreview key={`${item.produtoId}-${index}`} item={item} />
+            <PedidoItemPreview
+              key={`${item.produtoId}-${index}`}
+              item={item}
+              lojaId={lojaId}
+              pedidoId={pedidoId}
+              itemIndex={index}
+              userIdCliente={pedido.clienteUid}
+              onArtesAtualizadas={() => {
+                void obterPedidoAdmin(lojaId, pedidoId).then((p) => {
+                  if (p) setPedido(p);
+                });
+              }}
+            />
           ))}
         </section>
 

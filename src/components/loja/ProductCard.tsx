@@ -15,13 +15,12 @@ type Props = {
 
 export function ProductCard({ produto }: Props) {
   const paths = useLojaPaths();
+  const produtoId = produto.produtoBaseId ?? produto.id;
+  const qtdModelos = produto.modelosCompativeis?.length ?? 1;
 
   return (
     <Link
-      href={paths.personalizar(
-        produto.modeloId,
-        produto.produtoBaseId ?? produto.id,
-      )}
+      href={paths.produto(produtoId)}
       className="group flex h-full min-h-[340px] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md"
     >
       <div className="relative aspect-square w-full shrink-0 bg-white">
@@ -54,11 +53,16 @@ export function ProductCard({ produto }: Props) {
             {rotuloMaterial(produto.material)}
           </p>
         )}
+        {qtdModelos > 1 && (
+          <p className="text-[11px] text-zinc-500">
+            {qtdModelos} modelos compatíveis
+          </p>
+        )}
         <p className="mt-auto pt-2 text-base font-semibold text-zinc-900">
           {formatarPreco(produto.precoCentavos)}
         </p>
         <span className="mt-2 text-sm font-semibold text-gold-dark group-hover:text-gold">
-          Personalizar →
+          {qtdModelos > 1 ? "Escolher modelo →" : "Ver produto →"}
         </span>
       </div>
     </Link>

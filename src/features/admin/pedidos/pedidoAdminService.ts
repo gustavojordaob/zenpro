@@ -61,6 +61,10 @@ function mapItem(data: DocumentData): ItemPedidoLojaFirestore {
     textos: data.textos ?? (config?.textos as ItemPedidoLojaFirestore["textos"]) ?? null,
     titulo: (data.titulo as string | null | undefined) ?? null,
     descricao: (data.descricao as string | null | undefined) ?? null,
+    arteProducaoUrl:
+      (data.arteProducaoUrl as string | null | undefined) ?? null,
+    arteFotoUrl: (data.arteFotoUrl as string | null | undefined) ?? null,
+    arteTextoUrl: (data.arteTextoUrl as string | null | undefined) ?? null,
     imagemUrl: data.imagemUrl ? String(data.imagemUrl) : undefined,
   };
 }

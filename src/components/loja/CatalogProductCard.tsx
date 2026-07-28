@@ -1,47 +1,27 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import Link from "next/link";
 import { ProdutoImagem } from "@/components/loja/ProdutoImagem";
-import { QuantityStepper } from "@/components/loja/QuantityStepper";
-import { useCarrinho } from "@/features/loja/CarrinhoProvider";
-import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
-import { useLojaPaths } from "@/features/loja/useLojaPaths";
 import {
   formatarPreco,
   type ProdutoDestaque,
 } from "@/features/loja/produtosMock";
+import { useLojaPaths } from "@/features/loja/useLojaPaths";
 
 type Props = {
   produto: ProdutoDestaque;
 };
 
 export function CatalogProductCard({ produto }: Props) {
-  const { adicionarPronta } = useCarrinho();
-  const loja = useLojaEfetiva();
-  const router = useRouter();
   const paths = useLojaPaths();
-  const [adicionado, setAdicionado] = useState(false);
-  const [qty, setQty] = useState(1);
-  const isB2b = Boolean(loja?.isB2b);
-  const maxEstoque =
-    produto.controlaEstoque && typeof produto.disponivelVenda === "number"
-      ? Math.max(1, produto.disponivelVenda)
-      : undefined;
-
-  function handleComprar() {
-    if (produto.esgotado) return;
-    adicionarPronta({
-      ...produto,
-      quantidadeInicial: Math.max(1, qty),
-      precoCentavos: produto.precoCentavos,
-    });
-    setAdicionado(true);
-    setTimeout(() => router.push(paths.carrinho), 400);
-  }
+  const produtoId = produto.produtoBaseId ?? produto.id;
+  const qtdModelos = produto.modelosCompativeis?.length ?? 1;
 
   return (
-    <article className="flex h-full min-h-[340px] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md">
+    <Link
+      href={paths.produto(produtoId)}
+      className="group flex h-full min-h-[340px] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md"
+    >
       <div className="relative aspect-square w-full shrink-0 bg-white">
         {produto.imagemUrl ? (
           <ProdutoImagem src={produto.imagemUrl} alt={produto.nome} />
@@ -64,46 +44,23 @@ export function CatalogProductCard({ produto }: Props) {
 
       <div className="flex min-h-[132px] flex-1 flex-col gap-1 p-4">
         <p className="truncate text-xs font-medium text-zinc-500">
-          {produto.marca}
+          {produto.marca || "Capinha"}
         </p>
-        <h3 className="line-clamp-2 min-h-[2.5rem] font-semibold leading-tight text-zinc-900">
+        <h3 className="line-clamp-2 min-h-[2.5rem] font-semibold leading-tight text-zinc-900 group-hover:text-zinc-700">
           {produto.nome}
         </h3>
+        {qtdModelos > 1 && (
+          <p className="text-[11px] text-zinc-500">
+            {qtdModelos} modelos compatíveis
+          </p>
+        )}
         <p className="mt-auto pt-2 text-base font-semibold text-zinc-900">
-          {isB2b ? "A partir de " : ""}
           {formatarPreco(produto.precoCentavos)}
         </p>
-        {isB2b && produto.faixasPrecoRevendedor && produto.faixasPrecoRevendedor.length > 1 && (
-          <p className="text-[11px] text-teal-800">
-            {produto.faixasPrecoRevendedor.length} faixas de quantidade
-          </p>
-        )}
-        {produto.controlaEstoque && !produto.esgotado && (
-          <p className="text-xs text-zinc-500">
-            {produto.disponivelVenda ?? 0} em estoque
-          </p>
-        )}
-        {!produto.esgotado && (
-          <QuantityStepper
-            className="mt-1"
-            value={qty}
-            max={maxEstoque}
-            onChange={setQty}
-          />
-        )}
-        <button
-          type="button"
-          onClick={handleComprar}
-          disabled={adicionado || produto.esgotado}
-          className="mt-2 w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
-        >
-          {produto.esgotado
-            ? "Esgotado"
-            : adicionado
-              ? "Indo ao carrinho…"
-              : "Comprar"}
-        </button>
+        <span className="mt-2 text-sm font-semibold text-gold-dark group-hover:text-gold">
+          {qtdModelos > 1 ? "Escolher modelo →" : "Ver produto →"}
+        </span>
       </div>
-    </article>
+    </Link>
   );
 }

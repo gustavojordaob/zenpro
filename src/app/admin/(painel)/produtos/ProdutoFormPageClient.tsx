@@ -156,7 +156,29 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
         setAlturaCm(String(produto.alturaCm ?? 18));
         setLarguraCm(String(produto.larguraCm ?? 12));
         setComprimentoCm(String(produto.comprimentoCm ?? 4));
-        setPagamento(normalizarPagamentoProduto(produto.pagamento));
+        setPagamento(() => {
+          const raw = produto.pagamento as
+            | {
+                maxParcelasCartao?: number | null;
+                descontoPixPercentual?: number | null;
+              }
+            | null
+            | undefined;
+          const n = normalizarPagamentoProduto(produto.pagamento);
+          return {
+            ...n,
+            // 0 no form = “usar padrão da loja” (null no Firestore)
+            maxParcelasCartao:
+              raw?.maxParcelasCartao != null && Number(raw.maxParcelasCartao) > 0
+                ? n.maxParcelasCartao
+                : 0,
+            descontoPixPercentual:
+              raw?.descontoPixPercentual != null &&
+              Number(raw.descontoPixPercentual) > 0
+                ? n.descontoPixPercentual
+                : 0,
+          };
+        });
         setIdRascunho(produto.id);
       } catch (error) {
         setErro(
@@ -662,6 +684,31 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
               Cartão de crédito
             </label>
           </div>
+          {pagamento.aceitaPix && (
+            <label className="block max-w-xs text-sm text-zinc-700">
+              Desconto no PIX (%)
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={pagamento.descontoPixPercentual}
+                onChange={(e) =>
+                  setPagamento((p) => ({
+                    ...p,
+                    descontoPixPercentual: Math.min(
+                      100,
+                      Math.max(0, Number(e.target.value) || 0),
+                    ),
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+              />
+              <span className="mt-1 block text-xs text-zinc-500">
+                Deixe 0 para usar o desconto padrão da loja (Admin → Loja).
+              </span>
+            </label>
+          )}
           {pagamento.aceitaCartao && (
             <label className="block max-w-xs text-sm text-zinc-700">
               Parcelas máximas no cartão
@@ -671,13 +718,14 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
                   setPagamento((p) => ({
                     ...p,
                     maxParcelasCartao: Math.max(
-                      1,
-                      Math.min(PARCELAMENTO_MAXIMO, Number(e.target.value) || 12),
+                      0,
+                      Math.min(PARCELAMENTO_MAXIMO, Number(e.target.value) || 0),
                     ),
                   }))
                 }
                 className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
               >
+                <option value={0}>Padrão da loja (Admin → Loja)</option>
                 {Array.from({ length: PARCELAMENTO_MAXIMO }, (_, i) => i + 1).map(
                   (n) => (
                     <option key={n} value={n}>
@@ -686,6 +734,9 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
                   ),
                 )}
               </select>
+              <span className="mt-1 block text-xs text-zinc-500">
+                “Padrão da loja” herda o teto configurado no admin.
+              </span>
             </label>
           )}
           {!pagamento.aceitaPix &&

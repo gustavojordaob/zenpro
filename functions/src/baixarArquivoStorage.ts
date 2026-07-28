@@ -44,7 +44,8 @@ export const baixarArquivoStorage = onCall(
 
     const hostOk =
       parsed.hostname === "firebasestorage.googleapis.com" ||
-      parsed.hostname === "storage.googleapis.com";
+      parsed.hostname === "storage.googleapis.com" ||
+      parsed.hostname.endsWith(".firebasestorage.app");
     const bucketOk = BUCKET_MARKERS.some((m) => arquivoUrl.includes(m));
     if (!hostOk || !bucketOk) {
       throw new HttpsError(

@@ -17,10 +17,15 @@ const modelos = JSON.parse(
 const outDir = "public/molduras/rock";
 fs.mkdirSync(outDir, { recursive: true });
 
-const CACHE = "v=12";
+const CACHE = "v=15";
 /** Tom do módulo depois de escurecer o platô claro do molde. */
 const PLATE_TARGET_L = 46;
 const PLATE_CONTRAST = 1.45;
+/** --natural: copia cores do H5 (platô claro iPhone), sem escurecer. */
+const NATURAL = process.argv.includes("--natural");
+const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "")
+  .slice("--only=".length)
+  .toLowerCase();
 
 function isOutline(r, g, b, a) {
   if (a < 10) return false;
@@ -332,8 +337,9 @@ async function processFrame(url, dest) {
     fillCount++;
   }
 
-  // Sem recorte claro: molde já é escuro, copia como está
-  const escurecer = fillCount > 400;
+  // Sem recorte claro: molde já é escuro, copia como está.
+  // --natural: mantém platô claro do H5 (iPhone) — não escurece.
+  const escurecer = !NATURAL && fillCount > 400;
   const baseL = escurecer ? fillL / fillCount : 0;
   const t2 = baseL - 40;
   const t1 = baseL - 110;
@@ -341,20 +347,7 @@ async function processFrame(url, dest) {
   const out = Buffer.alloc(cw * ch * 4);
   let kept = 0;
 
-  // Base do módulo na forma da ilha do molde — evita lentes flutuando
-  // em moldes cujo platô é transparente (Redmi/Xiaomi).
-  for (let p = 0; p < w * h; p++) {
-    if (!inside[p]) continue;
-    const x = p % w;
-    const y = (p / w) | 0;
-    if (x < x0 || x > x1 || y < y0 || y > y1) continue;
-    const di = ((y - y0) * cw + (x - x0)) * 4;
-    out[di] = PLATE_TARGET_L;
-    out[di + 1] = PLATE_TARGET_L;
-    out[di + 2] = PLATE_TARGET_L + 2;
-    out[di + 3] = 255;
-  }
-
+  // 1) Pixels do H5 (lentes/flash/platô) — fidelidade ao molde
   for (let p = 0; p < w * h; p++) {
     if (!inside[p]) continue;
     const r = data[p * 4];
@@ -371,8 +364,6 @@ async function processFrame(url, dest) {
     let nb = b;
 
     if (escurecer) {
-      // Platô claro do molde vira módulo escuro, mas o relevo do H5
-      // (aros das lentes, flash, sensores) continua legível.
       const L = luminance(r, g, b);
       const peso = Math.max(0, Math.min(1, (L - t1) / (t2 - t1)));
       if (peso > 0) {
@@ -393,6 +384,21 @@ async function processFrame(url, dest) {
     kept++;
   }
 
+  // 2) Buracos transparentes na ilha (platô vazado Redmi etc.) — preenche por baixo
+  const basePlate = NATURAL ? 236 : PLATE_TARGET_L;
+  for (let p = 0; p < w * h; p++) {
+    if (!inside[p]) continue;
+    const x = p % w;
+    const y = (p / w) | 0;
+    if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+    const di = ((y - y0) * cw + (x - x0)) * 4;
+    if (out[di + 3] >= 10) continue;
+    out[di] = basePlate;
+    out[di + 1] = basePlate;
+    out[di + 2] = basePlate + 2;
+    out[di + 3] = 255;
+  }
+
   await sharp(out, { raw: { width: cw, height: ch, channels: 4 } })
     .png()
     .toFile(dest);
@@ -400,7 +406,11 @@ async function processFrame(url, dest) {
   return {
     kept,
     fillCount,
-    plate: escurecer ? `L${Math.round(baseL)}->${PLATE_TARGET_L}` : "h5-direct",
+    plate: escurecer
+      ? `L${Math.round(baseL)}->${PLATE_TARGET_L}`
+      : NATURAL
+        ? "h5-natural"
+        : "h5-direct",
     mode: useRect ? "hw-bbox" : "red-island",
   };
 }
@@ -408,8 +418,17 @@ async function processFrame(url, dest) {
 let i = 0;
 let ok = 0;
 let fail = 0;
+let skip = 0;
 for (const m of modelos) {
   i++;
+  if (
+    ONLY &&
+    !m.id.toLowerCase().includes(ONLY) &&
+    !(m.marca || "").toLowerCase().includes(ONLY)
+  ) {
+    skip++;
+    continue;
+  }
   const dest = `${outDir}/${m.id}-camera.png`;
   process.stdout.write(`[${i}/${modelos.length}] ${m.id} ... `);
   try {
@@ -430,16 +449,21 @@ fs.writeFileSync(
   JSON.stringify(modelos, null, 2),
 );
 
-const perso = {};
+const persoPath = "src/features/personalizacao/rockb2bPersonalizacao.json";
+const perso = JSON.parse(fs.readFileSync(persoPath, "utf8"));
 for (const m of modelos) {
+  if (ONLY && !m.cameraFrameUrl?.includes(`?${CACHE}`)) {
+    // não tocado neste run
+    continue;
+  }
+  if (!m.cameraFrameUrl) continue;
   perso[m.id] = {
+    ...(perso[m.id] || {}),
     cameraPresetId: "sem-camera",
-    corAparelho: m.corAparelho,
+    corAparelho: NATURAL ? "#f4f4f6" : m.corAparelho || perso[m.id]?.corAparelho,
     cameraFrameUrl: m.cameraFrameUrl,
   };
 }
-fs.writeFileSync(
-  "src/features/personalizacao/rockb2bPersonalizacao.json",
-  JSON.stringify(perso, null, 2),
-);
-console.log("done ok=", ok, "fail=", fail);
+fs.writeFileSync(persoPath, JSON.stringify(perso, null, 2));
+console.log("done ok=", ok, "fail=", fail, "skip=", skip, NATURAL ? "(natural)" : "");
+

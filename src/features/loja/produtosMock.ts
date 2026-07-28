@@ -13,6 +13,8 @@ export type ProdutoDestaque = {
   nome: string;
   descricao: string;
   modeloId: string;
+  /** Modelos compatíveis — página do produto (seletor estilo OBLI). */
+  modelosCompativeis?: string[];
   marca: string;
   precoCentavos: number;
   tipo: TipoProduto;
@@ -20,6 +22,8 @@ export type ProdutoDestaque = {
   material?: string;
   destaque?: string;
   imagemUrl?: string;
+  /** Galeria completa quando disponível. */
+  imagens?: string[];
   gradienteCapa?: string;
   controlaEstoque?: boolean;
   disponivelVenda?: number;

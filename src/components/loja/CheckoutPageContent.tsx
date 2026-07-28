@@ -44,6 +44,7 @@ import {
 } from "@/features/envios/prazoFreteCopy";
 import { obterProdutoCentral } from "@/features/admin/produtos/produtoCentralService";
 import {
+  descontoPixCentavos,
   formaPadraoPermitida,
   formasPermitidasDoPagamento,
   intersecaoPagamentoProdutos,
@@ -51,6 +52,9 @@ import {
   PAGAMENTO_PRODUTO_DEFAULT,
   type PagamentoProdutoConfig,
 } from "@/features/pagamentos/pagamentoProduto";
+import { doc, getDoc } from "firebase/firestore";
+import { getFirebaseDb } from "@/lib/firebase";
+import { COLECOES } from "@/features/multitenant/types";
 
 export function CheckoutPageContent() {
   const router = useRouter();
@@ -73,7 +77,6 @@ export function CheckoutPageContent() {
   });
   const freteCentavos =
     beneficios?.freteGratis ? 0 : freteOpcao?.precoCentavos ?? 0;
-  const totalPago = totalProdutos + freteCentavos;
   const [pagando, setPagando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
@@ -84,6 +87,14 @@ export function CheckoutPageContent() {
   const [pagamentoCfg, setPagamentoCfg] = useState<PagamentoProdutoConfig>({
     ...PAGAMENTO_PRODUTO_DEFAULT,
   });
+  const descontoPix =
+    formaPagamento === "pix"
+      ? descontoPixCentavos(
+          totalProdutos,
+          pagamentoCfg.descontoPixPercentual,
+        )
+      : 0;
+  const totalPago = Math.max(0, totalProdutos - descontoPix + freteCentavos);
   const mockPagamento = pagamentoMockAtivo();
   const formasPagamento = formasPermitidasDoPagamento(pagamentoCfg);
 
@@ -119,11 +130,27 @@ export function CheckoutPageContent() {
       return;
     }
     let cancelled = false;
-    void Promise.all(ids.map((id) => obterProdutoCentral(id)))
-      .then((produtos) => {
+    void (async () => {
+      try {
+        let lojaPadrao: {
+          maxParcelasCartao?: number;
+          descontoPixPercentual?: number;
+        } | null = null;
+        if (isFirebaseConfigured()) {
+          const snap = await getDoc(
+            doc(getFirebaseDb(), COLECOES.LOJAS, loja.lojaId),
+          );
+          const cfg = snap.data()?.config as
+            | { pagamentoPadrao?: typeof lojaPadrao }
+            | undefined;
+          lojaPadrao = cfg?.pagamentoPadrao ?? null;
+        }
+        const produtos = await Promise.all(
+          ids.map((id) => obterProdutoCentral(id)),
+        );
         if (cancelled) return;
         const configs = produtos.map((p) =>
-          normalizarPagamentoProduto(p?.pagamento),
+          normalizarPagamentoProduto(p?.pagamento, lojaPadrao),
         );
         const cfg = intersecaoPagamentoProdutos(configs);
         setPagamentoCfg(cfg);
@@ -132,12 +159,14 @@ export function CheckoutPageContent() {
           formas.includes(prev) ? prev : formaPadraoPermitida(formas),
         );
         setParcelas((p) => Math.min(p, cfg.maxParcelasCartao));
-      })
-      .catch((e) => console.error(e));
+      } catch (e) {
+        console.error(e);
+      }
+    })();
     return () => {
       cancelled = true;
     };
-  }, [produtoIdsKey]);
+  }, [produtoIdsKey, loja.lojaId]);
 
   if (authCarregando || perfilCarregando) {
     return (
@@ -368,6 +397,12 @@ export function CheckoutPageContent() {
                 Desconto {rotuloNivelRevendedor(beneficios.metricas.nivel)} (
                 {beneficios.descontoPercentual}%): −
                 {formatarPreco(beneficios.descontoCentavos)}
+              </span>
+            )}
+            {descontoPix > 0 && (
+              <span className="mb-1 block text-sm font-normal text-emerald-700">
+                Desconto PIX ({pagamentoCfg.descontoPixPercentual}%): −
+                {formatarPreco(descontoPix)}
               </span>
             )}
             {freteOpcao && (

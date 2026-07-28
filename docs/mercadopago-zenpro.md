@@ -14,17 +14,26 @@
 | Cliente (B2C) | `lojas/{lojaId}/pedidos` | Checkout Pro MP | Após `pagamentoLiberadoEnvio` |
 | Revendedor (B2B) | `pedidos_reposicao` | Checkout Pro MP | Após `pago` ou `aprovado` (crédito) |
 
-## Formas de pagamento
+### Formas de pagamento (Checkout Pro)
 
-- **PIX** — aprovação rápida
-- **Boleto** — envio só após compensação (`pagamentoLiberadoEnvio`)
-- **Cartão** — até **12x** via preference `installments`
+O cliente escolhe no site; a preference MP **restringe** o checkout:
 
-### Parcelas sem juros (só 1x / à vista)
+| Forma no site | Preference |
+|---|---|
+| PIX | exclui credit/debit/ticket/atm/prepaid; `default_payment_method_id: pix`. **Não** excluir `account_money` (MP rejeita) |
+| Cartão Nx | exclui boleto/PIX/débito; `installments` = `default_installments` = N |
+| Boleto | exclui cartão/PIX |
 
-No site, **apenas 1x** é anunciado como sem juros; a partir de 2x o cliente assume juros do Mercado Pago.
+`mapFormaParaMp` em `functions/src/mercadoPagoShared.ts`.
 
-No painel MP, **não** ofereça “parcelamento sem juros” em 2x+ (ou deixe só à vista sem acréscimo). O Checkout Pro respeita a config da conta.
+> **Nota:** no Checkout Pro, `installments: N` é o **teto** (1x…Nx). Não dá para forçar “somente 2x” sem Brick/API própria.
+
+### Desconto PIX / parcelas
+
+- **Padrão loja:** `lojas/{id}.config.pagamentoPadrao` (Admin → Loja, só marca)
+- **Por produto:** `produtos/{id}.pagamento.descontoPixPercentual` e `maxParcelasCartao` (0/null = herda loja)
+- Checkout: produto sobrescreve loja; interseção no carrinho (menor desconto / menor máx. parcelas)
+
 
 ### Qualidade / aprovação de cartão
 

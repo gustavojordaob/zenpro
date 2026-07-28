@@ -6,14 +6,34 @@ import { ProdutoImagem } from "@/components/loja/ProdutoImagem";
 import type { ItemPedidoLojaFirestore } from "@/features/multitenant/types";
 import { formatarPreco } from "@/features/loja/produtosMock";
 import { baixarUrlComoArquivo } from "@/lib/baixarArquivo";
+import { regenerarArtesItemPedidoAdmin } from "@/features/admin/pedidos/regenerarArtesPedido";
+import { useAuthAdmin } from "@/features/admin/AdminAuthProvider";
 
 type Props = {
   item: ItemPedidoLojaFirestore;
+  lojaId?: string;
+  pedidoId?: string;
+  itemIndex?: number;
+  userIdCliente?: string | null;
+  onArtesAtualizadas?: () => void;
 };
 
-export function PedidoItemPreview({ item }: Props) {
+export function PedidoItemPreview({
+  item,
+  lojaId,
+  pedidoId,
+  itemIndex,
+  userIdCliente,
+  onArtesAtualizadas,
+}: Props) {
+  const { user } = useAuthAdmin();
   const temPersonalizacao =
-    Boolean(item.fotoUrl) && item.transform !== null && item.transform !== undefined;
+    Boolean(item.fotoUrl) &&
+    item.transform !== null &&
+    item.transform !== undefined;
+
+  const [gerando, setGerando] = useState(false);
+  const [erroGerar, setErroGerar] = useState<string | null>(null);
 
   const textoCliente = [
     item.titulo?.trim() || null,
@@ -25,22 +45,55 @@ export function PedidoItemPreview({ item }: Props) {
     item.produtoId?.slice(0, 8) ||
     "pedido";
 
+  async function gerarArtes() {
+    if (
+      lojaId == null ||
+      pedidoId == null ||
+      itemIndex == null ||
+      (!userIdCliente && !user?.uid)
+    ) {
+      setErroGerar("Dados insuficientes para gerar a arte.");
+      return;
+    }
+    setGerando(true);
+    setErroGerar(null);
+    try {
+      await regenerarArtesItemPedidoAdmin(
+        lojaId,
+        pedidoId,
+        itemIndex,
+        userIdCliente || user!.uid,
+      );
+      onArtesAtualizadas?.();
+    } catch (e) {
+      console.error(e);
+      setErroGerar(
+        e instanceof Error ? e.message : "Falha ao gerar arte de produção.",
+      );
+    } finally {
+      setGerando(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 sm:flex-row sm:items-start">
       <div className="shrink-0">
+        {/* Mesmo mock do cliente — dono baixa o H5 à parte */}
         {temPersonalizacao ? (
-          <CasePreview
-            fotoUrl={item.fotoUrl!}
-            transform={item.transform!}
-            textos={item.textos ?? []}
-            modeloId={
-              item.modeloId ??
-              (item.config?.modeloId as string | undefined)
-            }
-            larguraPx={item.config?.larguraPx as number | undefined}
-            alturaPx={item.config?.alturaPx as number | undefined}
-            previewWidth={160}
-          />
+          <div className="overflow-hidden rounded-lg bg-zinc-100 p-1">
+            <CasePreview
+              fotoUrl={item.fotoUrl!}
+              transform={item.transform!}
+              textos={item.textos ?? []}
+              modeloId={
+                item.modeloId ??
+                (item.config?.modeloId as string | undefined)
+              }
+              larguraPx={item.config?.larguraPx as number | undefined}
+              alturaPx={item.config?.alturaPx as number | undefined}
+              previewWidth={140}
+            />
+          </div>
         ) : item.imagemUrl ? (
           <div className="relative h-40 w-40 overflow-hidden rounded-xl border border-zinc-200 bg-white">
             <ProdutoImagem src={item.imagemUrl} alt={item.nomeProduto ?? ""} />
@@ -79,19 +132,24 @@ export function PedidoItemPreview({ item }: Props) {
             <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Arquivos para produção
             </p>
+            <p className="mt-0.5 text-[11px] text-zinc-500">
+              Preview = mock do cliente · Impressão H5 = silhueta + câmera do
+              molde (borda H5). Pedidos antigos: use Regenerar arte H5.
+            </p>
             <div className="mt-1.5 flex flex-wrap gap-2">
               {item.arteProducaoUrl && (
                 <ArteDownloadButton
                   href={item.arteProducaoUrl}
-                  rotulo="Arte final (foto + texto)"
-                  nomeArquivo={`${prefixo}-arte-final`}
+                  rotulo="Baixar impressão H5"
+                  nomeArquivo={`${prefixo}-impressao-h5`}
                 />
               )}
               {item.arteFotoUrl && (
                 <ArteDownloadButton
                   href={item.arteFotoUrl}
-                  rotulo="Só a foto"
+                  rotulo="Só a foto (retângulo)"
                   nomeArquivo={`${prefixo}-so-foto`}
+                  variante="neutro"
                 />
               )}
               {item.arteTextoUrl && (
@@ -99,6 +157,7 @@ export function PedidoItemPreview({ item }: Props) {
                   href={item.arteTextoUrl}
                   rotulo="Só o texto"
                   nomeArquivo={`${prefixo}-so-texto`}
+                  variante="neutro"
                 />
               )}
               {item.fotoUrl && (
@@ -109,11 +168,28 @@ export function PedidoItemPreview({ item }: Props) {
                   variante="neutro"
                 />
               )}
+              {lojaId && pedidoId != null && itemIndex != null && (
+                  <button
+                    type="button"
+                    onClick={() => void gerarArtes()}
+                    disabled={gerando}
+                    className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+                  >
+                    {gerando
+                      ? "Gerando arte…"
+                      : item.arteProducaoUrl
+                        ? "Regenerar arte H5"
+                        : "Gerar arte H5"}
+                  </button>
+                )}
             </div>
-            {!item.arteProducaoUrl && !item.arteFotoUrl && (
+            {!item.arteProducaoUrl && (
               <p className="mt-1 text-xs text-amber-700">
-                Artes ainda não geradas para este item.
+                Arte H5 ainda não gerada — use o botão acima.
               </p>
+            )}
+            {erroGerar && (
+              <p className="mt-1 text-xs text-red-600">{erroGerar}</p>
             )}
           </div>
         )}
@@ -152,30 +228,25 @@ function ArteDownloadButton({
       ? "border-gold/50 bg-gold/10 text-gold-dark hover:bg-gold/20"
       : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50";
 
-  async function handleClick() {
-    setErro(null);
-    setBaixando(true);
-    try {
-      await baixarUrlComoArquivo(href, nomeArquivo);
-    } catch (e) {
-      console.error(e);
-      setErro("Falha ao baixar. Tente de novo.");
-    } finally {
-      setBaixando(false);
-    }
-  }
-
   return (
-    <span className="inline-flex flex-col gap-0.5">
+    <div className="inline-flex flex-col gap-0.5">
       <button
         type="button"
-        onClick={() => void handleClick()}
         disabled={baixando}
-        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:opacity-60 ${classe}`}
+        onClick={() => {
+          setErro(null);
+          setBaixando(true);
+          void baixarUrlComoArquivo(href, nomeArquivo)
+            .catch((e) =>
+              setErro(e instanceof Error ? e.message : "Falha no download"),
+            )
+            .finally(() => setBaixando(false));
+        }}
+        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-60 ${classe}`}
       >
-        ↓ {baixando ? "Baixando…" : rotulo}
+        {baixando ? "Baixando…" : rotulo}
       </button>
-      {erro ? <span className="text-[10px] text-rose-600">{erro}</span> : null}
-    </span>
+      {erro && <span className="text-[10px] text-red-600">{erro}</span>}
+    </div>
   );
 }

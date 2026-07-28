@@ -1,25 +1,35 @@
 import { ART_CANVAS, MOLDURA_VISUAL } from "./caseVisualConstants";
 import type { CaseLayout } from "./types";
 
+export type CaseLayoutOptions = {
+  /** Proporção W/H da moldura (ex.: contorno H5 Rock). Default: MOLDURA_VISUAL.aspect */
+  molduraAspect?: number;
+};
+
 /**
  * Layout do editor/exportação.
  *
  * - Canvas de arte SEMPRE 9:16 (1080×1920 em produção).
- * - Moldura visual com proporção fixa (MOLDURA_VISUAL) — igual em todos os modelos.
- * - O mock da câmera varia conforme o modelo do celular.
- * - A foto do cliente usa o canvas inteiro; pode ultrapassar a moldura no editor.
+ * - Moldura visual: proporção do modelo (H5) quando disponível; senão MOLDURA_VISUAL.
+ * - O mock da câmera / silhueta variam conforme o aparelho.
  */
 export function getCaseLayout(
   previewWidth: number = ART_CANVAS.previewWidth,
   artWidth: number = ART_CANVAS.width,
   artHeight: number = ART_CANVAS.height,
   stagePadding?: number,
+  options?: CaseLayoutOptions,
 ): CaseLayout {
   const scale = previewWidth / artWidth;
   const canvasW = previewWidth;
   const canvasH = Math.round(artHeight * scale);
 
-  const phoneAspect = MOLDURA_VISUAL.aspect;
+  const phoneAspect =
+    options?.molduraAspect &&
+    options.molduraAspect > 0.2 &&
+    options.molduraAspect < 1
+      ? options.molduraAspect
+      : MOLDURA_VISUAL.aspect;
 
   const maxPhoneH = canvasH * MOLDURA_VISUAL.maxHeightRatio;
   const maxPhoneW = canvasW * MOLDURA_VISUAL.maxWidthRatio;

@@ -194,7 +194,25 @@ function payloadFromInput(input: ProdutoFormInput) {
     alturaCm: Math.max(1, Math.round(input.alturaCm)),
     larguraCm: Math.max(1, Math.round(input.larguraCm)),
     comprimentoCm: Math.max(1, Math.round(input.comprimentoCm)),
-    pagamento: normalizarPagamentoProduto(input.pagamento),
+    pagamento: (() => {
+      const n = normalizarPagamentoProduto(input.pagamento);
+      const raw =
+        input.pagamento && typeof input.pagamento === "object"
+          ? (input.pagamento as Record<string, unknown>)
+          : {};
+      const maxRaw = raw.maxParcelasCartao;
+      const pixRaw = raw.descontoPixPercentual;
+      return {
+        aceitaPix: n.aceitaPix,
+        aceitaBoleto: n.aceitaBoleto,
+        aceitaCartao: n.aceitaCartao,
+        // null = usa padrão da loja no checkout
+        maxParcelasCartao:
+          maxRaw != null && Number(maxRaw) > 0 ? n.maxParcelasCartao : null,
+        descontoPixPercentual:
+          pixRaw != null && Number(pixRaw) > 0 ? n.descontoPixPercentual : null,
+      };
+    })(),
   };
 }
 

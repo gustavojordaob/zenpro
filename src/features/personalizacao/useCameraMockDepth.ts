@@ -5,13 +5,13 @@ import { useEffect, useState } from "react";
 export type CameraMockDepth = {
   /** Silhueta preta borrada — sombra de contato sob a ilha. */
   contactShadow: HTMLCanvasElement;
-  /** Corpo do aparelho (alpha da câmera) — veda o buraco do punch. */
+  /** Corpo sob o módulo (alpha da câmera) — veda o buraco do punch. */
   bodyFill: HTMLCanvasElement;
 };
 
 function parseHex(cor: string): { r: number; g: number; b: number } {
   const m = /^#?([0-9a-f]{6})$/i.exec(cor.trim());
-  if (!m) return { r: 43, g: 43, b: 46 };
+  if (!m) return { r: 244, g: 244, b: 246 };
   const n = parseInt(m[1], 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
@@ -61,7 +61,7 @@ export function buildCameraMockDepth(
   corAparelho: string,
 ): CameraMockDepth {
   const body = parseHex(corAparelho);
-  const silhouette = tintAlpha(camera, { r: 0, g: 0, b: 0, a: 0.55 });
+  const silhouette = tintAlpha(camera, { r: 0, g: 0, b: 0, a: 0.45 });
   const blurPx = Math.max(
     4,
     Math.round((camera.naturalWidth || camera.width) * 0.012),
@@ -72,7 +72,7 @@ export function buildCameraMockDepth(
   return { contactShadow, bodyFill };
 }
 
-/** Overlays de profundidade a partir do alpha do PNG H5. */
+/** Overlays de profundidade a partir do alpha do PNG H5 (sem alterar lentes). */
 export function useCameraMockDepth(
   camera: HTMLImageElement | null,
   corAparelho: string,

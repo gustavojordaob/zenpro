@@ -5,6 +5,7 @@
  * 1. `cameraFrameUrl` = PNG da câmera extraído do frame H5
  * 2. Foto é furada com esse PNG (`destination-out`) — não cobre o módulo
  * 3. O mesmo PNG é desenhado por cima como overlay
+ * 4. `bodyMaskUrl` = silhueta externa (botões + cantos) do mesmo molde
  * Fallback sem H5: SVG (`cameraPresetId` / cameraModules).
  */
 import type { CaseFrameSpec } from "@/features/personalizacao/caseFrame";
@@ -15,7 +16,13 @@ import {
   getCameraSpec,
   getCorAparelho,
 } from "@/features/personalizacao/cameraModules";
-import { resolveRockCameraFrameUrl } from "@/features/personalizacao/rockCameraAssets";
+import {
+  resolveRockBodyMaskUrl,
+  resolveRockBodyRimUrl,
+  resolveRockCameraFrameUrl,
+  resolveRockCaseRadius,
+  resolveRockMolduraAspect,
+} from "@/features/personalizacao/rockCameraAssets";
 
 /** Overrides opcionais gravados no Firestore (modelo ou produto). */
 export type PersonalizacaoVisualFirestore = {
@@ -25,6 +32,9 @@ export type PersonalizacaoVisualFirestore = {
   corAparelho?: string;
   /** Câmera extraída do molde H5 RockB2B. */
   cameraFrameUrl?: string;
+  bodyMaskUrl?: string;
+  bodyRimUrl?: string;
+  molduraAspect?: number;
 };
 
 /** Specs já resolvidas para render/export. */
@@ -37,6 +47,12 @@ export type ResolvedPersonalizacaoVisual = {
   maskUrl?: string;
   /** Overlay da câmera H5 (prioridade sobre SVG). */
   cameraFrameUrl?: string;
+  /** Silhueta externa H5 (botões + cantos). */
+  bodyMaskUrl?: string;
+  /** Filete da borda no contorno H5. */
+  bodyRimUrl?: string;
+  /** Proporção W/H do contorno externo Rock. */
+  molduraAspect?: number;
 };
 
 export function resolverVisualPersonalizacao(
@@ -52,15 +68,37 @@ export function resolverVisualPersonalizacao(
     } | null;
   },
 ): ResolvedPersonalizacaoVisual {
-  const caseFrame =
+  const nome = overrides?.assets?.nome;
+  const rockRadius = resolveRockCaseRadius(modeloId, nome);
+  const baseFrame =
     overrides?.produto?.caseFrame ??
     overrides?.modelo?.caseFrame ??
     getCaseFrameSpec(modeloId);
+  const caseFrame: CaseFrameSpec =
+    rockRadius != null ? { ...baseFrame, radius: rockRadius } : baseFrame;
 
   const cameraFrameUrl =
-    resolveRockCameraFrameUrl(modeloId, overrides?.assets?.nome) ||
+    resolveRockCameraFrameUrl(modeloId, nome) ||
     overrides?.produto?.cameraFrameUrl?.trim() ||
     overrides?.modelo?.cameraFrameUrl?.trim() ||
+    undefined;
+
+  const bodyMaskUrl =
+    resolveRockBodyMaskUrl(modeloId, nome) ||
+    overrides?.produto?.bodyMaskUrl?.trim() ||
+    overrides?.modelo?.bodyMaskUrl?.trim() ||
+    undefined;
+
+  const bodyRimUrl =
+    resolveRockBodyRimUrl(modeloId, nome) ||
+    (bodyMaskUrl
+      ? bodyMaskUrl.replace("-body-mask.png", "-body-rim.png")
+      : undefined);
+
+  const molduraAspect =
+    resolveRockMolduraAspect(modeloId, nome) ||
+    overrides?.produto?.molduraAspect ||
+    overrides?.modelo?.molduraAspect ||
     undefined;
 
   const presetId =
@@ -100,8 +138,11 @@ export function resolverVisualPersonalizacao(
     corAparelho,
     larguraPx,
     alturaPx,
-    maskUrl: overrides?.assets?.maskUrl || undefined,
+    maskUrl: bodyMaskUrl || overrides?.assets?.maskUrl || undefined,
     cameraFrameUrl,
+    bodyMaskUrl,
+    bodyRimUrl,
+    molduraAspect,
   };
 }
 

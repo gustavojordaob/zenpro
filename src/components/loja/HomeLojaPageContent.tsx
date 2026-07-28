@@ -1,16 +1,57 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { HomePartnersSection, HomeVideoHero } from "@/components/loja/HomeVideoSections";
-import { HowItWorks } from "@/components/loja/HowItWorks";
-import { PersonalizarSection } from "@/components/loja/PersonalizarSection";
+import { HomeVideoHero } from "@/components/loja/HomeVideoSections";
 import { ProdutosSection } from "@/components/loja/ProdutosSection";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { ZenProLogo } from "@/components/loja/ZenProLogo";
 import { EntrarComoRevendedorLink } from "@/components/revendedor/EntrarComoRevendedorLink";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
+
+const PersonalizarSection = dynamic(
+  () =>
+    import("@/components/loja/PersonalizarSection").then((m) => ({
+      default: m.PersonalizarSection,
+    })),
+  {
+    loading: () => (
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+        <div className="h-40 animate-pulse rounded-2xl bg-zinc-200/70" />
+      </div>
+    ),
+  },
+);
+
+const HowItWorks = dynamic(
+  () =>
+    import("@/components/loja/HowItWorks").then((m) => ({
+      default: m.HowItWorks,
+    })),
+  {
+    loading: () => (
+      <div className="border-t border-zinc-200 bg-white py-14">
+        <div className="mx-auto h-32 max-w-6xl animate-pulse rounded-xl bg-zinc-100 px-4" />
+      </div>
+    ),
+  },
+);
+
+const HomePartnersSection = dynamic(
+  () =>
+    import("@/components/loja/HomeVideoSections").then((m) => ({
+      default: m.HomePartnersSection,
+    })),
+  {
+    loading: () => (
+      <div className="border-t border-zinc-200 bg-white py-14">
+        <div className="mx-auto h-40 max-w-3xl animate-pulse rounded-xl bg-zinc-100" />
+      </div>
+    ),
+  },
+);
 
 type HomeLojaVariant = "marca" | "revendedor" | "b2b";
 

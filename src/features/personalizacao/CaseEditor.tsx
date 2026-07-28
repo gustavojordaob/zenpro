@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Group, Image as KonvaImage, Layer, Rect, Stage } from "react-konva";
 import Konva from "konva";
-import { buildCameraModuleSvgFromSpec, getCameraSpec, getCorAparelho } from "./cameraModules";
+import { buildCameraModuleSvgFromSpec, getCameraSpec } from "./cameraModules";
 import { ZenProLogoOverlay } from "./ZenProLogoOverlay";
 import { CaseTextNode } from "./CaseTextNode";
 import { getCaseFrameSpec } from "./caseFrame";
 import { getCaseLayout } from "./caseGeometry";
-import { usePersonalizacaoVisual } from "./PersonalizacaoVisualContext";
+import { useCaseVisual } from "./useCaseVisual";
 import type { ModeloCelular, TextoCapinha, Transform } from "./types";
 import { useCapinhaFontsReady } from "./useCapinhaFontsReady";
 import { DEFAULT_TRANSFORM } from "./types";
@@ -17,6 +17,7 @@ import {
   ZOOM_MAX,
   ZOOM_MIN,
   CASE_BORDER,
+  ART_CANVAS,
 } from "./caseVisualConstants";
 import {
   fitImageToArea,
@@ -24,6 +25,7 @@ import {
 } from "./fotoLayoutPresets";
 import { cameraPunchProps } from "./cameraPunch";
 import { useCameraMockDepth } from "./useCameraMockDepth";
+import { hardenBodyMaskAlpha } from "./cameraMockClean";
 
 const STUDIO_BG = "#ececec";
 const PLACEHOLDER_FILL = "#e4e4e7";
@@ -290,10 +292,16 @@ export function CaseEditor({
   onTextoSelecionadoChange,
 }: Props) {
   useCapinhaFontsReady();
-  const visualCtx = usePersonalizacaoVisual();
+  const visual = useCaseVisual(modelo.id);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const layout = getCaseLayout();
+  const layout = getCaseLayout(
+    ART_CANVAS.previewWidth,
+    ART_CANVAS.width,
+    ART_CANVAS.height,
+    undefined,
+    { molduraAspect: visual.molduraAspect },
+  );
   const {
     stageWidth: W,
     stageHeight: H,
@@ -321,18 +329,20 @@ export function CaseEditor({
     return () => ro.disconnect();
   }, [W]);
 
-  const frame = visualCtx?.caseFrame ?? getCaseFrameSpec(modelo.id);
+  const frame = visual.caseFrame ?? getCaseFrameSpec(modelo.id);
   const radius = frame.radius * molduraW;
   const borderWidth = Math.max(2.5, molduraW * CASE_BORDER.widthRatio);
 
-  const cameraSpec = visualCtx?.camera ?? getCameraSpec(modelo.id);
-  const rockFrameUrl = visualCtx?.cameraFrameUrl?.trim() || null;
+  const cameraSpec = visual.camera ?? getCameraSpec(modelo.id);
+  const rockFrameUrl = visual.cameraFrameUrl?.trim() || null;
   const { image: rockCameraImage, loadError: rockFrameError } =
     useHtmlImage(rockFrameUrl);
+  const bodyMaskUrl = visual.bodyMaskUrl?.trim() || null;
+  const { image: bodyMaskImage } = useHtmlImage(bodyMaskUrl);
 
   const cameraUrl = useMemo(() => {
     if (rockFrameUrl && !rockFrameError) return null;
-    const cor = visualCtx?.corAparelho ?? getCorAparelho(modelo.id);
+    const cor = visual.corAparelho ?? "#f4f4f6";
     const svg = buildCameraModuleSvgFromSpec(
       cameraSpec,
       molduraW,
@@ -343,16 +353,31 @@ export function CaseEditor({
   }, [
     rockFrameUrl,
     rockFrameError,
-    visualCtx?.corAparelho,
+    visual.corAparelho,
     cameraSpec,
-    modelo.id,
     molduraW,
     molduraH,
   ]);
   const { image: svgCameraImage } = useHtmlImage(cameraUrl);
   const cameraImage = rockCameraImage ?? svgCameraImage;
-  const corAparelho = visualCtx?.corAparelho ?? getCorAparelho(modelo.id);
-  const cameraDepth = useCameraMockDepth(cameraImage, corAparelho);
+  const cameraDepth = useCameraMockDepth(
+    cameraImage,
+    visual.corAparelho?.startsWith("#") ? visual.corAparelho : "#f4f4f6",
+  );
+  const [hardMask, setHardMask] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (!bodyMaskImage) {
+      setHardMask(null);
+      return;
+    }
+    try {
+      setHardMask(hardenBodyMaskAlpha(bodyMaskImage, 140));
+    } catch {
+      setHardMask(null);
+    }
+  }, [bodyMaskImage]);
+  /** Silhueta H5 RockB2B (botões + cantos) — nunca round-rect genérico quando há molde. */
+  const usarBodyMask = Boolean(hardMask ?? bodyMaskImage);
 
   /** Área generosa para arraste — foto pode ultrapassar a moldura no editor. */
   const areaArraste = useMemo(
@@ -476,102 +501,105 @@ export function CaseEditor({
         >
           <Layer listening={false}>
             <Rect x={0} y={0} width={W} height={H} fill={STUDIO_BG} />
-            <Rect
-              x={molduraX}
-              y={molduraY + molduraH * 0.012}
-              width={molduraW}
-              height={molduraH}
-              cornerRadius={radius}
-              fill="#000000"
-              opacity={0.12}
-              shadowColor="#000000"
-              shadowBlur={22}
-              shadowOpacity={0.25}
-            />
+            {/* Sem sombra fora do H5 — a aureola cinza vinha daqui */}
           </Layer>
 
-          {/* Conteúdo da arte — punch da câmera H5 (foto não cobre o módulo). */}
+          {/* Conteúdo da arte — clip H5 + punch da câmera. */}
           <Layer>
-            {fotos.length > 0 && (
-              <Group
-                clipFunc={(ctx) => {
-                  ctx.beginPath();
-                  ctx.rect(areaUtil.x, areaUtil.y, areaUtil.w, areaUtil.h);
-                  ctx.closePath();
-                }}
-              >
-                <Rect
-                  x={areaUtil.x}
-                  y={areaUtil.y}
-                  width={areaUtil.w}
-                  height={areaUtil.h}
-                  fill={corFundo}
-                  listening={false}
-                />
-                {fundoBlur && fotoFundoImage && (
-                  <KonvaImage
-                    ref={bgBlurRef}
-                    image={fotoFundoImage}
-                    x={fundoBlur.x}
-                    y={fundoBlur.y}
-                    scaleX={fundoBlur.scale}
-                    scaleY={fundoBlur.scale}
+            <Group>
+              {fotos.length > 0 && (
+                <Group
+                  clipFunc={(ctx) => {
+                    ctx.beginPath();
+                    ctx.rect(areaUtil.x, areaUtil.y, areaUtil.w, areaUtil.h);
+                    ctx.closePath();
+                  }}
+                >
+                  <Rect
+                    x={areaUtil.x}
+                    y={areaUtil.y}
+                    width={areaUtil.w}
+                    height={areaUtil.h}
+                    fill={corFundo}
                     listening={false}
                   />
-                )}
-              </Group>
-            )}
+                  {fundoBlur && fotoFundoImage && (
+                    <KonvaImage
+                      ref={bgBlurRef}
+                      image={fotoFundoImage}
+                      x={fundoBlur.x}
+                      y={fundoBlur.y}
+                      scaleX={fundoBlur.scale}
+                      scaleY={fundoBlur.scale}
+                      listening={false}
+                    />
+                  )}
+                </Group>
+              )}
 
-            {fotos.length === 0 && (
-              <Rect
-                x={areaMoldura.x}
-                y={areaMoldura.y}
-                width={areaMoldura.w}
-                height={areaMoldura.h}
-                fill={PLACEHOLDER_FILL}
-                listening={false}
-              />
-            )}
-
-            {fotosOrdenadas.map((foto) => {
-              const slotIndex = fotos.findIndex((f) => f.id === foto.id);
-              const areaSlot = layoutSlots[slotIndex] ?? areaUtil;
-              return (
-                <FotoLayer
-                  key={foto.id}
-                  url={foto.url}
-                  transform={foto.transform}
-                  areaSlot={areaSlot}
-                  areaArraste={areaArraste}
-                  ativa={foto.id === (fotoAtivaId ?? fotos[0]?.id)}
-                  opaca={multiplas}
-                  onTransformChange={(next) => onTransformChange(foto.id, next)}
-                  onInicializar={(next) =>
-                    onFotoInicializada?.(foto.id, next) ??
-                    onTransformChange(foto.id, next)
-                  }
+              {fotos.length === 0 && (
+                <Rect
+                  x={areaMoldura.x}
+                  y={areaMoldura.y}
+                  width={areaMoldura.w}
+                  height={areaMoldura.h}
+                  fill={PLACEHOLDER_FILL}
+                  listening={false}
                 />
-              );
-            })}
+              )}
 
-            {textos.map((texto) => (
-              <CaseTextNode
-                key={texto.id}
-                texto={texto}
-                selecionado={texto.id === textoSelecionadoId}
-                editavel
-                onChange={atualizarTexto}
-                onSelect={() => onTextoSelecionadoChange(texto.id)}
+              {fotosOrdenadas.map((foto) => {
+                const slotIndex = fotos.findIndex((f) => f.id === foto.id);
+                const areaSlot = layoutSlots[slotIndex] ?? areaUtil;
+                return (
+                  <FotoLayer
+                    key={foto.id}
+                    url={foto.url}
+                    transform={foto.transform}
+                    areaSlot={areaSlot}
+                    areaArraste={areaArraste}
+                    ativa={foto.id === (fotoAtivaId ?? fotos[0]?.id)}
+                    opaca={multiplas}
+                    onTransformChange={(next) => onTransformChange(foto.id, next)}
+                    onInicializar={(next) =>
+                      onFotoInicializada?.(foto.id, next) ??
+                      onTransformChange(foto.id, next)
+                    }
+                  />
+                );
+              })}
+
+              {textos.map((texto) => (
+                <CaseTextNode
+                  key={texto.id}
+                  texto={texto}
+                  selecionado={texto.id === textoSelecionadoId}
+                  editavel
+                  onChange={atualizarTexto}
+                  onSelect={() => onTextoSelecionadoChange(texto.id)}
+                />
+              ))}
+
+              <ZenProLogoOverlay
+                cameraSpec={cameraSpec}
+                molduraX={molduraX}
+                molduraY={molduraY}
+                molduraW={molduraW}
+                molduraH={molduraH}
               />
-            ))}
 
-            <ZenProLogoOverlay
-              cameraSpec={cameraSpec}
-              molduraX={molduraX}
-              molduraY={molduraY}
-              molduraW={molduraW}
-              molduraH={molduraH}
-            />
+              {usarBodyMask && (hardMask || bodyMaskImage) && (
+                <KonvaImage
+                  image={hardMask ?? bodyMaskImage!}
+                  x={molduraX}
+                  y={molduraY}
+                  width={molduraW}
+                  height={molduraH}
+                  globalCompositeOperation="destination-in"
+                  listening={false}
+                />
+              )}
+            </Group>
 
             {cameraImage && (
               <KonvaImage
@@ -585,7 +613,7 @@ export function CaseEditor({
             )}
           </Layer>
 
-          {/* Overlay H5 (câmera) + borda — acima do buraco da foto */}
+          {/* Overlay H5 (câmera completa) — sem sombra/filete fora do contorno */}
           <Layer listening={false}>
             {cameraImage && (
               <>
@@ -619,30 +647,31 @@ export function CaseEditor({
                 />
               </>
             )}
-            <Rect
-              x={molduraX + borderWidth / 2}
-              y={molduraY + borderWidth / 2}
-              width={molduraW - borderWidth}
-              height={molduraH - borderWidth}
-              cornerRadius={radius}
-              stroke={CASE_BORDER.outer}
-              strokeWidth={borderWidth}
-              shadowColor="#000000"
-              shadowBlur={Math.max(8, molduraW * 0.04)}
-              shadowOffsetY={Math.max(2, molduraW * 0.012)}
-              shadowOpacity={0.28}
-              listening={false}
-            />
-            <Rect
-              x={molduraX + borderWidth * 0.78}
-              y={molduraY + borderWidth * 0.78}
-              width={molduraW - borderWidth * 1.56}
-              height={molduraH - borderWidth * 1.56}
-              cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
-              stroke={CASE_BORDER.inner}
-              strokeWidth={Math.max(1.5, borderWidth * 0.45)}
-              listening={false}
-            />
+
+            {!usarBodyMask && (
+              <>
+                <Rect
+                  x={molduraX + borderWidth / 2}
+                  y={molduraY + borderWidth / 2}
+                  width={molduraW - borderWidth}
+                  height={molduraH - borderWidth}
+                  cornerRadius={radius}
+                  stroke={CASE_BORDER.outer}
+                  strokeWidth={borderWidth}
+                  listening={false}
+                />
+                <Rect
+                  x={molduraX + borderWidth * 0.78}
+                  y={molduraY + borderWidth * 0.78}
+                  width={molduraW - borderWidth * 1.56}
+                  height={molduraH - borderWidth * 1.56}
+                  cornerRadius={Math.max(0, radius - borderWidth * 0.32)}
+                  stroke={CASE_BORDER.inner}
+                  strokeWidth={Math.max(1.5, borderWidth * 0.45)}
+                  listening={false}
+                />
+              </>
+            )}
           </Layer>
         </Stage>
       </div>

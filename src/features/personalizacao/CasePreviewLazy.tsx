@@ -25,6 +25,7 @@ type Props = {
   previewWidth?: number;
   embedded?: boolean;
   hideBorder?: boolean;
+  silhouetteClip?: boolean;
   larguraPx?: number;
   alturaPx?: number;
 };

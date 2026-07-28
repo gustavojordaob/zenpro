@@ -296,18 +296,45 @@ export async function atualizarRevendedorAdmin(
   const snap = await getDoc(ref);
   if (!snap.exists()) throw new Error("Loja não encontrada.");
 
+  const atual = snap.data() as LojaFirestore;
+  const cfgAtual = atual.config ?? {};
+
   const payload: Record<string, unknown> = {
     nome: input.nome.trim(),
     config: {
+      ...cfgAtual,
       logo: input.config.logo ?? null,
       cor: input.config.cor ?? null,
       whatsapp: input.config.whatsapp ?? null,
-      limiteCreditoCentavos: input.config.limiteCreditoCentavos ?? null,
-      pedidoMinimoCentavos: input.config.pedidoMinimoCentavos ?? null,
-      comissaoPercentual: input.config.comissaoPercentual ?? null,
-      prazoEntregaDiasLocal: input.config.prazoEntregaDiasLocal ?? null,
-      prazoEntregaDiasZenPro: input.config.prazoEntregaDiasZenPro ?? null,
-      expedicao: input.config.expedicao ?? null,
+      limiteCreditoCentavos:
+        input.config.limiteCreditoCentavos !== undefined
+          ? input.config.limiteCreditoCentavos
+          : (cfgAtual.limiteCreditoCentavos ?? null),
+      pedidoMinimoCentavos:
+        input.config.pedidoMinimoCentavos !== undefined
+          ? input.config.pedidoMinimoCentavos
+          : (cfgAtual.pedidoMinimoCentavos ?? null),
+      comissaoPercentual:
+        input.config.comissaoPercentual !== undefined
+          ? input.config.comissaoPercentual
+          : (cfgAtual.comissaoPercentual ?? null),
+      prazoEntregaDiasLocal:
+        input.config.prazoEntregaDiasLocal !== undefined
+          ? input.config.prazoEntregaDiasLocal
+          : (cfgAtual.prazoEntregaDiasLocal ?? null),
+      prazoEntregaDiasZenPro:
+        input.config.prazoEntregaDiasZenPro !== undefined
+          ? input.config.prazoEntregaDiasZenPro
+          : (cfgAtual.prazoEntregaDiasZenPro ?? null),
+      expedicao:
+        input.config.expedicao !== undefined
+          ? input.config.expedicao
+          : (cfgAtual.expedicao ?? null),
+      pagamentoPadrao:
+        input.config.pagamentoPadrao !== undefined
+          ? input.config.pagamentoPadrao
+          : (cfgAtual.pagamentoPadrao ?? null),
+      niveisRevendedor: cfgAtual.niveisRevendedor ?? null,
     },
     atualizadoEm: serverTimestamp(),
   };
