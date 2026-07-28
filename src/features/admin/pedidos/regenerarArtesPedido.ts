@@ -1,23 +1,41 @@
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import {
-  exportCaseArtBlob,
-  exportFotoArtBlob,
-  exportTextoArtBlob,
-} from "@/features/personalizacao/exportCaseArt";
+import { exportH5PrintArtBlob } from "@/features/personalizacao/exportCaseArt";
 import { subirArteProducao } from "@/features/personalizacao/uploadArteProducao";
 import {
   resolveRockBodyMaskUrl,
+  resolveRockBodyRimUrl,
   resolveRockCameraFrameUrl,
   resolveRockMolduraAspect,
+  resolveRockPrintGuideUrl,
 } from "@/features/personalizacao/rockCameraAssets";
 import { COLECOES } from "@/features/multitenant/types";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import type { Transform } from "@/features/personalizacao/types";
 import type { TextoCapinha } from "@/features/personalizacao/caseTextFonts";
+import type { ArtGeo } from "@/features/personalizacao/exportCaseArt";
+
+export function geoH5PrintDoModelo(
+  modeloId: string,
+  config?: Record<string, unknown> | null,
+): ArtGeo {
+  const cfg = config ?? {};
+  return {
+    larguraPx: typeof cfg.larguraPx === "number" ? cfg.larguraPx : undefined,
+    alturaPx: typeof cfg.alturaPx === "number" ? cfg.alturaPx : undefined,
+    maskUrl:
+      resolveRockBodyMaskUrl(modeloId) ||
+      (typeof cfg.maskUrl === "string" ? cfg.maskUrl : undefined),
+    bodyRimUrl: resolveRockBodyRimUrl(modeloId),
+    printGuideUrl: resolveRockPrintGuideUrl(modeloId),
+    cameraFrameUrl: resolveRockCameraFrameUrl(modeloId),
+    molduraAspect: resolveRockMolduraAspect(modeloId),
+    corFundo: typeof cfg.corFundo === "string" ? cfg.corFundo : undefined,
+  };
+}
 
 /**
- * Gera artes retangulares (estilo H5) para um item do pedido que ficou sem arte.
- * Usa a foto/transform gravados no item.
+ * Gera guia de impressão H5 (laranja + contorno + foto/texto) para o dono.
+ * Só atualiza arteProducaoUrl — não gera mais “só foto” / “só texto”.
  */
 export async function regenerarArtesItemPedidoAdmin(
   lojaId: string,
@@ -26,8 +44,6 @@ export async function regenerarArtesItemPedidoAdmin(
   userIdDonoArte: string,
 ): Promise<{
   arteProducaoUrl: string;
-  arteFotoUrl: string;
-  arteTextoUrl: string | null;
 }> {
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase não configurado.");
@@ -50,49 +66,30 @@ export async function regenerarArtesItemPedidoAdmin(
 
   const textos = (item.textos as TextoCapinha[] | null) ?? [];
   const config = (item.config as Record<string, unknown> | null) ?? {};
-  const modeloId = String(
-    item.modeloId ?? config.modeloId ?? "",
-  );
+  const modeloId = String(item.modeloId ?? config.modeloId ?? "");
   const personalizacaoId =
     String(item.personalizacaoId ?? "").trim() ||
     `pedido-${pedidoId}-item-${itemIndex}`;
 
-  const geo = {
-    larguraPx:
-      typeof config.larguraPx === "number" ? config.larguraPx : undefined,
-    alturaPx:
-      typeof config.alturaPx === "number" ? config.alturaPx : undefined,
-    maskUrl:
-      resolveRockBodyMaskUrl(modeloId) ||
-      (typeof config.maskUrl === "string" ? config.maskUrl : undefined),
-    cameraFrameUrl: resolveRockCameraFrameUrl(modeloId),
-    molduraAspect: resolveRockMolduraAspect(modeloId),
-    corFundo:
-      typeof config.corFundo === "string" ? config.corFundo : undefined,
-  };
+  const geo = geoH5PrintDoModelo(modeloId, config);
+  const blob = await exportH5PrintArtBlob(
+    [{ url: fotoUrl, transform }],
+    transform,
+    textos,
+    undefined,
+    geo,
+  );
 
-  const fotos = [{ url: fotoUrl, transform }];
-  const [blobCombinada, blobFoto, blobTexto] = await Promise.all([
-    exportCaseArtBlob(fotos, transform, textos, undefined, geo),
-    exportFotoArtBlob(fotos, transform, undefined, geo),
-    textos.length
-      ? exportTextoArtBlob(transform, textos, undefined, geo)
-      : Promise.resolve(null),
-  ]);
-
-  const [arteProducaoUrl, arteFotoUrl, arteTextoUrl] = await Promise.all([
-    subirArteProducao(userIdDonoArte, personalizacaoId, blobCombinada, "combinada"),
-    subirArteProducao(userIdDonoArte, personalizacaoId, blobFoto, "foto"),
-    blobTexto
-      ? subirArteProducao(userIdDonoArte, personalizacaoId, blobTexto, "texto")
-      : Promise.resolve(null),
-  ]);
+  const arteProducaoUrl = await subirArteProducao(
+    userIdDonoArte,
+    personalizacaoId,
+    blob,
+    "combinada",
+  );
 
   itens[itemIndex] = {
     ...item,
     arteProducaoUrl,
-    arteFotoUrl,
-    arteTextoUrl,
   };
 
   await updateDoc(ref, {
@@ -100,18 +97,15 @@ export async function regenerarArtesItemPedidoAdmin(
     atualizadoEm: serverTimestamp(),
   });
 
-  // Espelha na personalização se existir
   if (item.personalizacaoId) {
     try {
       await updateDoc(doc(db, "personalizacoes", String(item.personalizacaoId)), {
         arteProducaoUrl,
-        arteFotoUrl,
-        arteTextoUrl,
       });
     } catch {
       // pedido já atualizado
     }
   }
 
-  return { arteProducaoUrl, arteFotoUrl, arteTextoUrl };
+  return { arteProducaoUrl };
 }

@@ -6,9 +6,13 @@ import {
   isFirebaseConfigured,
 } from "@/lib/firebase";
 
-function loadHtmlImage(src: string): Promise<HTMLImageElement> {
+function loadHtmlImage(
+  src: string,
+  crossOrigin?: "anonymous",
+): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
+    if (crossOrigin) img.crossOrigin = crossOrigin;
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("Falha ao carregar imagem"));
     img.src = src;
@@ -35,8 +39,6 @@ function base64ParaBlob(base64: string, contentType: string): Blob {
 export function firebaseStoragePathFromUrl(url: string): string | null {
   try {
     const u = new URL(url);
-    // https://firebasestorage.googleapis.com/v0/b/BUCKET/o/PATH?...
-    // https://BUCKET.firebasestorage.app/v0/b/BUCKET/o/PATH?...
     if (
       u.hostname === "firebasestorage.googleapis.com" ||
       u.hostname.endsWith(".firebasestorage.app")
@@ -44,7 +46,6 @@ export function firebaseStoragePathFromUrl(url: string): string | null {
       const match = u.pathname.match(/\/o\/([^?]+)/);
       if (match?.[1]) return decodeURIComponent(match[1]);
     }
-    // https://storage.googleapis.com/BUCKET/path
     if (u.hostname === "storage.googleapis.com") {
       const parts = u.pathname.replace(/^\//, "").split("/");
       if (parts.length >= 2) {
@@ -65,7 +66,7 @@ function isFirebaseStorageUrl(src: string): boolean {
   );
 }
 
-/** Proxy Cloud Function — evita CORS no browser ao ler foto do Storage. */
+/** Proxy Cloud Function — último recurso (frio + base64 = bem lento). */
 async function loadViaBaixarArquivoStorage(
   url: string,
 ): Promise<HTMLImageElement> {
@@ -80,7 +81,10 @@ async function loadViaBaixarArquivoStorage(
   return imageFromBlob(base64ParaBlob(data.base64, data.contentType));
 }
 
-/** Carrega imagem sem contaminar o canvas (toDataURL / export Konva). */
+/**
+ * Carrega imagem para Konva/canvas sem taint.
+ * Ordem rápida → lenta: CORS img → getBlob → proxy CF.
+ */
 export async function loadImageForCanvasExport(
   src: string,
 ): Promise<HTMLImageElement> {
@@ -93,29 +97,39 @@ export async function loadImageForCanvasExport(
     return loadHtmlImage(trimmed);
   }
 
-  // Paths locais (molduras H5, brand, etc.)
+  // Molduras H5 / brand no mesmo domínio — instantâneo (cache do browser).
   if (trimmed.startsWith("/") && typeof window !== "undefined") {
-    return loadHtmlImage(`${window.location.origin}${trimmed}`);
+    return loadHtmlImage(`${window.location.origin}${trimmed}`, "anonymous");
   }
 
-  const storagePath = firebaseStoragePathFromUrl(trimmed);
-  if (storagePath && isFirebaseConfigured()) {
+  // Storage público: CORS já configurado (storage.cors.json) → <img> direto.
+  // Evita Cloud Function (cold start + base64) que deixava o download lento.
+  if (isFirebaseStorageUrl(trimmed)) {
     try {
-      const blob = await getBlob(ref(getFirebaseStorage(), storagePath));
-      return imageFromBlob(blob);
-    } catch (error) {
-      console.warn("getBlob Firebase falhou, tentando proxy:", error);
+      return await loadHtmlImage(trimmed, "anonymous");
+    } catch {
+      // tenta SDK / proxy abaixo
     }
-  }
 
-  if (isFirebaseStorageUrl(trimmed) && isFirebaseConfigured()) {
-    try {
-      return await loadViaBaixarArquivoStorage(trimmed);
-    } catch (error) {
-      console.warn("Proxy baixarArquivoStorage falhou:", error);
-      throw new Error(
-        "Não foi possível carregar a foto do Storage (CORS). Recarregue a página ou reenvie a foto.",
-      );
+    const storagePath = firebaseStoragePathFromUrl(trimmed);
+    if (storagePath && isFirebaseConfigured()) {
+      try {
+        const blob = await getBlob(ref(getFirebaseStorage(), storagePath));
+        return imageFromBlob(blob);
+      } catch (error) {
+        console.warn("getBlob Firebase falhou, tentando proxy:", error);
+      }
+    }
+
+    if (isFirebaseConfigured()) {
+      try {
+        return await loadViaBaixarArquivoStorage(trimmed);
+      } catch (error) {
+        console.warn("Proxy baixarArquivoStorage falhou:", error);
+        throw new Error(
+          "Não foi possível carregar a foto do Storage (CORS). Recarregue a página ou reenvie a foto.",
+        );
+      }
     }
   }
 

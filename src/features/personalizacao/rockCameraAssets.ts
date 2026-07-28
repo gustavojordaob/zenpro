@@ -10,6 +10,11 @@ type RockPerso = {
   bodyMaskUrl?: string;
   /** Filete da borda no mesmo contorno H5. */
   bodyRimUrl?: string;
+  /**
+   * Guia print-h5: contorno vermelho + câmera do frameImage original
+   * (preto transparente). Usado no download “Recorte H5”.
+   */
+  printGuideUrl?: string;
   /** Largura/altura do contorno externo. */
   molduraAspect?: number;
   /** Raio do canto (fração da largura). */
@@ -110,6 +115,20 @@ export function resolveRockBodyRimUrl(
   const mask = ROCK[id]?.bodyMaskUrl?.trim();
   if (!mask) return undefined;
   return mask.replace("-body-mask.png", "-body-rim.png");
+}
+
+/** Guia de impressão Rock (vermelho + câmera) — igual print-h5. */
+export function resolveRockPrintGuideUrl(
+  modeloId: string,
+  modeloNome?: string | null,
+): string | undefined {
+  const id = resolveRockId(modeloId, modeloNome);
+  if (!id) return undefined;
+  const guide = ROCK[id]?.printGuideUrl?.trim();
+  if (guide) return guide;
+  const cam = ROCK[id]?.cameraFrameUrl?.trim();
+  if (!cam) return undefined;
+  return cam.replace(/-camera\.png.*/, "-print-guide.png?v=1");
 }
 
 export function resolveRockMolduraAspect(

@@ -6,7 +6,8 @@
     "bodyMaskUrl": "/molduras/rock/redmi-note-10-pro-max-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/redmi-note-10-pro-max-body-rim.png?v=16",
     "molduraAspect": 0.4758,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/redmi-note-10-pro-max-print-guide.png?v=1"
   },
   "mi-12-pro": {
     "cameraPresetId": "sem-camera",
@@ -15,7 +16,8 @@
     "bodyMaskUrl": "/molduras/rock/mi-12-pro-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/mi-12-pro-body-rim.png?v=16",
     "molduraAspect": 0.4787,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/mi-12-pro-print-guide.png?v=1"
   },
   "mi-12x": {
     "cameraPresetId": "sem-camera",
@@ -24,7 +26,8 @@
     "bodyMaskUrl": "/molduras/rock/mi-12x-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/mi-12x-body-rim.png?v=16",
     "molduraAspect": 0.49,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/mi-12x-print-guide.png?v=1"
   },
   "mi-12": {
     "cameraPresetId": "sem-camera",
@@ -33,7 +36,8 @@
     "bodyMaskUrl": "/molduras/rock/mi-12-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/mi-12-body-rim.png?v=16",
     "molduraAspect": 0.49,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/mi-12-print-guide.png?v=1"
   },
   "mi-11t": {
     "cameraPresetId": "sem-camera",
@@ -42,7 +46,8 @@
     "bodyMaskUrl": "/molduras/rock/mi-11t-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/mi-11t-body-rim.png?v=16",
     "molduraAspect": 0.49,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/mi-11t-print-guide.png?v=1"
   },
   "mi-11t-pro": {
     "cameraPresetId": "sem-camera",
@@ -51,7 +56,8 @@
     "bodyMaskUrl": "/molduras/rock/mi-11t-pro-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/mi-11t-pro-body-rim.png?v=16",
     "molduraAspect": 0.49,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/mi-11t-pro-print-guide.png?v=1"
   },
   "redmi-note-10-pro-china": {
     "cameraPresetId": "sem-camera",
@@ -60,7 +66,8 @@
     "bodyMaskUrl": "/molduras/rock/redmi-note-10-pro-china-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/redmi-note-10-pro-china-body-rim.png?v=16",
     "molduraAspect": 0.4758,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/redmi-note-10-pro-china-print-guide.png?v=1"
   },
   "redmi-note-10s": {
     "cameraPresetId": "sem-camera",
@@ -69,7 +76,8 @@
     "bodyMaskUrl": "/molduras/rock/redmi-note-10s-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/redmi-note-10s-body-rim.png?v=16",
     "molduraAspect": 0.4822,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/redmi-note-10s-print-guide.png?v=1"
   },
   "mi-11-lite-4g": {
     "cameraPresetId": "sem-camera",
@@ -78,7 +86,8 @@
     "bodyMaskUrl": "/molduras/rock/mi-11-lite-4g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/mi-11-lite-4g-body-rim.png?v=16",
     "molduraAspect": 0.4686,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/mi-11-lite-4g-print-guide.png?v=1"
   },
   "mi-11-lite-5g": {
     "cameraPresetId": "sem-camera",
@@ -87,7 +96,8 @@
     "bodyMaskUrl": "/molduras/rock/mi-11-lite-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/mi-11-lite-5g-body-rim.png?v=16",
     "molduraAspect": 0.4686,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/mi-11-lite-5g-print-guide.png?v=1"
   },
   "galaxy-s26-ultra": {
     "cameraPresetId": "sem-camera",
@@ -96,7 +106,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s26-ultra-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s26-ultra-body-rim.png?v=16",
     "molduraAspect": 0.4856,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s26-ultra-print-guide.png?v=1"
   },
   "galaxy-s26-plus": {
     "cameraPresetId": "sem-camera",
@@ -105,7 +116,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s26-plus-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s26-plus-body-rim.png?v=16",
     "molduraAspect": 0.4852,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s26-plus-print-guide.png?v=1"
   },
   "galaxy-s26": {
     "cameraPresetId": "sem-camera",
@@ -114,7 +126,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s26-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s26-body-rim.png?v=16",
     "molduraAspect": 0.4975,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s26-print-guide.png?v=1"
   },
   "galaxy-s25-edge": {
     "cameraPresetId": "sem-camera",
@@ -123,7 +136,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s25-edge-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s25-edge-body-rim.png?v=16",
     "molduraAspect": 0.4825,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s25-edge-print-guide.png?v=1"
   },
   "galaxy-s25-ultra": {
     "cameraPresetId": "sem-camera",
@@ -132,7 +146,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s25-ultra-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s25-ultra-body-rim.png?v=16",
     "molduraAspect": 0.4885,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s25-ultra-print-guide.png?v=1"
   },
   "galaxy-s25-plus": {
     "cameraPresetId": "sem-camera",
@@ -141,7 +156,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s25-plus-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s25-plus-body-rim.png?v=16",
     "molduraAspect": 0.5021,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s25-plus-print-guide.png?v=1"
   },
   "galaxy-s25": {
     "cameraPresetId": "sem-camera",
@@ -150,7 +166,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s25-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s25-body-rim.png?v=16",
     "molduraAspect": 0.5022,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s25-print-guide.png?v=1"
   },
   "galaxy-s24-fe": {
     "cameraPresetId": "sem-camera",
@@ -159,7 +176,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s24-fe-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s24-fe-body-rim.png?v=16",
     "molduraAspect": 0.4928,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s24-fe-print-guide.png?v=1"
   },
   "galaxy-s24-ultra": {
     "cameraPresetId": "sem-camera",
@@ -168,7 +186,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s24-ultra-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s24-ultra-body-rim.png?v=16",
     "molduraAspect": 0.484,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s24-ultra-print-guide.png?v=1"
   },
   "galaxy-s24-plus": {
     "cameraPresetId": "sem-camera",
@@ -177,7 +196,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s24-plus-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s24-plus-body-rim.png?v=16",
     "molduraAspect": 0.5021,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s24-plus-print-guide.png?v=1"
   },
   "samsung-s24": {
     "cameraPresetId": "sem-camera",
@@ -186,7 +206,8 @@
     "bodyMaskUrl": "/molduras/rock/samsung-s24-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/samsung-s24-body-rim.png?v=16",
     "molduraAspect": 0.5022,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/samsung-s24-print-guide.png?v=1"
   },
   "galaxy-s23-fe": {
     "cameraPresetId": "sem-camera",
@@ -195,7 +216,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s23-fe-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s23-fe-body-rim.png?v=16",
     "molduraAspect": 0.5026,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s23-fe-print-guide.png?v=1"
   },
   "galaxy-a34": {
     "cameraPresetId": "sem-camera",
@@ -204,7 +226,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a34-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a34-body-rim.png?v=16",
     "molduraAspect": 0.5021,
-    "caseRadius": 0.063
+    "caseRadius": 0.063,
+    "printGuideUrl": "/molduras/rock/galaxy-a34-print-guide.png?v=1"
   },
   "galaxy-a14-5g": {
     "cameraPresetId": "sem-camera",
@@ -213,7 +236,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a14-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a14-5g-body-rim.png?v=16",
     "molduraAspect": 0.4844,
-    "caseRadius": 0.065
+    "caseRadius": 0.065,
+    "printGuideUrl": "/molduras/rock/galaxy-a14-5g-print-guide.png?v=1"
   },
   "galaxy-s23-5g": {
     "cameraPresetId": "sem-camera",
@@ -222,7 +246,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s23-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s23-5g-body-rim.png?v=16",
     "molduraAspect": 0.5028,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s23-5g-print-guide.png?v=1"
   },
   "galaxy-s23-plus": {
     "cameraPresetId": "sem-camera",
@@ -231,7 +256,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s23-plus-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s23-plus-body-rim.png?v=16",
     "molduraAspect": 0.5026,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s23-plus-print-guide.png?v=1"
   },
   "galaxy-s23-ultra": {
     "cameraPresetId": "sem-camera",
@@ -240,7 +266,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s23-ultra-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s23-ultra-body-rim.png?v=16",
     "molduraAspect": 0.4845,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s23-ultra-print-guide.png?v=1"
   },
   "galaxy-a33-5g": {
     "cameraPresetId": "sem-camera",
@@ -249,7 +276,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a33-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a33-5g-body-rim.png?v=16",
     "molduraAspect": 0.4879,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a33-5g-print-guide.png?v=1"
   },
   "galaxy-a13": {
     "cameraPresetId": "sem-camera",
@@ -258,7 +286,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a13-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a13-body-rim.png?v=16",
     "molduraAspect": 0.4861,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a13-print-guide.png?v=1"
   },
   "galaxy-a73": {
     "cameraPresetId": "sem-camera",
@@ -267,7 +296,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a73-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a73-body-rim.png?v=16",
     "molduraAspect": 0.4892,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a73-print-guide.png?v=1"
   },
   "galaxy-a53-5g": {
     "cameraPresetId": "sem-camera",
@@ -276,7 +306,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a53-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a53-5g-body-rim.png?v=16",
     "molduraAspect": 0.4879,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a53-5g-print-guide.png?v=1"
   },
   "galaxy-s22-plus-5g": {
     "cameraPresetId": "sem-camera",
@@ -285,7 +316,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s22-plus-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s22-plus-5g-body-rim.png?v=16",
     "molduraAspect": 0.4973,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s22-plus-5g-print-guide.png?v=1"
   },
   "galaxy-s22-ultra-5g": {
     "cameraPresetId": "sem-camera",
@@ -294,7 +326,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s22-ultra-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s22-ultra-5g-body-rim.png?v=16",
     "molduraAspect": 0.4926,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s22-ultra-5g-print-guide.png?v=1"
   },
   "galaxy-s22-5g": {
     "cameraPresetId": "sem-camera",
@@ -303,7 +336,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s22-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s22-5g-body-rim.png?v=16",
     "molduraAspect": 0.4972,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s22-5g-print-guide.png?v=1"
   },
   "galaxy-s21-fe-5g": {
     "cameraPresetId": "sem-camera",
@@ -312,7 +346,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s21-fe-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s21-fe-5g-body-rim.png?v=16",
     "molduraAspect": 0.4911,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s21-fe-5g-print-guide.png?v=1"
   },
   "galaxy-s20-ultra-5g": {
     "cameraPresetId": "sem-camera",
@@ -321,7 +356,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s20-ultra-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s20-ultra-5g-body-rim.png?v=16",
     "molduraAspect": 0.4684,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s20-ultra-5g-print-guide.png?v=1"
   },
   "galaxy-a22-5g": {
     "cameraPresetId": "sem-camera",
@@ -330,7 +366,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a22-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a22-5g-body-rim.png?v=16",
     "molduraAspect": 0.4826,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a22-5g-print-guide.png?v=1"
   },
   "galaxy-a52": {
     "cameraPresetId": "sem-camera",
@@ -339,7 +376,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a52-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a52-body-rim.png?v=16",
     "molduraAspect": 0.4795,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a52-print-guide.png?v=1"
   },
   "galaxy-a52-5g": {
     "cameraPresetId": "sem-camera",
@@ -348,7 +386,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a52-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a52-5g-body-rim.png?v=16",
     "molduraAspect": 0.4795,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a52-5g-print-guide.png?v=1"
   },
   "galaxy-a72": {
     "cameraPresetId": "sem-camera",
@@ -357,7 +396,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a72-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a72-body-rim.png?v=16",
     "molduraAspect": 0.483,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a72-print-guide.png?v=1"
   },
   "galaxy-a32-5g": {
     "cameraPresetId": "sem-camera",
@@ -366,7 +406,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a32-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a32-5g-body-rim.png?v=16",
     "molduraAspect": 0.4836,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a32-5g-print-guide.png?v=1"
   },
   "galaxy-s21-ultra-5g": {
     "cameraPresetId": "sem-camera",
@@ -375,7 +416,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s21-ultra-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s21-ultra-5g-body-rim.png?v=16",
     "molduraAspect": 0.4634,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s21-ultra-5g-print-guide.png?v=1"
   },
   "galaxy-s21-5g": {
     "cameraPresetId": "sem-camera",
@@ -384,7 +426,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s21-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s21-5g-body-rim.png?v=16",
     "molduraAspect": 0.4836,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s21-5g-print-guide.png?v=1"
   },
   "galaxy-s21-plus-5g": {
     "cameraPresetId": "sem-camera",
@@ -393,7 +436,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s21-plus-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s21-plus-5g-body-rim.png?v=16",
     "molduraAspect": 0.4747,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s21-plus-5g-print-guide.png?v=1"
   },
   "galaxy-a42": {
     "cameraPresetId": "sem-camera",
@@ -402,7 +446,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a42-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a42-body-rim.png?v=16",
     "molduraAspect": 0.4712,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a42-print-guide.png?v=1"
   },
   "galaxy-s10-plus": {
     "cameraPresetId": "sem-camera",
@@ -411,7 +456,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s10-plus-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s10-plus-body-rim.png?v=16",
     "molduraAspect": 0.5017,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s10-plus-print-guide.png?v=1"
   },
   "galaxy-note-20": {
     "cameraPresetId": "sem-camera",
@@ -420,7 +466,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-note-20-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-note-20-body-rim.png?v=16",
     "molduraAspect": 0.4736,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-note-20-print-guide.png?v=1"
   },
   "galaxy-note-20-ultra-5g": {
     "cameraPresetId": "sem-camera",
@@ -429,7 +476,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-note-20-ultra-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-note-20-ultra-5g-body-rim.png?v=16",
     "molduraAspect": 0.4805,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-note-20-ultra-5g-print-guide.png?v=1"
   },
   "galaxy-s10-lite": {
     "cameraPresetId": "sem-camera",
@@ -438,7 +486,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s10-lite-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s10-lite-body-rim.png?v=16",
     "molduraAspect": 0.4793,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s10-lite-print-guide.png?v=1"
   },
   "galaxy-a71-5g": {
     "cameraPresetId": "sem-camera",
@@ -447,7 +496,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a71-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a71-5g-body-rim.png?v=16",
     "molduraAspect": 0.4741,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a71-5g-print-guide.png?v=1"
   },
   "galaxy-a51-5g": {
     "cameraPresetId": "sem-camera",
@@ -456,7 +506,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-a51-5g-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-a51-5g-body-rim.png?v=16",
     "molduraAspect": 0.479,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-a51-5g-print-guide.png?v=1"
   },
   "galaxy-s7": {
     "cameraPresetId": "sem-camera",
@@ -465,7 +516,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s7-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s7-body-rim.png?v=16",
     "molduraAspect": 0.5015,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s7-print-guide.png?v=1"
   },
   "galaxy-s10e": {
     "cameraPresetId": "sem-camera",
@@ -474,7 +526,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s10e-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s10e-body-rim.png?v=16",
     "molduraAspect": 0.5165,
-    "caseRadius": 0.1253
+    "caseRadius": 0.1253,
+    "printGuideUrl": "/molduras/rock/galaxy-s10e-print-guide.png?v=1"
   },
   "galaxy-s8": {
     "cameraPresetId": "sem-camera",
@@ -483,7 +536,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s8-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s8-body-rim.png?v=16",
     "molduraAspect": 0.4673,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s8-print-guide.png?v=1"
   },
   "galaxy-note10": {
     "cameraPresetId": "sem-camera",
@@ -492,7 +546,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-note10-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-note10-body-rim.png?v=16",
     "molduraAspect": 0.4878,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-note10-print-guide.png?v=1"
   },
   "galaxy-s9": {
     "cameraPresetId": "sem-camera",
@@ -501,7 +556,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s9-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s9-body-rim.png?v=16",
     "molduraAspect": 0.4877,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s9-print-guide.png?v=1"
   },
   "galaxy-s20": {
     "cameraPresetId": "sem-camera",
@@ -510,7 +566,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s20-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s20-body-rim.png?v=16",
     "molduraAspect": 0.466,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s20-print-guide.png?v=1"
   },
   "galaxy-note-8": {
     "cameraPresetId": "sem-camera",
@@ -519,7 +576,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-note-8-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-note-8-body-rim.png?v=16",
     "molduraAspect": 0.4731,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-note-8-print-guide.png?v=1"
   },
   "galaxy-s10": {
     "cameraPresetId": "sem-camera",
@@ -528,7 +586,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s10-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s10-body-rim.png?v=16",
     "molduraAspect": 0.5017,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s10-print-guide.png?v=1"
   },
   "galaxy-s20-plus": {
     "cameraPresetId": "sem-camera",
@@ -537,7 +596,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s20-plus-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s20-plus-body-rim.png?v=16",
     "molduraAspect": 0.4703,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s20-plus-print-guide.png?v=1"
   },
   "galaxy-s9-plus": {
     "cameraPresetId": "sem-camera",
@@ -546,7 +606,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-s9-plus-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-s9-plus-body-rim.png?v=16",
     "molduraAspect": 0.479,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-s9-plus-print-guide.png?v=1"
   },
   "galaxy-note-9": {
     "cameraPresetId": "sem-camera",
@@ -555,7 +616,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-note-9-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-note-9-body-rim.png?v=16",
     "molduraAspect": 0.483,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-note-9-print-guide.png?v=1"
   },
   "galaxy-note-10-plus": {
     "cameraPresetId": "sem-camera",
@@ -564,7 +626,8 @@
     "bodyMaskUrl": "/molduras/rock/galaxy-note-10-plus-body-mask.png?v=16",
     "bodyRimUrl": "/molduras/rock/galaxy-note-10-plus-body-rim.png?v=16",
     "molduraAspect": 0.4864,
-    "caseRadius": 0.06
+    "caseRadius": 0.06,
+    "printGuideUrl": "/molduras/rock/galaxy-note-10-plus-print-guide.png?v=1"
   },
   "iphone-17e": {
     "cameraPresetId": "sem-camera",
@@ -573,7 +636,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-17e-body-mask.png?v=16",
     "molduraAspect": 0.5011,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-17e-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-17e-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-17e-print-guide.png?v=1"
   },
   "iphone-17-pro-max": {
     "cameraPresetId": "sem-camera",
@@ -582,7 +646,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-17-pro-max-body-mask.png?v=16",
     "molduraAspect": 0.4957,
     "caseRadius": 0.069,
-    "bodyRimUrl": "/molduras/rock/iphone-17-pro-max-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-17-pro-max-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-17-pro-max-print-guide.png?v=1"
   },
   "iphone-air": {
     "cameraPresetId": "sem-camera",
@@ -591,7 +656,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-air-body-mask.png?v=16",
     "molduraAspect": 0.4944,
     "caseRadius": 0.0719,
-    "bodyRimUrl": "/molduras/rock/iphone-air-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-air-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-air-print-guide.png?v=1"
   },
   "iphone-17-pro": {
     "cameraPresetId": "sem-camera",
@@ -600,7 +666,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-17-pro-body-mask.png?v=16",
     "molduraAspect": 0.4986,
     "caseRadius": 0.0745,
-    "bodyRimUrl": "/molduras/rock/iphone-17-pro-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-17-pro-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-17-pro-print-guide.png?v=1"
   },
   "iphone-17": {
     "cameraPresetId": "sem-camera",
@@ -609,7 +676,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-17-body-mask.png?v=16",
     "molduraAspect": 0.4959,
     "caseRadius": 0.0735,
-    "bodyRimUrl": "/molduras/rock/iphone-17-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-17-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-17-print-guide.png?v=1"
   },
   "iphone-16e": {
     "cameraPresetId": "sem-camera",
@@ -618,7 +686,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-16e-body-mask.png?v=16",
     "molduraAspect": 0.5011,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-16e-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-16e-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-16e-print-guide.png?v=1"
   },
   "iphone-16-plus": {
     "cameraPresetId": "sem-camera",
@@ -627,7 +696,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-16-plus-body-mask.png?v=16",
     "molduraAspect": 0.4814,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-16-plus-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-16-plus-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-16-plus-print-guide.png?v=1"
   },
   "iphone-16-pro-max": {
     "cameraPresetId": "sem-camera",
@@ -636,7 +706,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-16-pro-max-body-mask.png?v=16",
     "molduraAspect": 0.4814,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-16-pro-max-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-16-pro-max-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-16-pro-max-print-guide.png?v=1"
   },
   "iphone-16": {
     "cameraPresetId": "sem-camera",
@@ -645,7 +716,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-16-body-mask.png?v=16",
     "molduraAspect": 0.4863,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-16-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-16-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-16-print-guide.png?v=1"
   },
   "iphone-16-pro": {
     "cameraPresetId": "sem-camera",
@@ -654,7 +726,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-16-pro-body-mask.png?v=16",
     "molduraAspect": 0.4863,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-16-pro-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-16-pro-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-16-pro-print-guide.png?v=1"
   },
   "iphone-15-pro-max": {
     "cameraPresetId": "sem-camera",
@@ -663,7 +736,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-15-pro-max-body-mask.png?v=16",
     "molduraAspect": 0.495,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-15-pro-max-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-15-pro-max-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-15-pro-max-print-guide.png?v=1"
   },
   "iphone-15-pro": {
     "cameraPresetId": "sem-camera",
@@ -672,7 +746,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-15-pro-body-mask.png?v=16",
     "molduraAspect": 0.4944,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-15-pro-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-15-pro-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-15-pro-print-guide.png?v=1"
   },
   "iphone-15-plus": {
     "cameraPresetId": "sem-camera",
@@ -681,7 +756,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-15-plus-body-mask.png?v=16",
     "molduraAspect": 0.495,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-15-plus-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-15-plus-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-15-plus-print-guide.png?v=1"
   },
   "iphone-15": {
     "cameraPresetId": "sem-camera",
@@ -690,7 +766,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-15-body-mask.png?v=16",
     "molduraAspect": 0.4938,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-15-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-15-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-15-print-guide.png?v=1"
   },
   "iphone-14-plus": {
     "cameraPresetId": "sem-camera",
@@ -699,7 +776,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-14-plus-body-mask.png?v=16",
     "molduraAspect": 0.4972,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-14-plus-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-14-plus-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-14-plus-print-guide.png?v=1"
   },
   "iphone-14": {
     "cameraPresetId": "sem-camera",
@@ -708,7 +786,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-14-body-mask.png?v=16",
     "molduraAspect": 0.5,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-14-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-14-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-14-print-guide.png?v=1"
   },
   "iphone-14-pro": {
     "cameraPresetId": "sem-camera",
@@ -717,7 +796,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-14-pro-body-mask.png?v=16",
     "molduraAspect": 0.5,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-14-pro-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-14-pro-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-14-pro-print-guide.png?v=1"
   },
   "iphone-14-pro-max": {
     "cameraPresetId": "sem-camera",
@@ -726,7 +806,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-14-pro-max-body-mask.png?v=16",
     "molduraAspect": 0.4972,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-14-pro-max-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-14-pro-max-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-14-pro-max-print-guide.png?v=1"
   },
   "iphone-13-mini": {
     "cameraPresetId": "sem-camera",
@@ -735,7 +816,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-13-mini-body-mask.png?v=16",
     "molduraAspect": 0.5003,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-13-mini-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-13-mini-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-13-mini-print-guide.png?v=1"
   },
   "iphone-13": {
     "cameraPresetId": "sem-camera",
@@ -744,7 +826,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-13-body-mask.png?v=16",
     "molduraAspect": 0.5036,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-13-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-13-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-13-print-guide.png?v=1"
   },
   "iphone-13-pro-max": {
     "cameraPresetId": "sem-camera",
@@ -753,7 +836,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-13-pro-max-body-mask.png?v=16",
     "molduraAspect": 0.4974,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-13-pro-max-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-13-pro-max-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-13-pro-max-print-guide.png?v=1"
   },
   "iphone-13-pro": {
     "cameraPresetId": "sem-camera",
@@ -762,7 +846,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-13-pro-body-mask.png?v=16",
     "molduraAspect": 0.5036,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-13-pro-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-13-pro-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-13-pro-print-guide.png?v=1"
   },
   "iphone-12-mini": {
     "cameraPresetId": "sem-camera",
@@ -771,7 +856,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-12-mini-body-mask.png?v=16",
     "molduraAspect": 0.5006,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-12-mini-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-12-mini-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-12-mini-print-guide.png?v=1"
   },
   "iphone-12": {
     "cameraPresetId": "sem-camera",
@@ -780,7 +866,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-12-body-mask.png?v=16",
     "molduraAspect": 0.5,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-12-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-12-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-12-print-guide.png?v=1"
   },
   "iphone-12-pro-max": {
     "cameraPresetId": "sem-camera",
@@ -789,7 +876,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-12-pro-max-body-mask.png?v=16",
     "molduraAspect": 0.4995,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-12-pro-max-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-12-pro-max-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-12-pro-max-print-guide.png?v=1"
   },
   "iphone-12-pro": {
     "cameraPresetId": "sem-camera",
@@ -798,7 +886,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-12-pro-body-mask.png?v=16",
     "molduraAspect": 0.5,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-12-pro-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-12-pro-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-12-pro-print-guide.png?v=1"
   },
   "iphone-11": {
     "cameraPresetId": "sem-camera",
@@ -807,7 +896,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-11-body-mask.png?v=16",
     "molduraAspect": 0.5177,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-11-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-11-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-11-print-guide.png?v=1"
   },
   "iphone-se": {
     "cameraPresetId": "sem-camera",
@@ -816,7 +906,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-se-body-mask.png?v=16",
     "molduraAspect": 0.5054,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-se-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-se-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-se-print-guide.png?v=1"
   },
   "iphone-xs": {
     "cameraPresetId": "sem-camera",
@@ -825,7 +916,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-xs-body-mask.png?v=16",
     "molduraAspect": 0.5119,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-xs-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-xs-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-xs-print-guide.png?v=1"
   },
   "iphone-7": {
     "cameraPresetId": "sem-camera",
@@ -834,7 +926,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-7-body-mask.png?v=16",
     "molduraAspect": 0.5054,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-7-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-7-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-7-print-guide.png?v=1"
   },
   "iphone-7-plus": {
     "cameraPresetId": "sem-camera",
@@ -843,7 +936,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-7-plus-body-mask.png?v=16",
     "molduraAspect": 0.5116,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-7-plus-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-7-plus-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-7-plus-print-guide.png?v=1"
   },
   "iphone-x": {
     "cameraPresetId": "sem-camera",
@@ -852,7 +946,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-x-body-mask.png?v=16",
     "molduraAspect": 0.5119,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-x-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-x-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-x-print-guide.png?v=1"
   },
   "iphone-8": {
     "cameraPresetId": "sem-camera",
@@ -861,7 +956,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-8-body-mask.png?v=16",
     "molduraAspect": 0.5054,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-8-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-8-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-8-print-guide.png?v=1"
   },
   "iphone-8-plus": {
     "cameraPresetId": "sem-camera",
@@ -870,7 +966,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-8-plus-body-mask.png?v=16",
     "molduraAspect": 0.5116,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-8-plus-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-8-plus-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-8-plus-print-guide.png?v=1"
   },
   "iphone-xs-max": {
     "cameraPresetId": "sem-camera",
@@ -879,7 +976,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-xs-max-body-mask.png?v=16",
     "molduraAspect": 0.5274,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-xs-max-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-xs-max-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-xs-max-print-guide.png?v=1"
   },
   "iphone-11-pro": {
     "cameraPresetId": "sem-camera",
@@ -888,7 +986,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-11-pro-body-mask.png?v=16",
     "molduraAspect": 0.505,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-11-pro-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-11-pro-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-11-pro-print-guide.png?v=1"
   },
   "iphone-xr": {
     "cameraPresetId": "sem-camera",
@@ -897,7 +996,8 @@
     "bodyMaskUrl": "/molduras/rock/iphone-xr-body-mask.png?v=16",
     "molduraAspect": 0.5216,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-xr-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-xr-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-xr-print-guide.png?v=1"
   },
   "iphone-11-pro-max": {
     "cameraPresetId": "sem-camera",
@@ -906,6 +1006,7 @@
     "bodyMaskUrl": "/molduras/rock/iphone-11-pro-max-body-mask.png?v=16",
     "molduraAspect": 0.5045,
     "caseRadius": 0.06,
-    "bodyRimUrl": "/molduras/rock/iphone-11-pro-max-body-rim.png?v=16"
+    "bodyRimUrl": "/molduras/rock/iphone-11-pro-max-body-rim.png?v=16",
+    "printGuideUrl": "/molduras/rock/iphone-11-pro-max-print-guide.png?v=1"
   }
 }
