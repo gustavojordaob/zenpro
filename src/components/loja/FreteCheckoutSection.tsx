@@ -30,6 +30,10 @@ type Props = {
     cepDestino: string;
     origemLojaId: string;
   }) => void;
+  /** Título da seção (padrão: Frete). */
+  titulo?: string;
+  /** Layout compacto na página de produto (estilo OBLI). */
+  compacto?: boolean;
 };
 
 export function FreteCheckoutSection({
@@ -39,6 +43,8 @@ export function FreteCheckoutSection({
   freteGratis = false,
   selecionada,
   onSelecionar,
+  titulo = "Frete",
+  compacto = false,
 }: Props) {
   const [cep, setCep] = useState(cepPadrao.replace(/\D/g, ""));
   const [carregando, setCarregando] = useState(false);
@@ -94,38 +100,61 @@ export function FreteCheckoutSection({
   }
 
   return (
-    <section className="mt-8 space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-        Frete
+    <section
+      className={
+        compacto
+          ? "mt-2 space-y-3 rounded-xl border border-zinc-200 bg-white p-4"
+          : "mt-8 space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"
+      }
+    >
+      <h2
+        className={
+          compacto
+            ? "text-sm font-semibold text-zinc-800"
+            : "text-sm font-semibold uppercase tracking-wide text-zinc-500"
+        }
+      >
+        {titulo}
       </h2>
       {freteGratis && (
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
           Benefício do nível: frete grátis nesta compra.
         </p>
       )}
-      <p className="text-xs leading-relaxed text-zinc-500">
-        {avisoPrazoFreteCheckout(personalizado)}
-      </p>
-      <div className="flex flex-wrap items-end gap-3">
+      {!compacto && (
+        <p className="text-xs leading-relaxed text-zinc-500">
+          {avisoPrazoFreteCheckout(personalizado)}
+        </p>
+      )}
+      <div className="flex flex-wrap items-end gap-2">
         <label className="block text-sm text-zinc-700">
-          CEP de entrega
+          {compacto ? null : "CEP de entrega"}
           <input
             type="text"
             inputMode="numeric"
             maxLength={9}
             value={cep.length > 5 ? `${cep.slice(0, 5)}-${cep.slice(5)}` : cep}
             onChange={(e) => setCep(e.target.value.replace(/\D/g, "").slice(0, 8))}
-            className="mt-1 block w-40 rounded-lg border border-zinc-300 px-3 py-2"
-            placeholder="00000-000"
+            className={
+              compacto
+                ? "block w-36 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                : "mt-1 block w-40 rounded-lg border border-zinc-300 px-3 py-2"
+            }
+            placeholder={compacto ? "CEP" : "00000-000"}
+            aria-label="CEP de entrega"
           />
         </label>
         <button
           type="button"
           disabled={carregando}
           onClick={() => void cotar()}
-          className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+          className={
+            compacto
+              ? "rounded-lg bg-zinc-500 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-600 disabled:opacity-50"
+              : "rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+          }
         >
-          {carregando ? "Calculando…" : "Calcular frete"}
+          {carregando ? "Calculando…" : compacto ? "Calcular" : "Calcular frete"}
         </button>
       </div>
       {erro && <p className="text-sm text-red-600">{erro}</p>}

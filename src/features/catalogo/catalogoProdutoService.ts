@@ -58,6 +58,10 @@ function mapProduto(id: string, data: Record<string, unknown>): ProdutoCatalogo 
         : [],
     controlaEstoque: data.personalizavel ? false : data.controlaEstoque !== false,
     estoqueCentral: Math.max(0, Number(data.estoqueCentral ?? 0)),
+    pagamento:
+      data.pagamento && typeof data.pagamento === "object"
+        ? (data.pagamento as ProdutoCentralFirestore["pagamento"])
+        : undefined,
     criadoEm: data.criadoEm,
     atualizadoEm: data.atualizadoEm,
   };

@@ -426,11 +426,14 @@ export function CheckoutPageContent() {
             )}
             Total:{" "}
             <span className="tabular-nums">{formatarPreco(totalPago)}</span>
-            {beneficios && beneficios.descontoCentavos > 0 && (
+            {(beneficios && beneficios.descontoCentavos > 0) ||
+            descontoPix > 0 ? (
               <span className="ml-2 text-sm font-normal text-zinc-400 line-through">
-                {formatarPreco(totalCentavos + (freteOpcao?.precoCentavos ?? 0))}
+                {formatarPreco(
+                  totalCentavos + (freteOpcao?.precoCentavos ?? 0),
+                )}
               </span>
-            )}
+            ) : null}
           </p>
         </section>
 
@@ -468,6 +471,11 @@ export function CheckoutPageContent() {
               totalCentavos={totalPago}
               formasPermitidas={formasPagamento}
               maxParcelas={pagamentoCfg.maxParcelasCartao}
+              descontoPixPercentual={pagamentoCfg.descontoPixPercentual}
+              descontoPixCentavosValor={descontoPixCentavos(
+                totalProdutos,
+                pagamentoCfg.descontoPixPercentual,
+              )}
             />
           )}
         </section>

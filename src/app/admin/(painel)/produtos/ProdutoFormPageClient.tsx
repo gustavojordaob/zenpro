@@ -30,6 +30,7 @@ import { SEED_CATALOGO } from "@/features/catalogo/types";
 import { validarFaixasPrecoRevendedor } from "@/features/revendedor/precoRevendedorFaixas";
 import type { FaixaPrecoRevendedor } from "@/features/multitenant/types";
 import {
+  DESCONTO_PIX_PRODUTO_PADRAO,
   normalizarPagamentoProduto,
   PAGAMENTO_PRODUTO_DEFAULT,
   type PagamentoProdutoConfig,
@@ -705,7 +706,8 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
                 className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
               />
               <span className="mt-1 block text-xs text-zinc-500">
-                Deixe 0 para usar o desconto padrão da loja (Admin → Loja).
+                Padrão {DESCONTO_PIX_PRODUTO_PADRAO}%. Altere se quiser outro
+                valor; 0 = usar o desconto padrão da loja (Admin → Loja).
               </span>
             </label>
           )}

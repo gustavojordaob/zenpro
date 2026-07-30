@@ -1,8 +1,10 @@
 "use client";
 
+import { doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { FreteCheckoutSection } from "@/components/loja/FreteCheckoutSection";
 import { PageBackLink } from "@/components/loja/PageBackLink";
 import { ProdutoImagem } from "@/components/loja/ProdutoImagem";
 import { QuantityStepper } from "@/components/loja/QuantityStepper";
@@ -10,18 +12,27 @@ import { StoreHeader } from "@/components/loja/StoreHeader";
 import { listarModelosAtivos } from "@/features/catalogo/catalogoRuntimeService";
 import { obterProdutoCatalogo } from "@/features/catalogo/catalogoProdutoService";
 import { rotuloMaterial } from "@/features/catalogo/materiaisCapinha";
+import type { OpcaoFreteMelhorEnvio } from "@/features/envios/melhorEnvioClient";
 import { useCarrinho } from "@/features/loja/CarrinhoProvider";
 import {
   calcularDisponivelVenda,
   listarEstoqueLojaMap,
   produtoControlaEstoque,
 } from "@/features/admin/estoque/estoqueAdminService";
+import { COLECOES } from "@/features/multitenant/types";
 import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
 import { formatarPreco } from "@/features/loja/produtosMock";
+import {
+  descontoPixCentavos,
+  normalizarPagamentoProduto,
+  PAGAMENTO_PRODUTO_DEFAULT,
+  type PagamentoProdutoConfig,
+} from "@/features/pagamentos/pagamentoProduto";
+import { PARCELAMENTO_SEM_JUROS } from "@/features/pagamentos/pagamentoConfig";
 import { precoRevendedorAPartirDe } from "@/features/revendedor/precoRevendedorFaixas";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
 import { useLojaPaths } from "@/features/loja/useLojaPaths";
-import { isFirebaseConfigured } from "@/lib/firebase";
+import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 
 type ModeloOpcao = { id: string; nome: string };
 
@@ -55,8 +66,14 @@ export function ProdutoPageClient() {
   const [qty, setQty] = useState(1);
   const [adicionando, setAdicionando] = useState(false);
   const [marcaNome, setMarcaNome] = useState("");
+  const [pagamentoCfg, setPagamentoCfg] = useState<PagamentoProdutoConfig>({
+    ...PAGAMENTO_PRODUTO_DEFAULT,
+  });
+  const [freteSelecionado, setFreteSelecionado] =
+    useState<OpcaoFreteMelhorEnvio | null>(null);
 
   const isB2b = Boolean(loja?.isB2b);
+  const lojaIdFrete = loja?.lojaId?.trim() || MARCA_LOJA_ID;
 
   useEffect(() => {
     if (!produtoId || !isFirebaseConfigured()) {
@@ -69,9 +86,11 @@ export function ProdutoPageClient() {
       setCarregando(true);
       setErro(null);
       try {
-        const [produto, modelosAtivos] = await Promise.all([
+        const lojaId = loja?.lojaId?.trim() || MARCA_LOJA_ID;
+        const [produto, modelosAtivos, lojaSnap] = await Promise.all([
           obterProdutoCatalogo(produtoId),
           listarModelosAtivos(),
+          getDoc(doc(getFirebaseDb(), COLECOES.LOJAS, lojaId)),
         ]);
         if (!produto) {
           setErro("Produto não encontrado ou inativo.");
@@ -114,6 +133,18 @@ export function ProdutoPageClient() {
           esgota = disponivel <= 0;
         }
 
+        const lojaPadrao =
+          (
+            lojaSnap.data()?.config as
+              | {
+                  pagamentoPadrao?: {
+                    maxParcelasCartao?: number;
+                    descontoPixPercentual?: number;
+                  };
+                }
+              | undefined
+          )?.pagamentoPadrao ?? null;
+
         setNome(produto.nome);
         setDescricao(produto.descricao);
         setImagens(produto.imagens?.length ? produto.imagens : []);
@@ -128,6 +159,10 @@ export function ProdutoPageClient() {
         setDisponivelVenda(disponivel);
         setEsgotado(esgota);
         setMarcaNome("");
+        setPagamentoCfg(
+          normalizarPagamentoProduto(produto.pagamento, lojaPadrao),
+        );
+        setFreteSelecionado(null);
       } catch (e) {
         console.error(e);
         setErro(
@@ -151,6 +186,30 @@ export function ProdutoPageClient() {
     controlaEstoque && typeof disponivelVenda === "number"
       ? Math.max(1, disponivelVenda)
       : undefined;
+
+  const descontoPix = descontoPixCentavos(
+    precoCentavos,
+    pagamentoCfg.descontoPixPercentual,
+  );
+  const precoPixCentavos = Math.max(0, precoCentavos - descontoPix);
+  const mostraPrecoPix =
+    pagamentoCfg.aceitaPix && pagamentoCfg.descontoPixPercentual > 0;
+  const mostraParcelas =
+    pagamentoCfg.aceitaCartao && pagamentoCfg.maxParcelasCartao >= 1;
+  const valorParcelaCentavos = mostraParcelas
+    ? Math.ceil(precoCentavos / pagamentoCfg.maxParcelasCartao)
+    : 0;
+
+  const itensFrete = useMemo(
+    () => [
+      {
+        produtoId,
+        quantidade: personalizavel ? 1 : Math.max(1, qty),
+        precoCentavos,
+      },
+    ],
+    [produtoId, personalizavel, qty, precoCentavos],
+  );
 
   function handlePersonalizar() {
     if (!modeloId || !produtoId) return;
@@ -298,23 +357,45 @@ export function ProdutoPageClient() {
               </div>
             </div>
 
-            <div className="mt-6">
-              <p className="text-2xl font-bold text-zinc-900">
-                {isB2b ? "A partir de " : ""}
-                {formatarPreco(precoCentavos)}
-              </p>
+            {/* Preço estilo OBLI: PIX + % + cheio + parcelas */}
+            <div className="mt-6 space-y-1">
+              {mostraPrecoPix ? (
+                <>
+                  <p className="text-2xl font-bold tabular-nums text-gold-dark sm:text-3xl">
+                    {isB2b ? "A partir de " : ""}
+                    {formatarPreco(precoPixCentavos)}{" "}
+                    <span className="text-xl font-semibold sm:text-2xl">
+                      no pix
+                    </span>
+                  </p>
+                  <p className="text-sm font-medium text-gold-dark">
+                    com {pagamentoCfg.descontoPixPercentual}% de desconto
+                  </p>
+                  <p className="text-base tabular-nums text-zinc-600">
+                    {formatarPreco(precoCentavos)}
+                  </p>
+                </>
+              ) : (
+                <p className="text-2xl font-bold tabular-nums text-zinc-900 sm:text-3xl">
+                  {isB2b ? "A partir de " : ""}
+                  {formatarPreco(precoCentavos)}
+                </p>
+              )}
+              {mostraParcelas && pagamentoCfg.maxParcelasCartao > 1 && (
+                <p className="text-sm text-zinc-600">
+                  até {pagamentoCfg.maxParcelasCartao}x de{" "}
+                  {formatarPreco(valorParcelaCentavos)}
+                  {pagamentoCfg.maxParcelasCartao <= PARCELAMENTO_SEM_JUROS
+                    ? " sem juros"
+                    : ""}
+                </p>
+              )}
               {descricao.trim() && (
                 <p className="mt-3 text-sm leading-relaxed text-zinc-600">
                   {descricao}
                 </p>
               )}
             </div>
-
-            {controlaEstoque && !esgotado && (
-              <p className="mt-3 text-xs text-zinc-500">
-                {disponivelVenda ?? 0} em estoque
-              </p>
-            )}
 
             {!personalizavel && !esgotado && (
               <QuantityStepper
@@ -330,7 +411,7 @@ export function ProdutoPageClient() {
                 type="button"
                 onClick={handlePersonalizar}
                 disabled={!modeloId}
-                className="mt-6 w-full rounded-xl bg-zinc-900 py-3.5 text-base font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 sm:max-w-sm"
+                className="btn-gold mt-6 w-full rounded-xl py-3.5 text-base font-semibold disabled:opacity-50 sm:max-w-sm"
               >
                 Personalizar
               </button>
@@ -339,7 +420,7 @@ export function ProdutoPageClient() {
                 type="button"
                 onClick={handleComprar}
                 disabled={esgotado || adicionando || !modeloId}
-                className="mt-6 w-full rounded-xl bg-zinc-900 py-3.5 text-base font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 sm:max-w-sm"
+                className="btn-gold mt-6 w-full rounded-xl py-3.5 text-base font-semibold disabled:opacity-50 sm:max-w-sm"
               >
                 {esgotado
                   ? "Esgotado"
@@ -348,6 +429,19 @@ export function ProdutoPageClient() {
                     : "Comprar"}
               </button>
             )}
+
+            {produtoId ? (
+              <div className="mt-6 sm:max-w-sm">
+                <FreteCheckoutSection
+                  lojaId={lojaIdFrete}
+                  itens={itensFrete}
+                  selecionada={freteSelecionado}
+                  onSelecionar={(op) => setFreteSelecionado(op)}
+                  titulo="Calcule o frete"
+                  compacto
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </main>

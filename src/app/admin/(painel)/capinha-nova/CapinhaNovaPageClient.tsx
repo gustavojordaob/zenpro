@@ -30,6 +30,7 @@ import {
 import { CAMERA_PRESET_OPCOES } from "@/features/personalizacao/cameraModules";
 import { getRockPersonalizacao } from "@/features/personalizacao/rockCameraAssets";
 import { reaisInputParaCentavos } from "@/features/admin/produtos/produtoFormUtils";
+import { DESCONTO_PIX_PRODUTO_PADRAO } from "@/features/pagamentos/pagamentoProduto";
 import { validarFaixasPrecoRevendedor } from "@/features/revendedor/precoRevendedorFaixas";
 
 export function CapinhaNovaPageClient() {
@@ -236,7 +237,7 @@ export function CapinhaNovaPageClient() {
           aceitaBoleto: true,
           aceitaCartao: true,
           maxParcelasCartao: 12,
-          descontoPixPercentual: 0,
+          descontoPixPercentual: DESCONTO_PIX_PRODUTO_PADRAO,
         },
       };
       const produtoId = await criarProdutoCentral(produtoPayload);

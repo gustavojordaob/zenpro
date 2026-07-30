@@ -6,6 +6,7 @@ import {
   rotuloParcelaCheckout,
 } from "@/features/pagamentos/pagamentoConfig";
 import type { PedidoLojaFormaPagamentoOnline } from "@/features/multitenant/types";
+import { formatarPreco } from "@/features/loja/produtosMock";
 
 type Props = {
   formaPagamento: PedidoLojaFormaPagamentoOnline;
@@ -17,6 +18,10 @@ type Props = {
   /** Se omitido, mostra todas as formas. */
   formasPermitidas?: PedidoLojaFormaPagamentoOnline[];
   maxParcelas?: number;
+  /** % de desconto no PIX (0 = sem desconto). */
+  descontoPixPercentual?: number;
+  /** Valor do desconto em centavos (só exibição). */
+  descontoPixCentavosValor?: number;
 };
 
 export function SeletorFormaPagamentoOnline({
@@ -28,11 +33,14 @@ export function SeletorFormaPagamentoOnline({
   compact = false,
   formasPermitidas,
   maxParcelas = PARCELAMENTO_MAXIMO,
+  descontoPixPercentual = 0,
+  descontoPixCentavosValor = 0,
 }: Props) {
   const formas = FORMAS_PAGAMENTO_ONLINE.filter(
     (f) => !formasPermitidas || formasPermitidas.includes(f.id),
   );
   const max = Math.min(PARCELAMENTO_MAXIMO, Math.max(1, maxParcelas));
+  const temDescontoPix = descontoPixPercentual > 0;
 
   return (
     <div className="space-y-3">
@@ -45,25 +53,38 @@ export function SeletorFormaPagamentoOnline({
               : "grid gap-2 sm:grid-cols-2"
         }
       >
-        {formas.map((forma) => (
-          <button
-            key={forma.id}
-            type="button"
-            onClick={() => onFormaChange(forma.id)}
-            className={`rounded-xl border px-3 py-3 text-left text-sm transition ${
-              formaPagamento === forma.id
-                ? "border-gold bg-amber-50 ring-1 ring-gold"
-                : "border-zinc-200 hover:border-zinc-300"
-            }`}
-          >
-            <span className="font-semibold text-zinc-900">{forma.rotulo}</span>
-            <span className="mt-1 block text-xs text-zinc-500">
-              {forma.id === "cartao"
-                ? `Até ${max}x — à vista sem juros`
-                : forma.descricao}
-            </span>
-          </button>
-        ))}
+        {formas.map((forma) => {
+          const ativo = formaPagamento === forma.id;
+          let descricao = forma.descricao;
+          if (forma.id === "cartao") {
+            descricao = `Até ${max}x — à vista sem juros`;
+          } else if (forma.id === "pix" && temDescontoPix) {
+            descricao = `${descontoPixPercentual}% de desconto`;
+          }
+          return (
+            <button
+              key={forma.id}
+              type="button"
+              onClick={() => onFormaChange(forma.id)}
+              className={`rounded-xl border px-3 py-3 text-left text-sm transition ${
+                ativo
+                  ? "border-gold bg-amber-50 ring-1 ring-gold"
+                  : "border-zinc-200 hover:border-zinc-300"
+              }`}
+            >
+              <span className="font-semibold text-zinc-900">{forma.rotulo}</span>
+              <span
+                className={`mt-1 block text-xs ${
+                  forma.id === "pix" && temDescontoPix
+                    ? "font-medium text-gold-dark"
+                    : "text-zinc-500"
+                }`}
+              >
+                {descricao}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {formas.length === 0 && (
@@ -107,9 +128,18 @@ export function SeletorFormaPagamentoOnline({
       )}
 
       {formaPagamento === "pix" && (
-        <p className="text-xs text-zinc-500">
-          Após gerar o PIX, o pagamento costuma confirmar em segundos.
-        </p>
+        <div className="space-y-1">
+          {temDescontoPix && descontoPixCentavosValor > 0 ? (
+            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              Desconto de {descontoPixPercentual}% no PIX: −
+              {formatarPreco(descontoPixCentavosValor)}. O valor cobrado no PIX
+              já inclui esse desconto.
+            </p>
+          ) : null}
+          <p className="text-xs text-zinc-500">
+            Após gerar o PIX, o pagamento costuma confirmar em segundos.
+          </p>
+        </div>
       )}
     </div>
   );

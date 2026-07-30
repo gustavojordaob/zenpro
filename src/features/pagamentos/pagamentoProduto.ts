@@ -17,12 +17,15 @@ export type PagamentoLojaPadrao = {
   descontoPixPercentual?: number;
 };
 
+/** % sugerido no cadastro de produto (dono pode alterar). */
+export const DESCONTO_PIX_PRODUTO_PADRAO = 5;
+
 export const PAGAMENTO_PRODUTO_DEFAULT: PagamentoProdutoConfig = {
   aceitaPix: true,
   aceitaBoleto: true,
   aceitaCartao: true,
   maxParcelasCartao: PARCELAMENTO_MAXIMO,
-  descontoPixPercentual: 0,
+  descontoPixPercentual: DESCONTO_PIX_PRODUTO_PADRAO,
 };
 
 function clampParcelas(n: unknown, fallback: number): number {
@@ -79,7 +82,9 @@ export function intersecaoPagamentoProdutos(
   configs: PagamentoProdutoConfig[],
 ): PagamentoProdutoConfig {
   if (configs.length === 0) return { ...PAGAMENTO_PRODUTO_DEFAULT };
-  return configs.reduce(
+  // Seed = 1º produto — NÃO usar PAGAMENTO_PRODUTO_DEFAULT (descontoPix=0
+  // zeria qualquer % via Math.min).
+  return configs.slice(1).reduce(
     (acc, c) => ({
       aceitaPix: acc.aceitaPix && c.aceitaPix,
       aceitaBoleto: acc.aceitaBoleto && c.aceitaBoleto,
@@ -91,7 +96,7 @@ export function intersecaoPagamentoProdutos(
         c.descontoPixPercentual,
       ),
     }),
-    { ...PAGAMENTO_PRODUTO_DEFAULT },
+    { ...configs[0] },
   );
 }
 
