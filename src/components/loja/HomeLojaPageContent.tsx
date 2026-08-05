@@ -5,25 +5,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { HomeVideoHero } from "@/components/loja/HomeVideoSections";
-import { ProdutosSection } from "@/components/loja/ProdutosSection";
+import { PromocoesStrip } from "@/components/loja/PromocoesStrip";
 import { StoreHeader } from "@/components/loja/StoreHeader";
+import { VitrineCategoriaPreview } from "@/components/loja/VitrineCategoriaPreview";
 import { ZenProLogo } from "@/components/loja/ZenProLogo";
 import { EntrarComoRevendedorLink } from "@/components/revendedor/EntrarComoRevendedorLink";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
-
-const PersonalizarSection = dynamic(
-  () =>
-    import("@/components/loja/PersonalizarSection").then((m) => ({
-      default: m.PersonalizarSection,
-    })),
-  {
-    loading: () => (
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="h-40 animate-pulse rounded-2xl bg-zinc-200/70" />
-      </div>
-    ),
-  },
-);
 
 const HowItWorks = dynamic(
   () =>
@@ -142,9 +129,17 @@ export function HomeLojaPageContent({ variant }: Props) {
 
         <HomeVideoHero />
 
-        <ProdutosSection />
+        <PromocoesStrip />
 
-        <PersonalizarSection />
+        <VitrineCategoriaPreview categoriaId="capinhas" tom="branco" />
+
+        <VitrineCategoriaPreview categoriaId="personalizaveis" tom="claro" />
+
+        <VitrineCategoriaPreview categoriaId="personalizadas" tom="branco" />
+
+        <VitrineCategoriaPreview categoriaId="termicos" tom="claro" />
+
+        <VitrineCategoriaPreview categoriaId="acessorios" tom="branco" />
 
         <HowItWorks />
 

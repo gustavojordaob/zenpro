@@ -120,6 +120,11 @@ service cloud.firestore {
       allow create, update, delete: if isMarca();
     }
 
+    match /campanhas/{campanhaId} {
+      allow read: if true;
+      allow create, update, delete: if isMarca();
+    }
+
     match /modelos/{modeloId} {
       allow read: if true;
       allow create, update, delete: if isMarca();

@@ -32,18 +32,6 @@ export function AuthLink() {
             Admin
           </Link>
         )}
-        <Link
-          href="/meus-pedidos"
-          className="hidden text-sm font-medium text-zinc-600 transition hover:text-gold-dark sm:inline"
-        >
-          Meus pedidos
-        </Link>
-        <Link
-          href="/conta"
-          className="hidden text-sm font-medium text-zinc-600 transition hover:text-gold-dark sm:inline"
-        >
-          Minha conta
-        </Link>
         <button
           type="button"
           onClick={() => void sair()}

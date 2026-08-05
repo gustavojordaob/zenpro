@@ -140,6 +140,18 @@ export type ProdutoCentralFirestore = {
     /** % de desconto no PIX (0–100). null = padrão da loja. */
     descontoPixPercentual?: number | null;
   } | null;
+  /**
+   * Categoria de vitrine: termicos | capinhas | personalizadas | personalizaveis | acessorios.
+   * Se omitido, inferir por personalizavel / categoria legada.
+   */
+  categoriaId?:
+    | "termicos"
+    | "capinhas"
+    | "personalizadas"
+    | "personalizaveis"
+    | "acessorios"
+    | null;
+  /** @deprecated preferir categoriaId — string livre legada */
   categoria: string;
   destaque?: string | null;
   /** Condicional: tipoPersonalizacao === mascara_modelo */
@@ -318,6 +330,23 @@ export type PedidoLojaFirestore = {
   atualizadoEm?: unknown;
 };
 
+/** `campanhas/{campanhaId}` — promoções de vitrine (ex.: Dia dos pais) */
+export type CampanhaFirestore = {
+  slug: string;
+  titulo: string;
+  descricao: string;
+  ativo: boolean;
+  /** Ordem crescente no menu / strip. */
+  ordem: number;
+  /** ISO date string YYYY-MM-DD opcional */
+  inicio?: string | null;
+  fim?: string | null;
+  /** IDs de produtos/{id} na ordem da vitrine */
+  produtoIds: string[];
+  criadoEm?: unknown;
+  atualizadoEm?: unknown;
+};
+
 export const COLECOES = {
   LOJAS: "lojas",
   USUARIOS: "usuarios",
@@ -325,4 +354,5 @@ export const COLECOES = {
   MODELOS_CELULAR: "modelos_celular",
   PEDIDOS: "pedidos",
   ESTOQUE: "estoque",
+  CAMPANHAS: "campanhas",
 } as const;

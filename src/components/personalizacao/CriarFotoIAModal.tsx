@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { gerarFotoCriativaComIA } from "@/features/personalizacao/gerarFotoComIA";
 
 const SUGUESTAO_PROMPT =
   "Ex.: Nós dois juntos na mesma foto, como se estivéssemos tirando uma selfie no mesmo lugar.";
+
+const MAX_FOTOS = 4;
+const MIN_FOTOS = 2;
 
 type Props = {
   aberto: boolean;
@@ -31,6 +34,17 @@ export function CriarFotoIAModal({
   const [erro, setErro] = useState<string | null>(null);
   const [gerandoIA, setGerandoIA] = useState(false);
 
+  const miniaturas = useMemo(
+    () => arquivos.map((f) => URL.createObjectURL(f)),
+    [arquivos],
+  );
+
+  useEffect(() => {
+    return () => {
+      for (const url of miniaturas) URL.revokeObjectURL(url);
+    };
+  }, [miniaturas]);
+
   useEffect(() => {
     if (!aberto) {
       setArquivos([]);
@@ -50,28 +64,47 @@ export function CriarFotoIAModal({
 
   function handleSelecionar(files: FileList | null) {
     if (!files?.length) return;
-    const lista = Array.from(files).slice(0, 4);
-    if (lista.length < 2) {
-      setErro("Escolha pelo menos 2 fotos de referência.");
+
+    const novos = Array.from(files).filter(
+      (f) =>
+        !f.type ||
+        f.type.startsWith("image/") ||
+        /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(f.name),
+    );
+    if (novos.length === 0) {
+      setErro("Selecione arquivos de imagem (JPG, PNG, WEBP…).");
       return;
     }
-    setErro(null);
+
+    const vagas = MAX_FOTOS - arquivos.length;
+    if (vagas <= 0) {
+      setErro(`Máximo de ${MAX_FOTOS} fotos.`);
+      return;
+    }
+
+    const adicionar = novos.slice(0, vagas);
+    setArquivos((prev) => [...prev, ...adicionar]);
+    if (novos.length > vagas) {
+      setErro(`Só cabem mais ${vagas} foto(s). Máximo ${MAX_FOTOS}.`);
+    } else {
+      setErro(null);
+    }
     setResultado(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
-    setArquivos(lista);
   }
 
   function removerIndice(i: number) {
     setArquivos((prev) => prev.filter((_, idx) => idx !== i));
     setResultado(null);
+    setErro(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
   }
 
   async function handleGerar() {
-    if (arquivos.length < 2) {
-      setErro("Escolha entre 2 e 4 fotos.");
+    if (arquivos.length < MIN_FOTOS) {
+      setErro(`Anexe pelo menos ${MIN_FOTOS} fotos para gerar.`);
       return;
     }
     setErro(null);
@@ -103,6 +136,8 @@ export function CriarFotoIAModal({
   if (!aberto) return null;
 
   const ocupado = gerando || gerandoIA;
+  const podeAdicionar = arquivos.length < MAX_FOTOS;
+  const podeGerar = arquivos.length >= MIN_FOTOS;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
@@ -113,8 +148,8 @@ export function CriarFotoIAModal({
               Criar foto com IA
             </h2>
             <p className="text-xs text-zinc-500">
-              Junta suas fotos numa cena só — ex.: você e alguém juntos.
-              Clientes: até 3 montagens por dia (revendedores sem limite).
+              Anexe de {MIN_FOTOS} a {MAX_FOTOS} fotos (pode escolher uma de
+              cada vez). Clientes: até 3 montagens por dia.
             </p>
           </div>
           <button
@@ -138,18 +173,20 @@ export function CriarFotoIAModal({
           <div>
             <button
               type="button"
-              disabled={ocupado}
+              disabled={ocupado || !podeAdicionar}
               onClick={() => inputRef.current?.click()}
               className="w-full rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm font-medium text-zinc-700 hover:border-zinc-400 disabled:opacity-50"
             >
-              {arquivos.length >= 2
-                ? "Trocar fotos de referência"
-                : "Escolher 2 a 4 fotos"}
+              {arquivos.length === 0
+                ? `Escolher fotos (${MIN_FOTOS} a ${MAX_FOTOS})`
+                : podeAdicionar
+                  ? `Adicionar mais fotos (${arquivos.length}/${MAX_FOTOS})`
+                  : `${MAX_FOTOS} fotos anexadas`}
             </button>
             <input
               ref={inputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*"
               multiple
               className="hidden"
               onChange={(e) => {
@@ -160,23 +197,37 @@ export function CriarFotoIAModal({
           </div>
 
           {arquivos.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {arquivos.map((f, i) => (
-                <div
-                  key={`${f.name}-${i}`}
-                  className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-700"
-                >
-                  Ref. {i + 1}
-                  <button
-                    type="button"
-                    className="ml-1 text-zinc-400 hover:text-red-500"
-                    onClick={() => removerIndice(i)}
-                    aria-label={`Remover referência ${i + 1}`}
+            <div>
+              <p className="mb-2 text-xs font-medium text-zinc-600">
+                Fotos anexadas ({arquivos.length}/{MAX_FOTOS})
+              </p>
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {arquivos.map((f, i) => (
+                  <li
+                    key={`${f.name}-${f.size}-${i}`}
+                    className="relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100"
                   >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={miniaturas[i]}
+                      alt={`Referência ${i + 1}`}
+                      className="aspect-square h-28 w-full object-cover sm:h-24"
+                    />
+                    <span className="absolute left-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      {i + 1}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={ocupado}
+                      className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-sm text-white hover:bg-red-600 disabled:opacity-50"
+                      onClick={() => removerIndice(i)}
+                      aria-label={`Remover referência ${i + 1}`}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -218,7 +269,9 @@ export function CriarFotoIAModal({
               />
             ) : (
               <p className="py-16 text-center text-sm text-zinc-500">
-                Escolha as fotos, descreva a cena e toque em Gerar
+                {podeGerar
+                  ? "Toque em Gerar foto com IA"
+                  : `Anexe pelo menos ${MIN_FOTOS} fotos para gerar`}
               </p>
             )}
           </div>
@@ -235,7 +288,7 @@ export function CriarFotoIAModal({
           {!resultado ? (
             <button
               type="button"
-              disabled={ocupado || arquivos.length < 2}
+              disabled={ocupado || !podeGerar}
               onClick={() => void handleGerar()}
               className="btn-gold w-full rounded-xl py-3 text-base disabled:opacity-40"
             >
@@ -245,7 +298,7 @@ export function CriarFotoIAModal({
             <>
               <button
                 type="button"
-                disabled={ocupado}
+                disabled={ocupado || !podeGerar}
                 onClick={() => void handleGerar()}
                 className="w-full rounded-xl border border-zinc-300 py-2.5 text-sm font-medium text-zinc-800 disabled:opacity-40"
               >

@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -89,4 +90,8 @@ export async function alternarAtivoMarcaAdmin(
     ativo,
     atualizadoEm: serverTimestamp(),
   });
+}
+
+export async function excluirMarcaAdmin(id: string): Promise<void> {
+  await deleteDoc(doc(requireDb(), COLECOES_CATALOGO.MARCAS, id));
 }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { listarMarcasAdmin } from "@/features/admin/catalogo/marcaAdminService";
 import {
+  excluirModeloAdmin,
   listarModelosAdmin,
   type ModeloCatalogoAdmin,
 } from "@/features/admin/catalogo/modeloAdminService";
@@ -16,19 +17,29 @@ export function ModelosAdminPageClient() {
     { id: string; nome: string }[]
   >([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("todos");
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
-    const [modelosLista, marcas] = await Promise.all([
-      listarModelosAdmin(),
-      listarMarcasAdmin(),
-    ]);
-    setModelos(modelosLista);
-    setMarcasMap(Object.fromEntries(marcas.map((m) => [m.id, m.nome])));
-    setMarcasOpcoes(marcas.map((m) => ({ id: m.id, nome: m.nome })));
-    setCarregando(false);
+    setErro(null);
+    try {
+      const [modelosLista, marcas] = await Promise.all([
+        listarModelosAdmin(),
+        listarMarcasAdmin(),
+      ]);
+      setModelos(modelosLista);
+      setMarcasMap(Object.fromEntries(marcas.map((m) => [m.id, m.nome])));
+      setMarcasOpcoes(marcas.map((m) => ({ id: m.id, nome: m.nome })));
+    } catch (error) {
+      setErro(
+        error instanceof Error ? error.message : "Erro ao carregar modelos.",
+      );
+    } finally {
+      setCarregando(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -48,6 +59,26 @@ export function ModelosAdminPageClient() {
       );
     });
   }, [modelos, busca, filtroMarca, marcasMap]);
+
+  async function handleExcluir(m: ModeloCatalogoAdmin) {
+    if (
+      !confirm(
+        `Excluir o modelo "${m.nome}"?\n\nProdutos que usam este aparelho podem ficar inconsistentes. Esta ação não pode ser desfeita.`,
+      )
+    ) {
+      return;
+    }
+    setExcluindoId(m.id);
+    setErro(null);
+    try {
+      await excluirModeloAdmin(m.id);
+      await carregar();
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : "Erro ao excluir.");
+    } finally {
+      setExcluindoId(null);
+    }
+  }
 
   return (
     <AdminShell
@@ -127,6 +158,7 @@ export function ModelosAdminPageClient() {
         </select>
       </div>
 
+      {erro && <p className="mb-4 text-sm text-red-600">{erro}</p>}
       {carregando ? (
         <p className="text-sm text-zinc-500">Carregando...</p>
       ) : filtrados.length === 0 ? (
@@ -164,6 +196,14 @@ export function ModelosAdminPageClient() {
                       >
                         Editar
                       </Link>
+                      <button
+                        type="button"
+                        disabled={excluindoId === m.id}
+                        onClick={() => void handleExcluir(m)}
+                        className="ml-3 text-xs font-medium text-red-700 hover:underline disabled:opacity-50"
+                      >
+                        {excluindoId === m.id ? "…" : "Excluir"}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -181,12 +221,22 @@ export function ModelosAdminPageClient() {
                 <p className="text-sm text-zinc-600">
                   {marcasMap[m.marcaId] ?? m.marcaId}
                 </p>
-                <Link
-                  href={`/admin/modelos/editar?id=${m.id}`}
-                  className="mt-3 block rounded-xl border border-zinc-300 px-3 py-2.5 text-center text-sm font-medium text-zinc-800 active:bg-zinc-100"
-                >
-                  Editar
-                </Link>
+                <div className="mt-3 flex gap-2">
+                  <Link
+                    href={`/admin/modelos/editar?id=${m.id}`}
+                    className="flex-1 rounded-xl border border-zinc-300 px-3 py-2.5 text-center text-sm font-medium text-zinc-800 active:bg-zinc-100"
+                  >
+                    Editar
+                  </Link>
+                  <button
+                    type="button"
+                    disabled={excluindoId === m.id}
+                    onClick={() => void handleExcluir(m)}
+                    className="flex-1 rounded-xl border border-red-200 px-3 py-2.5 text-center text-sm font-medium text-red-700 active:bg-red-50 disabled:opacity-50"
+                  >
+                    {excluindoId === m.id ? "…" : "Excluir"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

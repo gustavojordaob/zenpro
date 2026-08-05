@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
+import type { CategoriaVitrineId } from "@/features/loja/categoriasVitrine";
 
 export type LojaPaths = {
   home: string;
@@ -10,6 +11,8 @@ export type LojaPaths = {
   /** Página do produto com seletor de modelos. */
   produto: (produtoId: string) => string;
   personalizar: (modeloId: string, produtoId?: string) => string;
+  categoria: (categoriaId: CategoriaVitrineId | string) => string;
+  promocao: (slug: string) => string;
   carrinho: string;
   checkout: string;
   contato: string;
@@ -42,6 +45,9 @@ export function useLojaPaths(): LojaPaths {
           if (produtoId) params.set("produto", produtoId);
           return `/personalizar?${params.toString()}`;
         },
+        categoria: (categoriaId) => `/c/${encodeURIComponent(categoriaId)}`,
+        promocao: (slug) =>
+          `/promocao?slug=${encodeURIComponent(slug)}`,
         carrinho: "/carrinho",
         checkout: "/checkout",
         contato: "/contato",
@@ -59,6 +65,10 @@ export function useLojaPaths(): LojaPaths {
         `${base}/produto?id=${encodeURIComponent(produtoId)}`,
       personalizar: (modeloId: string, produtoId?: string) =>
         buildPersonalizarUrl(base, modeloId, produtoId),
+      categoria: (categoriaId) =>
+        `${base}/c/${encodeURIComponent(categoriaId)}`,
+      promocao: (slug) =>
+        `${base}/promocao?slug=${encodeURIComponent(slug)}`,
       carrinho: `${base}/carrinho`,
       checkout: `${base}/checkout`,
       contato: "/contato",

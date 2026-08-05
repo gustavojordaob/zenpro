@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
+  excluirMarcaAdmin,
   listarMarcasAdmin,
   type MarcaCatalogoAdmin,
 } from "@/features/admin/catalogo/marcaAdminService";
@@ -16,6 +17,7 @@ export function MarcasAdminPageClient() {
   const [erro, setErro] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -41,6 +43,26 @@ export function MarcasAdminPageClient() {
       return m.nome.toLowerCase().includes(q) || m.id.toLowerCase().includes(q);
     });
   }, [marcas, busca, filtroStatus]);
+
+  async function handleExcluir(m: MarcaCatalogoAdmin) {
+    if (
+      !confirm(
+        `Excluir a marca "${m.nome}"?\n\nProdutos e modelos que apontam para ela podem ficar inconsistentes. Esta ação não pode ser desfeita.`,
+      )
+    ) {
+      return;
+    }
+    setExcluindoId(m.id);
+    setErro(null);
+    try {
+      await excluirMarcaAdmin(m.id);
+      await carregar();
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : "Erro ao excluir.");
+    } finally {
+      setExcluindoId(null);
+    }
+  }
 
   return (
     <AdminShell titulo="Marcas" subtitulo="Fabricantes / linhas de aparelho">
@@ -108,6 +130,14 @@ export function MarcasAdminPageClient() {
                     >
                       Editar
                     </Link>
+                    <button
+                      type="button"
+                      disabled={excluindoId === m.id}
+                      onClick={() => void handleExcluir(m)}
+                      className="ml-3 text-xs font-medium text-red-700 hover:underline disabled:opacity-50"
+                    >
+                      {excluindoId === m.id ? "…" : "Excluir"}
+                    </button>
                   </td>
                 </tr>
               ))}

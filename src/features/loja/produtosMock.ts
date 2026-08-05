@@ -19,6 +19,8 @@ export type ProdutoDestaque = {
   precoCentavos: number;
   tipo: TipoProduto;
   categoria: CategoriaProduto;
+  /** Categoria de vitrine (termicos | capinhas | personalizadas | personalizaveis | acessorios). */
+  categoriaId?: import("./categoriasVitrine").CategoriaVitrineId;
   material?: string;
   destaque?: string;
   imagemUrl?: string;
@@ -28,6 +30,7 @@ export type ProdutoDestaque = {
   controlaEstoque?: boolean;
   disponivelVenda?: number;
   esgotado?: boolean;
+  personalizavel?: boolean;
   /** B2B */
   quantidadeInicial?: number;
   faixasPrecoRevendedor?: import("@/features/multitenant/types").FaixaPrecoRevendedor[];

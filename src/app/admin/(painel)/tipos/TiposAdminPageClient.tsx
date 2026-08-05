@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   alternarAtivoTipoAdmin,
+  excluirTipoAdmin,
   listarTiposAdmin,
   type TipoCatalogoAdmin,
 } from "@/features/admin/catalogo/tipoAdminService";
@@ -14,6 +15,7 @@ export function TiposAdminPageClient() {
   const [tipos, setTipos] = useState<TipoCatalogoAdmin[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -30,6 +32,26 @@ export function TiposAdminPageClient() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  async function handleExcluir(tipo: TipoCatalogoAdmin) {
+    if (
+      !confirm(
+        `Excluir o tipo "${tipo.nome}"?\n\nProdutos que usam este tipo podem ficar inconsistentes. Esta ação não pode ser desfeita.`,
+      )
+    ) {
+      return;
+    }
+    setExcluindoId(tipo.id);
+    setErro(null);
+    try {
+      await excluirTipoAdmin(tipo.id);
+      await carregar();
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : "Erro ao excluir.");
+    } finally {
+      setExcluindoId(null);
+    }
+  }
 
   return (
     <AdminShell titulo="Tipos de produto" subtitulo="Define como cada categoria se personaliza">
@@ -68,6 +90,14 @@ export function TiposAdminPageClient() {
                       <button type="button" className="ml-3 text-xs text-zinc-600" onClick={() => void alternarAtivoTipoAdmin(tipo.id, !tipo.ativo).then(carregar)}>
                         {tipo.ativo ? "Desativar" : "Ativar"}
                       </button>
+                      <button
+                        type="button"
+                        disabled={excluindoId === tipo.id}
+                        className="ml-3 text-xs font-medium text-red-700 hover:underline disabled:opacity-50"
+                        onClick={() => void handleExcluir(tipo)}
+                      >
+                        {excluindoId === tipo.id ? "…" : "Excluir"}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -86,19 +116,27 @@ export function TiposAdminPageClient() {
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-zinc-600">{ROTULOS_TIPO_PERSONALIZACAO[tipo.tipoPersonalizacao]}</p>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   <Link
                     href={`/admin/tipos/editar?id=${tipo.id}`}
-                    className="flex-1 rounded-xl border border-zinc-300 px-3 py-2.5 text-center text-sm font-medium text-zinc-800 active:bg-zinc-100"
+                    className="min-w-[30%] flex-1 rounded-xl border border-zinc-300 px-3 py-2.5 text-center text-sm font-medium text-zinc-800 active:bg-zinc-100"
                   >
                     Editar
                   </Link>
                   <button
                     type="button"
-                    className="flex-1 rounded-xl border border-zinc-300 px-3 py-2.5 text-center text-sm font-medium text-zinc-700 active:bg-zinc-100"
+                    className="min-w-[30%] flex-1 rounded-xl border border-zinc-300 px-3 py-2.5 text-center text-sm font-medium text-zinc-700 active:bg-zinc-100"
                     onClick={() => void alternarAtivoTipoAdmin(tipo.id, !tipo.ativo).then(carregar)}
                   >
                     {tipo.ativo ? "Desativar" : "Ativar"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={excluindoId === tipo.id}
+                    className="min-w-[30%] flex-1 rounded-xl border border-red-200 px-3 py-2.5 text-center text-sm font-medium text-red-700 active:bg-red-50 disabled:opacity-50"
+                    onClick={() => void handleExcluir(tipo)}
+                  >
+                    {excluindoId === tipo.id ? "…" : "Excluir"}
                   </button>
                 </div>
               </div>

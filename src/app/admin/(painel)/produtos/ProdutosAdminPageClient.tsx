@@ -235,7 +235,7 @@ export function ProdutosAdminPageClient() {
           className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm"
         >
           <option value="todos">Todos os tipos</option>
-          <option value="personalizada">Capinhas personalizadas</option>
+          <option value="personalizada">Capinhas personalizáveis</option>
           <option value="pronta">Produtos prontos</option>
         </select>
         <select

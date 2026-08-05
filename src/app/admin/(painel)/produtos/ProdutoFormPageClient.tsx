@@ -25,8 +25,7 @@ import { subirImagemProduto } from "@/features/admin/produtos/uploadImagemProdut
 import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
 import { listarMarcasAdmin } from "@/features/admin/catalogo/marcaAdminService";
 import { listarModelosAdmin } from "@/features/admin/catalogo/modeloAdminService";
-import { listarTiposAdmin } from "@/features/admin/catalogo/tipoAdminService";
-import { SEED_CATALOGO } from "@/features/catalogo/types";
+import { tipoIdPorCategoriaVitrine } from "@/features/catalogo/types";
 import { validarFaixasPrecoRevendedor } from "@/features/revendedor/precoRevendedorFaixas";
 import type { FaixaPrecoRevendedor } from "@/features/multitenant/types";
 import {
@@ -35,6 +34,13 @@ import {
   PAGAMENTO_PRODUTO_DEFAULT,
   type PagamentoProdutoConfig,
 } from "@/features/pagamentos/pagamentoProduto";
+import {
+  CATEGORIAS_VITRINE,
+  categoriaEhCapinhaCelular,
+  categoriaPermitePersonalizar,
+  inferirCategoriaId,
+  type CategoriaVitrineId,
+} from "@/features/loja/categoriasVitrine";
 import { PARCELAMENTO_MAXIMO } from "@/features/pagamentos/pagamentoConfig";
 
 type Props = {
@@ -56,9 +62,10 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
   );
   const [imagens, setImagens] = useState<string[]>([]);
   const [ativo, setAtivo] = useState(true);
-  const [tipoId, setTipoId] = useState<string>(SEED_CATALOGO.TIPO_CAPINHA);
   const [modoVenda, setModoVenda] = useState<"personalizada" | "pronta">("pronta");
   const [personalizavel, setPersonalizavel] = useState(false);
+  const [categoriaId, setCategoriaId] =
+    useState<CategoriaVitrineId>("capinhas");
   const [material, setMaterial] = useState("");
   const [controlaEstoque, setControlaEstoque] = useState(true);
   const [estoqueCentral, setEstoqueCentral] = useState("0");
@@ -71,7 +78,6 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
   const [pagamento, setPagamento] = useState<PagamentoProdutoConfig>({
     ...PAGAMENTO_PRODUTO_DEFAULT,
   });
-  const [tipos, setTipos] = useState<{ id: string; nome: string; tipoPersonalizacao: string }[]>([]);
   const [marcas, setMarcas] = useState<{ id: string; nome: string }[]>([]);
   const [modelos, setModelos] = useState<{ id: string; nome: string; marcaId: string }[]>([]);
   const [carregando, setCarregando] = useState(editando);
@@ -80,30 +86,29 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
   const [erro, setErro] = useState<string | null>(null);
   const [idRascunho, setIdRascunho] = useState<string | null>(produtoId ?? null);
 
-  const tipoSelecionado = tipos.find((t) => t.id === tipoId);
-  const ehCapinhaCelular =
-    tipoSelecionado?.tipoPersonalizacao === "mascara_modelo" &&
-    tipoId === SEED_CATALOGO.TIPO_CAPINHA;
-
-  const podePersonalizar = ehCapinhaCelular;
+  /** Capinhas (prontas, arte pronta ou personalizáveis) usam marca/modelos. */
+  const ehCapinhaCelular = categoriaEhCapinhaCelular(categoriaId);
+  /** Só Personalizáveis abrem o editor de foto. */
+  const podePersonalizar = categoriaPermitePersonalizar(categoriaId);
 
   useEffect(() => {
-    void Promise.all([
-      listarTiposAdmin(),
-      listarMarcasAdmin(),
-      listarModelosAdmin(),
-    ]).then(([t, m, mod]) => {
-      setTipos(t);
-      setMarcas(m);
-      setModelos(mod);
-    });
+    void Promise.all([listarMarcasAdmin(), listarModelosAdmin()]).then(
+      ([m, mod]) => {
+        setMarcas(m);
+        setModelos(mod);
+      },
+    );
   }, []);
 
   useEffect(() => {
-    if (!podePersonalizar && personalizavel) {
+    if (podePersonalizar) {
+      setPersonalizavel(true);
+      setModoVenda("personalizada");
+    } else {
       setPersonalizavel(false);
+      setModoVenda("pronta");
     }
-  }, [podePersonalizar, personalizavel]);
+  }, [podePersonalizar]);
 
   useEffect(() => {
     if (personalizavel) {
@@ -145,7 +150,7 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
         );
         setImagens(produto.imagens);
         setAtivo(produto.ativo);
-        setTipoId(produto.tipoId);
+        setCategoriaId(inferirCategoriaId(produto));
         setModoVenda(produto.modoVenda);
         setPersonalizavel(Boolean(produto.personalizavel));
         setMaterial(produto.material ?? "");
@@ -197,9 +202,9 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
       descricao,
       imagens,
       ativo,
-      tipoId,
+      tipoId: tipoIdPorCategoriaVitrine(categoriaId),
       modoVenda: personalizavel ? ("personalizada" as const) : modoVenda,
-      personalizavel: podePersonalizar ? personalizavel : false,
+      personalizavel: podePersonalizar,
       material: material.trim() || null,
       controlaEstoque: personalizavel ? false : controlaEstoque,
       estoqueCentral: personalizavel ? 0 : Math.max(0, parseInt(estoqueCentral, 10) || 0),
@@ -210,13 +215,13 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
       larguraCm: Math.max(1, parseInt(larguraCm, 10) || 12),
       comprimentoCm: Math.max(1, parseInt(comprimentoCm, 10) || 4),
       pagamento,
+      categoriaId,
     }),
     [
       nome,
       descricao,
       imagens,
       ativo,
-      tipoId,
       modoVenda,
       personalizavel,
       material,
@@ -230,6 +235,7 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
       larguraCm,
       comprimentoCm,
       pagamento,
+      categoriaId,
     ],
   );
 
@@ -441,23 +447,37 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-zinc-700">Tipo de produto</span>
+          <label className="block space-y-1.5 sm:col-span-2">
+            <span className="text-sm font-medium text-zinc-700">
+              Categoria da vitrine
+            </span>
             <select
-              value={tipoId}
-              onChange={(e) => setTipoId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2.5"
+              value={categoriaId}
+              onChange={(e) =>
+                setCategoriaId(e.target.value as CategoriaVitrineId)
+              }
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 sm:max-w-md"
             >
-              {tipos.map((t) => (
-                <option key={t.id} value={t.id}>{t.nome}</option>
+              {CATEGORIAS_VITRINE.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
               ))}
             </select>
+            <span className="block text-xs text-zinc-500">
+              Capinhas = prontas genéricas · Personalizáveis = cliente manda
+              foto · Personalizadas = arte/tema já pronto · Térmicos /
+              Acessórios.
+            </span>
           </label>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-zinc-700">Modo de venda</span>
             <select
               value={modoVenda}
-              disabled={personalizavel}
+              disabled={personalizavel || podePersonalizar}
               onChange={(e) => setModoVenda(e.target.value as "personalizada" | "pronta")}
               className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 disabled:bg-zinc-100"
             >
@@ -471,9 +491,8 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
           <label className="flex items-start gap-3">
             <input
               type="checkbox"
-              checked={personalizavel}
-              disabled={!podePersonalizar}
-              onChange={(e) => setPersonalizavel(e.target.checked)}
+              checked={personalizavel || podePersonalizar}
+              disabled
               className="mt-1 h-4 w-4 rounded border-zinc-300"
             />
             <span>
@@ -481,14 +500,13 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
                 Produto personalizável (cliente envia foto)
               </span>
               <span className="mt-1 block text-xs text-zinc-600">
-                {podePersonalizar
-                  ? "Aparece na seção “Personalize com sua foto” do site. Por enquanto disponível só para capinhas de celular."
-                  : "Personalização com foto está disponível apenas para o tipo Capinha de celular."}
+                Ativado automaticamente na categoria Personalizáveis.
+                Personalizadas são artes prontas — sem editor de foto.
               </span>
             </span>
           </label>
 
-          {personalizavel && (
+          {(personalizavel || podePersonalizar) && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-xs text-amber-950">
               <strong>Importante:</strong> cadastre em{" "}
               <Link href="/admin/modelos" className="font-semibold underline">
@@ -547,7 +565,41 @@ export function ProdutoFormPageClient({ produtoId }: Props) {
               </select>
             </label>
             <div className="space-y-2">
-              <span className="text-sm text-zinc-600">Modelos compatíveis</span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm text-zinc-600">Modelos compatíveis</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
+                    onClick={() => {
+                      const ids = modelos
+                        .filter((m) => !marcaId || m.marcaId === marcaId)
+                        .map((m) => m.id);
+                      setModelosCompativeis((prev) =>
+                        Array.from(new Set([...prev, ...ids])),
+                      );
+                    }}
+                  >
+                    Selecionar todos
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
+                    onClick={() => {
+                      const ids = new Set(
+                        modelos
+                          .filter((m) => !marcaId || m.marcaId === marcaId)
+                          .map((m) => m.id),
+                      );
+                      setModelosCompativeis((prev) =>
+                        prev.filter((id) => !ids.has(id)),
+                      );
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
               <ul className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 p-2">
                 {modelos
                   .filter((m) => !marcaId || m.marcaId === marcaId)

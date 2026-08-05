@@ -20,7 +20,9 @@ export const LOJA_SLUGS_RESERVADOS = [
   "conta",
   "contato",
   "login",
-  "seja-revendedor",
+  "c",
+  "promocao",
+  "produto",
 ] as const;
 
 /** Slugs pré-renderizados no static export (seeds + casca genérica) */

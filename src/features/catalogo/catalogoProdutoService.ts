@@ -4,6 +4,7 @@ import {
   type FaixaPrecoRevendedor,
   type ProdutoCentralFirestore,
 } from "@/features/multitenant/types";
+import { inferirCategoriaId } from "@/features/loja/categoriasVitrine";
 import { normalizarFaixasPrecoRevendedor } from "@/features/revendedor/precoRevendedorFaixas";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 
@@ -16,6 +17,7 @@ function mapProduto(id: string, data: Record<string, unknown>): ProdutoCatalogo 
     data.modoVenda === "personalizada" || data.tipo === "personalizada"
       ? "personalizada"
       : "pronta";
+  const categoriaId = inferirCategoriaId(data);
 
   return {
     id,
@@ -48,7 +50,8 @@ function mapProduto(id: string, data: Record<string, unknown>): ProdutoCatalogo 
     personalizavel: Boolean(data.personalizavel),
     material: data.material ? String(data.material) : undefined,
     visualPersonalizacao: data.visualPersonalizacao ?? undefined,
-    categoria: String(data.categoria ?? "capinhas"),
+    categoriaId,
+    categoria: String(data.categoria ?? categoriaId),
     destaque: (data.destaque as string | null | undefined) ?? null,
     marcaId: (data.marcaId as string | null | undefined) ?? null,
     modelosCompativeis: Array.isArray(data.modelosCompativeis)

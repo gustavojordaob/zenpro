@@ -9,7 +9,11 @@ import {
   updateDoc,
   type DocumentData,
 } from "firebase/firestore";
-import { SEED_CATALOGO } from "@/features/catalogo/types";
+import { SEED_CATALOGO, tipoIdPorCategoriaVitrine } from "@/features/catalogo/types";
+import {
+  inferirCategoriaId,
+  type CategoriaVitrineId,
+} from "@/features/loja/categoriasVitrine";
 import {
   COLECOES,
   type FaixaPrecoRevendedor,
@@ -52,6 +56,8 @@ export type ProdutoFormInput = {
   larguraCm: number;
   comprimentoCm: number;
   pagamento: PagamentoProdutoConfig;
+  /** Categoria de vitrine. */
+  categoriaId: CategoriaVitrineId;
 };
 
 /** Preço cobrado na reposição — 1 un. (faixa) ou fallback. */
@@ -72,9 +78,28 @@ const DEFAULTS_NOVO_PRODUTO = {
   modelosCompativeis: [] as string[],
 };
 
-function categoriaFromTipoId(tipoId: string): string {
-  if (tipoId === SEED_CATALOGO.TIPO_CAPINHA) return "capinhas";
-  return "acessorios";
+function sincronizarFlagsCategoria(
+  categoriaId: CategoriaVitrineId,
+): {
+  categoriaId: CategoriaVitrineId;
+  personalizavel: boolean;
+  modoVenda: "personalizada" | "pronta";
+  tipoId: string;
+} {
+  if (categoriaId === "personalizaveis") {
+    return {
+      categoriaId,
+      personalizavel: true,
+      modoVenda: "personalizada",
+      tipoId: tipoIdPorCategoriaVitrine(categoriaId),
+    };
+  }
+  return {
+    categoriaId,
+    personalizavel: false,
+    modoVenda: "pronta",
+    tipoId: tipoIdPorCategoriaVitrine(categoriaId),
+  };
 }
 
 function requireDb() {
@@ -91,6 +116,7 @@ function mapProduto(id: string, data: DocumentData): ProdutoCentral {
       : "pronta";
 
   const tipoId = String(data.tipoId ?? SEED_CATALOGO.TIPO_CAPINHA);
+  const categoriaId = inferirCategoriaId(data);
 
   return {
     id,
@@ -126,7 +152,8 @@ function mapProduto(id: string, data: DocumentData): ProdutoCentral {
       ? false
       : data.controlaEstoque !== false,
     estoqueCentral: Math.max(0, Number(data.estoqueCentral ?? 0)),
-    categoria: String(data.categoria ?? categoriaFromTipoId(tipoId)),
+    categoriaId,
+    categoria: String(data.categoria ?? categoriaId),
     destaque: (data.destaque as string | null | undefined) ?? null,
     marcaId: (data.marcaId as string | null | undefined) ?? null,
     modelosCompativeis: Array.isArray(data.modelosCompativeis)
@@ -161,6 +188,7 @@ function mapProduto(id: string, data: DocumentData): ProdutoCentral {
 
 function payloadFromInput(input: ProdutoFormInput) {
   const modeloLegacy = input.modelosCompativeis[0] ?? null;
+  const sync = sincronizarFlagsCategoria(input.categoriaId);
 
   return {
     nome: input.nome.trim(),
@@ -177,14 +205,15 @@ function payloadFromInput(input: ProdutoFormInput) {
     ),
     imagens: input.imagens,
     ativo: input.ativo,
-    tipoId: input.tipoId,
-    modoVenda: input.modoVenda,
-    tipo: input.modoVenda,
-    personalizavel: input.personalizavel,
+    tipoId: sync.tipoId,
+    modoVenda: sync.modoVenda,
+    tipo: sync.modoVenda,
+    personalizavel: sync.personalizavel,
     material: input.material?.trim() || null,
-    controlaEstoque: input.personalizavel ? false : input.controlaEstoque,
-    estoqueCentral: input.personalizavel ? 0 : Math.max(0, input.estoqueCentral),
-    categoria: categoriaFromTipoId(input.tipoId),
+    controlaEstoque: sync.personalizavel ? false : input.controlaEstoque,
+    estoqueCentral: sync.personalizavel ? 0 : Math.max(0, input.estoqueCentral),
+    categoriaId: sync.categoriaId,
+    categoria: sync.categoriaId,
     marcaId: input.marcaId,
     modelosCompativeis: input.modelosCompativeis,
     modeloId: modeloLegacy,

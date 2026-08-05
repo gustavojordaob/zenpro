@@ -27,6 +27,12 @@ export function getTiposSeed(): ({
       tipoPersonalizacao: "mascara_modelo",
       ativo: true,
     },
+    {
+      id: SEED_CATALOGO.TIPO_PRONTA,
+      nome: "Produto pronto",
+      tipoPersonalizacao: "mascara_modelo",
+      ativo: true,
+    },
   ];
 }
 

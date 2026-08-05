@@ -20,7 +20,6 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
   const [menuAberto, setMenuAberto] = useState(false);
   const pathname = usePathname();
 
-  // Dourado só na página atual (não antes de clicar).
   const rotaAtiva = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
@@ -39,19 +38,20 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
             label: "Candidaturas",
             destaque: true,
           },
-          { href: "/admin/capinha-nova", label: "+ Nova case", destaque: true },
+          { href: "/admin/capinha-nova", label: "Nova case", destaque: true },
           { href: "/admin/tipos", label: "Tipos" },
           { href: "/admin/marcas", label: "Marcas" },
           { href: "/admin/modelos", label: "Modelos" },
           { href: "/admin/produtos", label: "Produtos" },
+          { href: "/admin/campanhas", label: "Campanhas" },
         ]
       : []),
     { href: "/admin/pedidos", label: "Pedidos" },
-    // Estoque só da marca (loja oficial). Revendedor compra em /revendedor.
     ...(sessao?.papel === "marca"
       ? [
           { href: "/admin/estoque", label: "Estoque" },
           { href: "/admin/reposicao", label: "Reposição" },
+          { href: "/admin/pedidos/nova", label: "Venda presencial", destaque: true },
         ]
       : [
           {
@@ -60,52 +60,44 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
             destaque: true,
           },
         ]),
-    ...(sessao?.papel === "marca"
-      ? [{ href: "/admin/pedidos/nova", label: "Venda presencial", destaque: true }]
-      : []),
   ];
+
+  const badgePapel =
+    papel === "marca" ? "Marca" : papel === "revendedor" ? "Revendedor" : null;
 
   return (
     <div className="min-h-screen bg-zinc-100">
       <div className="h-1 w-full bg-gradient-to-r from-gold-dark via-gold to-gold-dark" />
       <header className="border-b border-zinc-200 bg-ink">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">
-              Admin Zen Pro
-            </p>
-            <h1 className="truncate text-lg font-bold text-white">{titulo}</h1>
-            {subtitulo && (
-              <p className="truncate text-sm text-zinc-300">{subtitulo}</p>
-            )}
+        {/* Linha 1: marca + ações (nunca compete com os links) */}
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">
+                Admin Zen Pro
+              </p>
+              {badgePapel && (
+                <span className="shrink-0 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-[10px] font-medium text-gold">
+                  {badgePapel}
+                  {lojaId ? ` · ${lojaId}` : ""}
+                </span>
+              )}
+            </div>
+            <h1 className="mt-1 truncate text-base font-bold text-white sm:text-lg">
+              {titulo}
+            </h1>
+            {subtitulo ? (
+              <p className="mt-0.5 truncate text-xs text-zinc-400 sm:text-sm">
+                {subtitulo}
+              </p>
+            ) : null}
           </div>
 
-          {/* Nav desktop */}
-          <nav className="hidden items-center gap-3 lg:flex">
-            {papel && (
-              <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-medium text-gold">
-                {papel === "marca" ? "Marca" : "Revendedor"}
-                {lojaId ? ` · ${lojaId}` : ""}
-              </span>
-            )}
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                aria-current={rotaAtiva(l.href) ? "page" : undefined}
-                className={`text-sm font-medium transition ${
-                  rotaAtiva(l.href)
-                    ? "text-gold"
-                    : "text-zinc-300 hover:text-gold"
-                }`}
-              >
-                {l.label}
-              </Link>
-            ))}
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => void handleSair()}
-              className="rounded-lg border border-gold/40 px-3 py-1.5 text-sm text-gold hover:bg-gold/10"
+              className="hidden rounded-lg border border-gold/40 px-3 py-1.5 text-sm text-gold hover:bg-gold/10 sm:inline-flex"
             >
               Sair
             </button>
@@ -116,56 +108,79 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
                 )}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500"
+                className="hidden rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500 sm:inline-flex"
               >
                 Fale conosco
               </a>
             )}
-          </nav>
-
-          {/* Botão menu mobile */}
-          <button
-            type="button"
-            aria-label="Abrir menu"
-            aria-expanded={menuAberto}
-            onClick={() => setMenuAberto((v) => !v)}
-            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-gold/40 p-2 text-gold lg:hidden"
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
+            <button
+              type="button"
+              aria-label={menuAberto ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={menuAberto}
+              onClick={() => setMenuAberto((v) => !v)}
+              className="inline-flex items-center justify-center rounded-lg border border-gold/40 p-2 text-gold lg:hidden"
             >
-              {menuAberto ? (
-                <path d="M6 6l12 12M18 6L6 18" />
-              ) : (
-                <path d="M4 7h16M4 12h16M4 17h16" />
-              )}
-            </svg>
-          </button>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                {menuAberto ? (
+                  <path d="M6 6l12 12M18 6L6 18" />
+                ) : (
+                  <path d="M4 7h16M4 12h16M4 17h16" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
-        {/* Painel mobile */}
+        {/* Linha 2 desktop: links em scroll horizontal */}
+        <nav
+          className="hidden border-t border-white/10 lg:block"
+          aria-label="Admin"
+        >
+          <div className="mx-auto max-w-6xl overflow-x-auto px-4 sm:px-6">
+            <ul className="flex min-w-max items-center gap-1 py-2">
+              {links.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    aria-current={rotaAtiva(l.href) ? "page" : undefined}
+                    className={`inline-block whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                      rotaAtiva(l.href)
+                        ? "bg-gold/15 text-gold"
+                        : l.destaque
+                          ? "text-gold/90 hover:bg-white/5 hover:text-gold"
+                          : "text-zinc-300 hover:bg-white/5 hover:text-gold"
+                    }`}
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </nav>
+
+        {/* Menu mobile / tablet */}
         {menuAberto && (
-          <nav className="border-t border-white/10 bg-ink px-4 pb-4 lg:hidden">
-            {papel && (
-              <span className="mb-3 mt-3 inline-block rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-medium text-gold">
-                {papel === "marca" ? "Marca" : "Revendedor"}
-                {lojaId ? ` · ${lojaId}` : ""}
-              </span>
-            )}
-            <div className="flex flex-col gap-1">
+          <nav
+            className="max-h-[70vh] overflow-y-auto border-t border-white/10 bg-ink px-4 pb-4 lg:hidden"
+            aria-label="Admin mobile"
+          >
+            <div className="flex flex-col gap-0.5 pt-2">
               {links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
                   aria-current={rotaAtiva(l.href) ? "page" : undefined}
                   onClick={() => setMenuAberto(false)}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                  className={`rounded-lg px-3 py-2.5 text-sm font-medium ${
                     rotaAtiva(l.href)
                       ? "bg-gold/10 text-gold"
                       : "text-zinc-200 hover:bg-white/5 hover:text-gold"
@@ -177,7 +192,7 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
               <button
                 type="button"
                 onClick={() => void handleSair()}
-                className="mt-2 rounded-lg border border-gold/40 px-3 py-2 text-left text-sm text-gold hover:bg-gold/10"
+                className="mt-2 rounded-lg border border-gold/40 px-3 py-2.5 text-left text-sm text-gold hover:bg-gold/10 sm:hidden"
               >
                 Sair
               </button>
@@ -188,7 +203,7 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
                   )}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-center text-sm font-medium text-white"
+                  className="mt-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-center text-sm font-medium text-white sm:hidden"
                 >
                   Fale conosco
                 </a>
@@ -197,7 +212,9 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
           </nav>
         )}
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        {children}
+      </main>
     </div>
   );
 }

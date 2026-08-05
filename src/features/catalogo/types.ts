@@ -81,7 +81,23 @@ export const COLECOES_CATALOGO = {
 
 export const SEED_CATALOGO = {
   TIPO_CAPINHA: "capinha",
+  /** Produtos prontos sem personalização (térmicos, acessórios…). */
+  TIPO_PRONTA: "pronta",
   MARCA_APPLE: "apple",
   MARCA_SAMSUNG: "samsung",
   MARCA_XIAOMI: "xiaomi",
 } as const;
+
+/** Resolve o tipo interno a partir da categoria da vitrine (admin não escolhe mais). */
+export function tipoIdPorCategoriaVitrine(
+  categoriaId: string,
+): string {
+  if (
+    categoriaId === "personalizadas" ||
+    categoriaId === "personalizaveis" ||
+    categoriaId === "capinhas"
+  ) {
+    return SEED_CATALOGO.TIPO_CAPINHA;
+  }
+  return SEED_CATALOGO.TIPO_PRONTA;
+}

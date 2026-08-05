@@ -35,23 +35,6 @@ function coverRect(
   };
 }
 
-function containRect(
-  imgW: number,
-  imgH: number,
-  areaW: number,
-  areaH: number,
-): { x: number; y: number; w: number; h: number } {
-  const scale = Math.min(areaW / imgW, areaH / imgH);
-  const w = imgW * scale;
-  const h = imgH * scale;
-  return {
-    x: (areaW - w) / 2,
-    y: (areaH - h) / 2,
-    w,
-    h,
-  };
-}
-
 /**
  * Recria a foto no padrão 9:16 (Stories): fundo borrado preenche topo/baixo
  * e a foto nítida fica centralizada (cover). Resultado pronto para editor/export.
@@ -93,8 +76,8 @@ export async function expandirFotoPara916(file: File): Promise<File> {
 }
 
 /**
- * Normaliza saída da IA para case 9:16: pessoas inteiras na zona segura
- * (margem ~8%), sem celular/câmera na composição — só a foto.
+ * Normaliza saída da IA para case 9:16 full-bleed.
+ * Preenche a tela inteira (cover) — sem faixa borrada / letterbox.
  */
 export async function normalizarArteCase916(file: File): Promise<File> {
   const img = await loadImageFromFile(file);
@@ -103,25 +86,15 @@ export async function normalizarArteCase916(file: File): Promise<File> {
   const outW = PREVIEW_WIDTH;
   const outH = Math.round((artH / artW) * outW);
 
-  const margem = 1 - ART_CANVAS.safeTopRatio - ART_CANVAS.safeBottomRatio;
-  const safeW = outW * margem;
-  const safeH = outH * margem;
-  const safeX = (outW - safeW) / 2;
-  const safeY = outH * ART_CANVAS.safeTopRatio;
-
   const canvas = document.createElement("canvas");
   canvas.width = outW;
   canvas.height = outH;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas indisponível");
 
-  const bg = coverRect(img.width, img.height, outW, outH);
-  ctx.filter = "blur(32px) saturate(1.1) brightness(0.95)";
-  ctx.drawImage(img, bg.x, bg.y, bg.w, bg.h);
-  ctx.filter = "none";
-
-  const fg = containRect(img.width, img.height, safeW, safeH);
-  ctx.drawImage(img, safeX + fg.x, safeY + fg.y, fg.w, fg.h);
+  // Capa full-bleed: a foto cobre 100% do 9:16 (corta o que sobrar nas laterais/topo).
+  const fill = coverRect(img.width, img.height, outW, outH);
+  ctx.drawImage(img, fill.x, fill.y, fill.w, fill.h);
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

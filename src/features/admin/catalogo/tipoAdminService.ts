@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -96,4 +97,8 @@ export async function alternarAtivoTipoAdmin(
     ativo,
     atualizadoEm: serverTimestamp(),
   });
+}
+
+export async function excluirTipoAdmin(id: string): Promise<void> {
+  await deleteDoc(doc(requireDb(), COLECOES_CATALOGO.TIPOS, id));
 }

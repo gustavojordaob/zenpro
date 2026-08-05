@@ -47,8 +47,11 @@ const INSTRUCOES_ENQUADRAMENTO =
   "qualquer elemento de aparelho sobreposto ou embutido na foto — a câmera da case " +
   "será aplicada depois pelo app; a arte deve ser só a fotografia limpa. " +
   "Proporção EXATA 9:16 vertical (1080×1920, formato Instagram Stories). " +
-  "Todas as pessoas com rosto, cabeça, ombros e corpo visíveis — ninguém cortado nas bordas. " +
-  "Margem de segurança de ~8% em todos os lados; sujeitos centralizados e bem proporcionados. " +
+  "A imagem DEVE preencher 100% do quadro vertical — do topo absoluto até a base, " +
+  "borda a borda, SEM faixas vazias, SEM letterbox, SEM barras pretas/brancas/borradas " +
+  "acima ou abaixo, SEM moldura interna. Composição full-bleed (cover). " +
+  "Se as referências forem paisagem, reenquadre em vertical ocupando a tela inteira. " +
+  "Pessoas bem enquadradas no retrato vertical; priorize rostos e corpos no centro. " +
   "Conteúdo = foto pura para impressão na traseira de uma case — sem objetos eletrônicos na cena.";
 
 function extrairImagemResposta(

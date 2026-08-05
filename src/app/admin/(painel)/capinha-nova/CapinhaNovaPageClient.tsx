@@ -232,6 +232,7 @@ export function CapinhaNovaPageClient() {
         alturaCm: 18,
         larguraCm: 12,
         comprimentoCm: 4,
+        categoriaId: "personalizaveis" as const,
         pagamento: {
           aceitaPix: true,
           aceitaBoleto: true,

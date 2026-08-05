@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -161,4 +162,8 @@ export async function alternarAtivoModeloAdmin(
     ativo,
     atualizadoEm: serverTimestamp(),
   });
+}
+
+export async function excluirModeloAdmin(id: string): Promise<void> {
+  await deleteDoc(doc(requireDb(), COLECOES_CATALOGO.MODELOS, id));
 }

@@ -17,6 +17,10 @@ import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
 import { precoRevendedorAPartirDe } from "@/features/revendedor/precoRevendedorFaixas";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
 import type { CategoriaProduto, ProdutoDestaque } from "./produtosMock";
+import {
+  inferirCategoriaId,
+  type CategoriaVitrineId,
+} from "./categoriasVitrine";
 
 export function produtoCentralParaDestaque(
   id: string,
@@ -71,6 +75,7 @@ export function produtoCentralParaDestaque(
     precoCentavos,
     tipo: modoVenda,
     categoria: (data.categoria ?? "capinhas") as CategoriaProduto,
+    categoriaId: inferirCategoriaId(data),
     material: data.material ?? undefined,
     destaque: data.destaque ?? undefined,
     imagemUrl: data.imagens[0],
@@ -78,6 +83,7 @@ export function produtoCentralParaDestaque(
     controlaEstoque: controla,
     disponivelVenda: disponivel,
     esgotado: controla && disponivel <= 0,
+    personalizavel: Boolean(data.personalizavel),
     ...(opts?.modoB2b
       ? {
           faixasPrecoRevendedor: data.faixasPrecoRevendedor,
@@ -173,4 +179,90 @@ export async function listarProdutosPersonalizaveisAtivos(opts?: {
   }
 
   return itens.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+/** Produtos ativos de uma categoria de vitrine. */
+export async function listarProdutosPorCategoriaVitrine(
+  categoriaId: CategoriaVitrineId,
+  lojaId?: string | null,
+  opts?: { modoB2b?: boolean },
+): Promise<ProdutoDestaque[]> {
+  if (!isFirebaseConfigured()) return [];
+
+  if (categoriaId === "personalizaveis") {
+    return listarProdutosPersonalizaveisAtivos(opts);
+  }
+
+  const lojaEstoqueId = lojaId?.trim() || MARCA_LOJA_ID;
+  const db = getFirebaseDb();
+  const [snap, estoqueMap] = await Promise.all([
+    getDocs(
+      query(collection(db, COLECOES.PRODUTOS), where("ativo", "==", true)),
+    ),
+    listarEstoqueLojaMap(lojaEstoqueId),
+  ]);
+
+  return snap.docs
+    .map((d) => {
+      const data = d.data() as ProdutoCentralFirestore;
+      const cat = inferirCategoriaId(data);
+      if (cat !== categoriaId) return null;
+      if (Boolean(data.personalizavel)) return null;
+      const estoqueLoja = estoqueMap[d.id] ?? 0;
+      return produtoCentralParaDestaque(d.id, data, {
+        disponivelVenda: calcularDisponivelVenda(data, estoqueLoja),
+        modoB2b: opts?.modoB2b,
+      });
+    })
+    .filter((p): p is ProdutoDestaque => p != null)
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+/** Produtos por IDs (ordem preservada — campanhas). */
+export async function listarProdutosPorIds(
+  produtoIds: string[],
+  lojaId?: string | null,
+  opts?: { modoB2b?: boolean },
+): Promise<ProdutoDestaque[]> {
+  if (!isFirebaseConfigured() || produtoIds.length === 0) return [];
+
+  const lojaEstoqueId = lojaId?.trim() || MARCA_LOJA_ID;
+  const db = getFirebaseDb();
+  const [snap, estoqueMap, marcas, modelos] = await Promise.all([
+    getDocs(
+      query(collection(db, COLECOES.PRODUTOS), where("ativo", "==", true)),
+    ),
+    listarEstoqueLojaMap(lojaEstoqueId),
+    listarMarcasAtivas(),
+    listarModelosAtivos(),
+  ]);
+
+  const marcasMap = Object.fromEntries(marcas.map((m) => [m.id, m.nome]));
+  const modelosMap = Object.fromEntries(
+    modelos.map((m) => [m.id, { nome: m.nome, marcaId: m.marcaId }]),
+  );
+  const byId = new Map(
+    snap.docs.map((d) => [d.id, d.data() as ProdutoCentralFirestore]),
+  );
+
+  const out: ProdutoDestaque[] = [];
+  for (const id of produtoIds) {
+    const data = byId.get(id);
+    if (!data) continue;
+    const estoqueLoja = estoqueMap[id] ?? 0;
+    const modeloId =
+      data.modelosCompativeis?.[0] ?? data.modeloId ?? undefined;
+    const modeloInfo = modeloId ? modelosMap[modeloId] : undefined;
+    const marcaId = data.marcaId ?? modeloInfo?.marcaId ?? null;
+    const marcaNome =
+      (marcaId ? marcasMap[marcaId] : undefined) || data.marca || "";
+    out.push(
+      produtoCentralParaDestaque(id, data, {
+        disponivelVenda: calcularDisponivelVenda(data, estoqueLoja),
+        marcaNome,
+        modoB2b: opts?.modoB2b,
+      }),
+    );
+  }
+  return out;
 }
