@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CatalogProductCard } from "@/components/loja/CatalogProductCard";
-import { ProductCard } from "@/components/loja/ProductCard";
+import { ProdutosVitrineFaixa } from "@/components/loja/ProdutosVitrineFaixa";
 import { listarProdutosPorCategoriaVitrine } from "@/features/loja/catalogoProdutos";
 import {
   obterCategoriaVitrine,
@@ -14,7 +13,7 @@ import { useLojaPaths } from "@/features/loja/useLojaPaths";
 import type { ProdutoDestaque } from "@/features/loja/produtosMock";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
-const LIMITE_HOME = 6;
+const LIMITE_HOME = 8;
 
 type Props = {
   categoriaId: CategoriaVitrineId;
@@ -61,7 +60,10 @@ export function VitrineCategoriaPreview({
       : "border-t border-zinc-200 bg-zinc-50";
 
   return (
-    <section id={categoriaId === "personalizaveis" ? "personalizar" : categoriaId} className={bg}>
+    <section
+      id={categoriaId === "personalizaveis" ? "personalizar" : categoriaId}
+      className={bg}
+    >
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
         <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -85,17 +87,10 @@ export function VitrineCategoriaPreview({
             Em breve produtos nesta categoria.
           </p>
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {produtos.map((p) => (
-              <li key={p.id}>
-                {categoria.personalizavel ? (
-                  <ProductCard produto={p} />
-                ) : (
-                  <CatalogProductCard produto={p} />
-                )}
-              </li>
-            ))}
-          </ul>
+          <ProdutosVitrineFaixa
+            produtos={produtos}
+            personalizavel={categoria.personalizavel}
+          />
         )}
       </div>
     </section>

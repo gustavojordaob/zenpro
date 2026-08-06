@@ -20,7 +20,7 @@ export function CatalogProductCard({ produto }: Props) {
   return (
     <Link
       href={paths.produto(produtoId)}
-      className="group flex h-full min-h-[340px] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md"
+      className="group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md sm:min-h-[340px]"
     >
       <div className="relative aspect-square w-full shrink-0 bg-white">
         {produto.imagemUrl ? (
@@ -42,11 +42,11 @@ export function CatalogProductCard({ produto }: Props) {
         )}
       </div>
 
-      <div className="flex min-h-[132px] flex-1 flex-col gap-1 p-4">
-        <p className="truncate text-xs font-medium text-zinc-500">
+      <div className="flex min-h-0 flex-1 flex-col gap-0.5 p-3 sm:min-h-[132px] sm:gap-1 sm:p-4">
+        <p className="truncate text-[11px] font-medium text-zinc-500 sm:text-xs">
           {produto.marca || "Capinha"}
         </p>
-        <h3 className="line-clamp-2 min-h-[2.5rem] font-semibold leading-tight text-zinc-900 group-hover:text-zinc-700">
+        <h3 className="line-clamp-2 min-h-[2.25rem] text-sm font-semibold leading-tight text-zinc-900 group-hover:text-zinc-700 sm:min-h-[2.5rem] sm:text-base">
           {produto.nome}
         </h3>
         {qtdModelos > 1 && (

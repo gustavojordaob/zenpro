@@ -90,7 +90,7 @@ export function PromocaoPageClient() {
                 Nenhum produto nesta promoção.
               </p>
             ) : (
-              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 {produtos.map((p) => (
                   <li key={p.id}>
                     {p.personalizavel || p.tipo === "personalizada" ? (

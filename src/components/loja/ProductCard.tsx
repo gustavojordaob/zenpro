@@ -21,7 +21,7 @@ export function ProductCard({ produto }: Props) {
   return (
     <Link
       href={paths.produto(produtoId)}
-      className="group flex h-full min-h-[340px] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md"
+      className="group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md sm:min-h-[340px]"
     >
       <div className="relative aspect-square w-full shrink-0 bg-white">
         {produto.imagemUrl ? (

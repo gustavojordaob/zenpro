@@ -21,6 +21,11 @@ import {
 } from "@/features/admin/estoque/estoqueAdminService";
 import { COLECOES } from "@/features/multitenant/types";
 import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
+import {
+  categoriaEhCapinhaCelular,
+  inferirCategoriaId,
+  type CategoriaVitrineId,
+} from "@/features/loja/categoriasVitrine";
 import { formatarPreco } from "@/features/loja/produtosMock";
 import {
   descontoPixCentavos,
@@ -71,6 +76,10 @@ export function ProdutoPageClient() {
   });
   const [freteSelecionado, setFreteSelecionado] =
     useState<OpcaoFreteMelhorEnvio | null>(null);
+  const [categoriaId, setCategoriaId] =
+    useState<CategoriaVitrineId>("capinhas");
+  /** Capinha / personalizável: precisa de modelo de celular. Térmico/acessório: não. */
+  const [exigeModelo, setExigeModelo] = useState(true);
 
   const isB2b = Boolean(loja?.isB2b);
   const lojaIdFrete = loja?.lojaId?.trim() || MARCA_LOJA_ID;
@@ -97,11 +106,16 @@ export function ProdutoPageClient() {
           return;
         }
 
+        const cat = inferirCategoriaId(produto);
+        const precisaModelo =
+          Boolean(produto.personalizavel) || categoriaEhCapinhaCelular(cat);
+
         const ids =
           produto.modelosCompativeis?.length
             ? produto.modelosCompativeis
             : [];
-        if (ids.length === 0) {
+
+        if (precisaModelo && ids.length === 0) {
           setErro("Este produto não tem modelos compatíveis cadastrados.");
           return;
         }
@@ -153,6 +167,8 @@ export function ProdutoPageClient() {
         setMaterial(produto.material ?? null);
         setDestaque(produto.destaque ?? null);
         setPersonalizavel(Boolean(produto.personalizavel));
+        setCategoriaId(cat);
+        setExigeModelo(precisaModelo);
         setModelos(opcoes);
         setModeloId(opcoes[0]?.id ?? "");
         setControlaEstoque(controla && !produto.personalizavel);
@@ -217,18 +233,20 @@ export function ProdutoPageClient() {
   }
 
   function handleComprar() {
-    if (esgotado || !modeloId || !produtoId) return;
+    if (esgotado || !produtoId) return;
+    if (exigeModelo && !modeloId) return;
     setAdicionando(true);
     adicionarPronta({
       id: produtoId,
       produtoBaseId: produtoId,
       nome: nome,
       descricao,
-      modeloId,
+      modeloId: modeloId || produtoId,
       marca: marcaNome || modeloSelecionado?.nome || "",
       precoCentavos,
       tipo: "pronta",
-      categoria: "capinhas",
+      categoria: categoriaId === "termicos" ? "acessorios" : "capinhas",
+      categoriaId,
       material: material ?? undefined,
       destaque: destaque ?? undefined,
       imagemUrl: imagemPrincipal,
@@ -333,28 +351,32 @@ export function ProdutoPageClient() {
             <p className="mt-1 text-xs text-zinc-400">Cód: {produtoId}</p>
 
             <div className="mt-6">
-              <p className="mb-2 text-sm font-semibold text-zinc-800">
-                Selecione o modelo do celular:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {modelos.map((m) => {
-                  const ativo = m.id === modeloId;
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setModeloId(m.id)}
-                      className={`rounded-lg border px-3 py-2 text-sm transition ${
-                        ativo
-                          ? "border-zinc-900 bg-zinc-900 text-white"
-                          : "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-500"
-                      }`}
-                    >
-                      {m.nome}
-                    </button>
-                  );
-                })}
-              </div>
+              {exigeModelo && modelos.length > 0 ? (
+                <>
+                  <p className="mb-2 text-sm font-semibold text-zinc-800">
+                    Selecione o modelo do celular:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {modelos.map((m) => {
+                      const ativo = m.id === modeloId;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setModeloId(m.id)}
+                          className={`rounded-lg border px-3 py-2 text-sm transition ${
+                            ativo
+                              ? "border-zinc-900 bg-zinc-900 text-white"
+                              : "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-500"
+                          }`}
+                        >
+                          {m.nome}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : null}
             </div>
 
             {/* Preço estilo OBLI: PIX + % + cheio + parcelas */}
@@ -419,7 +441,11 @@ export function ProdutoPageClient() {
               <button
                 type="button"
                 onClick={handleComprar}
-                disabled={esgotado || adicionando || !modeloId}
+                disabled={
+                  esgotado ||
+                  adicionando ||
+                  (exigeModelo && !modeloId)
+                }
                 className="btn-gold mt-6 w-full rounded-xl py-3.5 text-base font-semibold disabled:opacity-50 sm:max-w-sm"
               >
                 {esgotado
