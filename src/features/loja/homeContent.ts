@@ -1,6 +1,7 @@
 /**
- * Slides do carrossel da home — edite aqui (foto ou vídeo).
- * Fotos: public/banners/ · Vídeos: public/videos/
+ * Slides padrão do carrossel da home (fallback).
+ * Mídia editável pela marca: Admin → Mídia home (`site_conteudo/home`).
+ * Fotos locais legadas: public/banners/ · Vídeos: public/videos/
  */
 export type HomeCarouselSlide = {
   id: string;

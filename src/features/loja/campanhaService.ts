@@ -10,6 +10,7 @@ import {
   type CampanhaFirestore,
 } from "@/features/multitenant/types";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
+import { cachedFetch, TTL_CATALOGO_MS } from "@/lib/ttlCache";
 
 export type Campanha = { id: string } & CampanhaFirestore;
 
@@ -52,16 +53,25 @@ export function campanhaEstaVigente(
 
 export async function listarCampanhasAtivas(): Promise<Campanha[]> {
   if (!isFirebaseConfigured()) return [];
-  const snap = await getDocs(
-    query(
-      collection(getFirebaseDb(), COLECOES.CAMPANHAS),
-      where("ativo", "==", true),
-    ),
+  return cachedFetch(
+    "campanhas:ativas",
+    async () => {
+      const snap = await getDocs(
+        query(
+          collection(getFirebaseDb(), COLECOES.CAMPANHAS),
+          where("ativo", "==", true),
+        ),
+      );
+      return snap.docs
+        .map((d) => mapCampanha(d.id, d.data()))
+        .filter((c) => campanhaEstaVigente(c))
+        .sort(
+          (a, b) =>
+            a.ordem - b.ordem || a.titulo.localeCompare(b.titulo, "pt-BR"),
+        );
+    },
+    { ttlMs: TTL_CATALOGO_MS },
   );
-  return snap.docs
-    .map((d) => mapCampanha(d.id, d.data()))
-    .filter((c) => campanhaEstaVigente(c))
-    .sort((a, b) => a.ordem - b.ordem || a.titulo.localeCompare(b.titulo, "pt-BR"));
 }
 
 export async function obterCampanhaPorSlug(

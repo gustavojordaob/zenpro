@@ -3,14 +3,17 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { HomeVideoHero } from "@/components/loja/HomeVideoSections";
 import { PromocoesStrip } from "@/components/loja/PromocoesStrip";
 import { StoreHeader } from "@/components/loja/StoreHeader";
 import { VitrineCategoriaPreview } from "@/components/loja/VitrineCategoriaPreview";
 import { ZenProLogo } from "@/components/loja/ZenProLogo";
 import { EntrarComoRevendedorLink } from "@/components/revendedor/EntrarComoRevendedorLink";
+import { prefetchCatalogoVitrine } from "@/features/loja/catalogoProdutos";
+import { listarCampanhasAtivas } from "@/features/loja/campanhaService";
 import { useLojaEfetiva } from "@/features/loja/useLojaEfetiva";
+import { isFirebaseConfigured } from "@/lib/firebase";
 
 const HowItWorks = dynamic(
   () =>
@@ -114,10 +117,23 @@ type Props = {
   variant: HomeLojaVariant;
 };
 
+function PrefetchCatalogoHome() {
+  const loja = useLojaEfetiva();
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+    void Promise.all([
+      prefetchCatalogoVitrine(loja?.lojaId),
+      listarCampanhasAtivas(),
+    ]);
+  }, [loja?.lojaId]);
+  return null;
+}
+
 /** Home unificada: marca (/) e lojas revendedor (/[slug]). */
 export function HomeLojaPageContent({ variant }: Props) {
   return (
     <>
+      <PrefetchCatalogoHome />
       <StoreHeader />
 
       <main className="bg-zinc-50">

@@ -44,6 +44,7 @@ export function AdminShell({ titulo, subtitulo, children }: Props) {
           { href: "/admin/modelos", label: "Modelos" },
           { href: "/admin/produtos", label: "Produtos" },
           { href: "/admin/campanhas", label: "Campanhas" },
+          { href: "/admin/home", label: "Mídia home", destaque: true },
         ]
       : []),
     { href: "/admin/pedidos", label: "Pedidos" },

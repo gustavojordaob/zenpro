@@ -14,6 +14,7 @@ import {
   type ProdutoCentralFirestore,
 } from "@/features/multitenant/types";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
+import { invalidateTtlCache } from "@/lib/ttlCache";
 
 export type EstoqueLojaItem = {
   produtoId: string;
@@ -88,6 +89,7 @@ export async function definirEstoqueLojaProduto(
     },
     { merge: true },
   );
+  invalidateTtlCache(`estoque:${lojaId}`);
 }
 
 /**
@@ -127,6 +129,8 @@ export async function definirEstoqueLojaOficialMarca(
       { merge: true },
     );
   });
+  invalidateTtlCache(`estoque:${marcaLojaId}`);
+  invalidateTtlCache("produtos:");
 }
 
 export async function listarProdutosEstoqueAdmin(

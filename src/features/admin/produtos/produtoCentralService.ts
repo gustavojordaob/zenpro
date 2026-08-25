@@ -28,6 +28,7 @@ import {
   type PagamentoProdutoConfig,
 } from "@/features/pagamentos/pagamentoProduto";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
+import { invalidateTtlCache } from "@/lib/ttlCache";
 
 export type ProdutoCentral = {
   id: string;
@@ -286,6 +287,7 @@ export async function criarProdutoCentral(
     atualizadoEm: serverTimestamp(),
   });
 
+  invalidateTtlCache("produtos:");
   return id;
 }
 
@@ -298,6 +300,7 @@ export async function atualizarProdutoCentral(
     ...payloadFromInput(input),
     atualizadoEm: serverTimestamp(),
   });
+  invalidateTtlCache("produtos:");
 }
 
 export async function alternarAtivoProdutoCentral(
@@ -309,6 +312,7 @@ export async function alternarAtivoProdutoCentral(
     ativo,
     atualizadoEm: serverTimestamp(),
   });
+  invalidateTtlCache("produtos:");
 }
 
 export async function excluirProdutoCentral(produtoId: string): Promise<void> {
@@ -319,4 +323,5 @@ export async function excluirProdutoCentral(produtoId: string): Promise<void> {
     throw new Error("Produto não encontrado.");
   }
   await deleteDoc(ref);
+  invalidateTtlCache("produtos:");
 }

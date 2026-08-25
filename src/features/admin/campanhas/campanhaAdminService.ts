@@ -16,6 +16,7 @@ import {
   type CampanhaFirestore,
 } from "@/features/multitenant/types";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
+import { invalidateTtlCache } from "@/lib/ttlCache";
 
 export type CampanhaAdmin = { id: string } & CampanhaFirestore;
 
@@ -118,6 +119,7 @@ export async function criarCampanhaAdmin(
     criadoEm: serverTimestamp(),
     atualizadoEm: serverTimestamp(),
   });
+  invalidateTtlCache("campanhas:");
   return ref.id;
 }
 
@@ -141,10 +143,12 @@ export async function atualizarCampanhaAdmin(
     ...payload,
     atualizadoEm: serverTimestamp(),
   });
+  invalidateTtlCache("campanhas:");
 }
 
 export async function excluirCampanhaAdmin(id: string): Promise<void> {
   await deleteDoc(doc(requireDb(), COLECOES.CAMPANHAS, id));
+  invalidateTtlCache("campanhas:");
 }
 
 export async function alternarAtivoCampanhaAdmin(

@@ -355,4 +355,5 @@ export const COLECOES = {
   PEDIDOS: "pedidos",
   ESTOQUE: "estoque",
   CAMPANHAS: "campanhas",
+  SITE_CONTEUDO: "site_conteudo",
 } as const;

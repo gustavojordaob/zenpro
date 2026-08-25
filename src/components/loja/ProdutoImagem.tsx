@@ -19,6 +19,8 @@ export function ProdutoImagem({
       alt={alt}
       fill
       sizes={sizes}
+      loading="lazy"
+      decoding="async"
       className={className}
     />
   );

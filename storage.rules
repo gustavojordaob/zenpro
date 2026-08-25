@@ -42,6 +42,22 @@ service firebase.storage {
                    && request.resource.contentType.matches('image/.*');
     }
 
+    // Vídeos/fotos do banner home e parceiros (Admin → Mídia home)
+    match /home/{slot}/{fileName} {
+      allow read: if true;
+      allow write: if isMarca()
+                   && (
+                     (
+                       request.resource.contentType == 'video/mp4'
+                       && request.resource.size < 80 * 1024 * 1024
+                     )
+                     || (
+                       request.resource.contentType.matches('image/.*')
+                       && request.resource.size < 5 * 1024 * 1024
+                     )
+                   );
+    }
+
     match /modelos/{modeloId}/{fileName} {
       allow read: if true;
       allow write: if isMarca()

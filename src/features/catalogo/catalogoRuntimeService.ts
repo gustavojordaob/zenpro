@@ -13,6 +13,7 @@ import type { ModeloCelular } from "@/features/personalizacao/types";
 import rockb2bPersonalizacao from "@/features/personalizacao/rockb2bPersonalizacao.json";
 import { COLECOES } from "@/features/multitenant/types";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
+import { cachedFetch, TTL_CATALOGO_MS } from "@/lib/ttlCache";
 import {
   COLECOES_CATALOGO,
   type MarcaFirestore,
@@ -132,67 +133,89 @@ export function modeloParaVisualAssets(modelo: ModeloCatalogo): ModeloVisualAsse
 
 export async function listarTiposAtivos(): Promise<TipoCatalogo[]> {
   if (!isFirebaseConfigured()) return [];
-  const db = getFirebaseDb();
-  const snap = await getDocs(
-    query(collection(db, COLECOES_CATALOGO.TIPOS), where("ativo", "==", true)),
+  return cachedFetch(
+    "catalogo:tipos:ativos",
+    async () => {
+      const db = getFirebaseDb();
+      const snap = await getDocs(
+        query(collection(db, COLECOES_CATALOGO.TIPOS), where("ativo", "==", true)),
+      );
+      return snap.docs
+        .map((d) => mapTipo(d.id, d.data()))
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    },
+    { ttlMs: TTL_CATALOGO_MS },
   );
-  return snap.docs
-    .map((d) => mapTipo(d.id, d.data()))
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
 export async function listarMarcasAtivas(): Promise<MarcaCatalogo[]> {
   if (!isFirebaseConfigured()) return [];
-  const db = getFirebaseDb();
-  const snap = await getDocs(
-    query(collection(db, COLECOES_CATALOGO.MARCAS), where("ativo", "==", true)),
+  return cachedFetch(
+    "catalogo:marcas:ativas",
+    async () => {
+      const db = getFirebaseDb();
+      const snap = await getDocs(
+        query(collection(db, COLECOES_CATALOGO.MARCAS), where("ativo", "==", true)),
+      );
+      return snap.docs
+        .map((d) => mapMarca(d.id, d.data()))
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    },
+    { ttlMs: TTL_CATALOGO_MS },
   );
-  return snap.docs
-    .map((d) => mapMarca(d.id, d.data()))
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+async function listarTodosModelosAtivos(): Promise<ModeloCatalogo[]> {
+  if (!isFirebaseConfigured()) {
+    return MODELOS.map(modeloMockParaCatalogo);
+  }
+
+  return cachedFetch(
+    "catalogo:modelos:ativos",
+    async () => {
+      const db = getFirebaseDb();
+      const snap = await getDocs(
+        query(
+          collection(db, COLECOES_CATALOGO.MODELOS),
+          where("ativo", "==", true),
+        ),
+      );
+      let modelos = snap.docs.map((d) => mapModelo(d.id, d.data()));
+
+      if (modelos.length === 0) {
+        const legado = await getDocs(
+          query(
+            collection(db, COLECOES.MODELOS_CELULAR),
+            where("ativo", "==", true),
+          ),
+        );
+        modelos = legado.docs.map((d) => {
+          const data = d.data();
+          return mapModelo(d.id, {
+            ...data,
+            nome: data.modelo,
+            marcaId: String(data.marca ?? "").toLowerCase().includes("apple")
+              ? "apple"
+              : "samsung",
+          });
+        });
+      }
+
+      return modelos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    },
+    { ttlMs: TTL_CATALOGO_MS },
+  );
 }
 
 export async function listarModelosAtivos(
   marcaId?: string | null,
 ): Promise<ModeloCatalogo[]> {
-  if (!isFirebaseConfigured()) {
-    return MODELOS.map(modeloMockParaCatalogo);
-  }
-
-  const db = getFirebaseDb();
-  const snap = await getDocs(
-    query(collection(db, COLECOES_CATALOGO.MODELOS), where("ativo", "==", true)),
-  );
-  let modelos = snap.docs.map((d) => mapModelo(d.id, d.data()));
-
-  if (modelos.length === 0) {
-    const legado = await getDocs(
-      query(
-        collection(db, COLECOES.MODELOS_CELULAR),
-        where("ativo", "==", true),
-      ),
-    );
-    modelos = legado.docs.map((d) => {
-      const data = d.data();
-      return mapModelo(d.id, {
-        ...data,
-        nome: data.modelo,
-        marcaId: String(data.marca ?? "").toLowerCase().includes("apple")
-          ? "apple"
-          : "samsung",
-      });
-    });
-  }
-
-  if (modelos.length === 0) {
-    return [];
-  }
-
+  const modelos = await listarTodosModelosAtivos();
+  if (modelos.length === 0) return [];
   if (marcaId) {
-    modelos = modelos.filter((m) => m.marcaId === marcaId);
+    return modelos.filter((m) => m.marcaId === marcaId);
   }
-
-  return modelos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  return modelos;
 }
 
 export async function obterModeloCatalogo(

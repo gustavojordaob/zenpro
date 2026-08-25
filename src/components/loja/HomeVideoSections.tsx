@@ -1,19 +1,47 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   CATEGORIAS_VENDA,
   HOME_CARROSSEL_INTERVAL_MS,
   HOME_HERO_CARROSSEL,
   HOME_PARCEIROS_CARROSSEL,
+  type HomeCarouselSlide,
 } from "@/features/loja/homeContent";
+import {
+  obterHomeMidia,
+  slotParaSlide,
+  slotTemMidia,
+} from "@/features/loja/homeMidiaService";
+import { isFirebaseConfigured } from "@/lib/firebase";
 import { HomeHeroCarousel } from "./HomeHeroCarousel";
 
-/** Banner carrossel no topo — fotos e vídeos definidos pelo cliente. */
+/** Banner carrossel no topo — mídia do admin (se houver) + slides padrão. */
 export function HomeVideoHero() {
+  const [slides, setSlides] = useState<HomeCarouselSlide[]>(HOME_HERO_CARROSSEL);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const midia = await obterHomeMidia();
+        const adminSlide = slotParaSlide("hero-admin", midia.hero, "overlay");
+        if (cancelled || !adminSlide) return;
+        setSlides([adminSlide, ...HOME_HERO_CARROSSEL]);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section className="border-b border-zinc-200">
       <HomeHeroCarousel
-        slides={HOME_HERO_CARROSSEL}
+        slides={slides}
         intervalMs={HOME_CARROSSEL_INTERVAL_MS}
         variant="hero"
       />
@@ -23,6 +51,41 @@ export function HomeVideoHero() {
 
 /** Parceiros e conteúdo — carrossel compacto abaixo da vitrine. */
 export function HomePartnersSection() {
+  const [slides, setSlides] = useState<HomeCarouselSlide[]>(
+    HOME_PARCEIROS_CARROSSEL,
+  );
+  const [temMidiaAdmin, setTemMidiaAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const midia = await obterHomeMidia();
+        if (cancelled) return;
+        if (slotTemMidia(midia.parceiros)) {
+          const slide = slotParaSlide(
+            "parceiros-admin",
+            midia.parceiros,
+            "overlay",
+          );
+          if (slide) {
+            setSlides([slide]);
+            setTemMidiaAdmin(true);
+            return;
+          }
+        }
+        setSlides(HOME_PARCEIROS_CARROSSEL);
+        setTemMidiaAdmin(false);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section className="border-t border-zinc-200 bg-white py-14">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -30,12 +93,14 @@ export function HomePartnersSection() {
           Parceiros e conteúdo
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm text-zinc-600">
-          Espaço para fotos e vídeos de parceiros — em breve.
+          {temMidiaAdmin
+            ? "Destaques e conteúdo dos parceiros Zen Pro."
+            : "Espaço para fotos e vídeos de parceiros — em breve."}
         </p>
 
         <div className="mx-auto mt-6 max-w-3xl overflow-hidden rounded-xl shadow-md ring-1 ring-zinc-200">
           <HomeHeroCarousel
-            slides={HOME_PARCEIROS_CARROSSEL}
+            slides={slides}
             intervalMs={HOME_CARROSSEL_INTERVAL_MS}
             variant="compact"
           />

@@ -16,11 +16,54 @@ import {
 import { MARCA_LOJA_ID } from "@/features/multitenant/marcaLoja";
 import { precoRevendedorAPartirDe } from "@/features/revendedor/precoRevendedorFaixas";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
+import {
+  cachedFetch,
+  TTL_CATALOGO_MS,
+  TTL_ESTOQUE_MS,
+} from "@/lib/ttlCache";
 import type { CategoriaProduto, ProdutoDestaque } from "./produtosMock";
 import {
   inferirCategoriaId,
   type CategoriaVitrineId,
 } from "./categoriasVitrine";
+
+type ProdutoAtivoDoc = {
+  id: string;
+  data: ProdutoCentralFirestore;
+};
+
+/** Docs ativos sem Timestamps (sessionStorage-safe). */
+function stripTimestamps(data: ProdutoCentralFirestore): ProdutoCentralFirestore {
+  const { criadoEm: _c, atualizadoEm: _a, ...rest } = data;
+  return rest as ProdutoCentralFirestore;
+}
+
+async function listarProdutosAtivosDocs(): Promise<ProdutoAtivoDoc[]> {
+  return cachedFetch(
+    "produtos:ativos:docs",
+    async () => {
+      const db = getFirebaseDb();
+      const snap = await getDocs(
+        query(collection(db, COLECOES.PRODUTOS), where("ativo", "==", true)),
+      );
+      return snap.docs.map((d) => ({
+        id: d.id,
+        data: stripTimestamps(d.data() as ProdutoCentralFirestore),
+      }));
+    },
+    { ttlMs: TTL_CATALOGO_MS },
+  );
+}
+
+async function listarEstoqueLojaMapCached(
+  lojaId: string,
+): Promise<Record<string, number>> {
+  return cachedFetch(
+    `estoque:${lojaId}`,
+    () => listarEstoqueLojaMap(lojaId),
+    { ttlMs: TTL_ESTOQUE_MS },
+  );
+}
 
 export function produtoCentralParaDestaque(
   id: string,
@@ -102,23 +145,18 @@ export async function listarProdutosLojaAtivos(
 ): Promise<ProdutoDestaque[]> {
   if (!isFirebaseConfigured()) return [];
 
-  // Site B2C (/) não tem LojaContext — usa estoque da loja oficial Zen Pro.
   const lojaEstoqueId = lojaId?.trim() || MARCA_LOJA_ID;
+  const [docs, estoqueMap] = await Promise.all([
+    listarProdutosAtivosDocs(),
+    listarEstoqueLojaMapCached(lojaEstoqueId),
+  ]);
 
-  const db = getFirebaseDb();
-  const snap = await getDocs(
-    query(collection(db, COLECOES.PRODUTOS), where("ativo", "==", true)),
-  );
-
-  const estoqueMap = await listarEstoqueLojaMap(lojaEstoqueId);
-
-  return snap.docs
-    .filter((d) => !Boolean((d.data() as ProdutoCentralFirestore).personalizavel))
+  return docs
+    .filter((d) => !Boolean(d.data.personalizavel))
     .map((d) => {
-      const data = d.data() as ProdutoCentralFirestore;
       const estoqueLoja = estoqueMap[d.id] ?? 0;
-      return produtoCentralParaDestaque(d.id, data, {
-        disponivelVenda: calcularDisponivelVenda(data, estoqueLoja),
+      return produtoCentralParaDestaque(d.id, d.data, {
+        disponivelVenda: calcularDisponivelVenda(d.data, estoqueLoja),
         modoB2b: opts?.modoB2b,
       });
     })
@@ -131,15 +169,8 @@ export async function listarProdutosPersonalizaveisAtivos(opts?: {
 }): Promise<ProdutoDestaque[]> {
   if (!isFirebaseConfigured()) return [];
 
-  const db = getFirebaseDb();
-  const [snap, marcas, modelos] = await Promise.all([
-    getDocs(
-      query(
-        collection(db, COLECOES.PRODUTOS),
-        where("ativo", "==", true),
-        where("personalizavel", "==", true),
-      ),
-    ),
+  const [docs, marcas, modelos] = await Promise.all([
+    listarProdutosAtivosDocs(),
     listarMarcasAtivas(),
     listarModelosAtivos(),
   ]);
@@ -151,8 +182,9 @@ export async function listarProdutosPersonalizaveisAtivos(opts?: {
 
   const itens: ProdutoDestaque[] = [];
 
-  for (const docSnap of snap.docs) {
-    const data = docSnap.data() as ProdutoCentralFirestore;
+  for (const docSnap of docs) {
+    const data = docSnap.data;
+    if (!Boolean(data.personalizavel)) continue;
     if (data.tipoId !== SEED_CATALOGO.TIPO_CAPINHA) continue;
 
     const listaModelos = data.modelosCompativeis?.length
@@ -163,7 +195,6 @@ export async function listarProdutosPersonalizaveisAtivos(opts?: {
 
     if (listaModelos.length === 0) continue;
 
-    // Um card por produto — o seletor de iPhone fica na página do produto.
     const primeiroModelo = listaModelos[0];
     const modeloInfo = modelosMap[primeiroModelo];
     const marcaId = data.marcaId ?? modeloInfo?.marcaId ?? null;
@@ -194,17 +225,14 @@ export async function listarProdutosPorCategoriaVitrine(
   }
 
   const lojaEstoqueId = lojaId?.trim() || MARCA_LOJA_ID;
-  const db = getFirebaseDb();
-  const [snap, estoqueMap] = await Promise.all([
-    getDocs(
-      query(collection(db, COLECOES.PRODUTOS), where("ativo", "==", true)),
-    ),
-    listarEstoqueLojaMap(lojaEstoqueId),
+  const [docs, estoqueMap] = await Promise.all([
+    listarProdutosAtivosDocs(),
+    listarEstoqueLojaMapCached(lojaEstoqueId),
   ]);
 
-  return snap.docs
+  return docs
     .map((d) => {
-      const data = d.data() as ProdutoCentralFirestore;
+      const data = d.data;
       const cat = inferirCategoriaId(data);
       if (cat !== categoriaId) return null;
       if (Boolean(data.personalizavel)) return null;
@@ -227,12 +255,9 @@ export async function listarProdutosPorIds(
   if (!isFirebaseConfigured() || produtoIds.length === 0) return [];
 
   const lojaEstoqueId = lojaId?.trim() || MARCA_LOJA_ID;
-  const db = getFirebaseDb();
-  const [snap, estoqueMap, marcas, modelos] = await Promise.all([
-    getDocs(
-      query(collection(db, COLECOES.PRODUTOS), where("ativo", "==", true)),
-    ),
-    listarEstoqueLojaMap(lojaEstoqueId),
+  const [docs, estoqueMap, marcas, modelos] = await Promise.all([
+    listarProdutosAtivosDocs(),
+    listarEstoqueLojaMapCached(lojaEstoqueId),
     listarMarcasAtivas(),
     listarModelosAtivos(),
   ]);
@@ -241,9 +266,7 @@ export async function listarProdutosPorIds(
   const modelosMap = Object.fromEntries(
     modelos.map((m) => [m.id, { nome: m.nome, marcaId: m.marcaId }]),
   );
-  const byId = new Map(
-    snap.docs.map((d) => [d.id, d.data() as ProdutoCentralFirestore]),
-  );
+  const byId = new Map(docs.map((d) => [d.id, d.data]));
 
   const out: ProdutoDestaque[] = [];
   for (const id of produtoIds) {
@@ -265,4 +288,18 @@ export async function listarProdutosPorIds(
     );
   }
   return out;
+}
+
+/** Aquece cache na home (1× getDocs produtos + estoque + marcas/modelos). */
+export async function prefetchCatalogoVitrine(
+  lojaId?: string | null,
+): Promise<void> {
+  if (!isFirebaseConfigured()) return;
+  const lojaEstoqueId = lojaId?.trim() || MARCA_LOJA_ID;
+  await Promise.all([
+    listarProdutosAtivosDocs(),
+    listarEstoqueLojaMapCached(lojaEstoqueId),
+    listarMarcasAtivas(),
+    listarModelosAtivos(),
+  ]);
 }
